@@ -1,0 +1,102 @@
+# ---------- Dependencies ----------
+node_modules/
+.pnpm-store/
+.pnp.*
+.yarn/
+
+# ---------- Build output ----------
+dist/
+build/
+out/
+.next/
+.vite/
+*.tsbuildinfo
+
+# ---------- Environment and secrets (never commit) ----------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+keystore/
+secrets/
+.secrets/
+
+# ---------- Logs ----------
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ---------- Test and coverage ----------
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+playwright/.cache/
+blob-report/
+
+# ---------- Hardhat / Solidity (blockchain/) ----------
+blockchain/artifacts/
+blockchain/cache/
+blockchain/typechain-types/
+blockchain/crytic-export/
+blockchain/coverage.json
+blockchain/gas-report.txt
+blockchain/ignition/deployments/chain-31337/
+blockchain/ignition/deployments/chain-1337/
+
+# Local chain deployment changes on every run, Amoy manifest is committed
+shared/deployments/local.json
+
+# ---------- Backend (backend/) ----------
+# Local stub storage for evidence when IPFS_MODE=stub or local
+backend/.data/
+.data/
+# Prisma generated client is rebuilt on install
+backend/src/generated/
+# Local databases and dumps
+*.sqlite
+*.sqlite3
+*.dump
+pgdata/
+
+# ---------- Docker ----------
+infra/.data/
+docker-compose.override.yml
+
+# ---------- IDEs and editors ----------
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.example.json
+.fleet/
+.history/
+
+# ---------- OS files ----------
+.DS_Store
+Thumbs.db
+desktop.ini
+*~
+*.swp
+
+# ---------- Temporary ----------
+tmp/
+temp/
+.cache/
+.eslintcache
+.parcel-cache/
+.turbo/
+
+# ---------- Scratch files from early setup ----------
+# Placeholder text files created before the real code went in
+backend/backendcodehere.txt
+blockchain/smartcontratscode.txt
+frontend/frontendcodehre.txt
