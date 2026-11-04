@@ -23,10 +23,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserSession | null>(() => {
     const saved = localStorage.getItem('charitychain_session');
-    return saved ? JSON.parse(saved) : defaultSession;
+    return saved ? JSON.parse(saved) : null;
   });
 
-  const [role, setRoleState] = useState<UserRole>(user?.role || 'COMMITTEE');
+  const [role, setRoleState] = useState<UserRole>(user?.role || 'DONOR');
 
   useEffect(() => {
     if (user) {

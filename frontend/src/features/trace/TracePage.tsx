@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { useTranslation } from '@/app/i18n/I18nContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -8,6 +10,7 @@ import { StatusChip } from '@/components/StatusChip';
 import { Money } from '@/components/Money';
 import { DonorBadge } from '@/components/ui/Badge';
 import { EmptyState } from '@/components/EmptyState';
+import { SankeyFlow } from './SankeyFlow';
 import {
   Search,
   CheckCircle2,
@@ -18,15 +21,30 @@ import {
   ArrowRight,
   Clock,
   Sparkles,
+  AlertTriangle,
+  RefreshCw,
 } from 'lucide-react';
 import type { DonationTrace } from '@/types';
 
 export const TracePage: React.FC = () => {
-  const [searchInput, setSearchInput] = useState('MLK-7F3K-92QD');
-  const [activeCode, setActiveCode] = useState('MLK-7F3K-92QD');
+  const { t } = useTranslation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const queryParam = searchParams.get('receipt') || searchParams.get('code') || '';
+  const initialCode = queryParam || 'MLK-7F3K-92QD';
+
+  const [searchInput, setSearchInput] = useState(initialCode);
+  const [activeCode, setActiveCode] = useState(initialCode);
   const [techDetailsOpen, setTechDetailsOpen] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
-  const [verifiedState, setVerifiedState] = useState<'IDLE' | 'MATCH' | 'MISMATCH'>('MATCH');
+  const [verifiedState, setVerifiedState] = useState<'MATCH' | 'MISMATCH'>('MATCH');
+  const [simulateTamper, setSimulateTamper] = useState(false);
+
+  useEffect(() => {
+    if (queryParam && queryParam !== activeCode) {
+      setSearchInput(queryParam);
+      setActiveCode(queryParam);
+    }
+  }, [queryParam]);
 
   const { data: donation, isLoading, isError } = useQuery<DonationTrace | null>({
     queryKey: ['trace', activeCode],
@@ -37,30 +55,32 @@ export const TracePage: React.FC = () => {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchInput.trim()) {
-      setActiveCode(searchInput.trim());
-      setVerifiedState('MATCH');
+      const code = searchInput.trim().toUpperCase();
+      setActiveCode(code);
+      setSearchParams({ code });
+      setVerifiedState(simulateTamper ? 'MISMATCH' : 'MATCH');
     }
   };
 
   const handleVerifyOnChain = async () => {
     setIsVerifying(true);
     // Simulating Web3.js direct RPC call to Polygon Amoy DonationLedger.recordHashOf(donationId)
-    await new Promise((r) => setTimeout(r, 800));
+    await new Promise((r) => setTimeout(r, 600));
     setIsVerifying(false);
-    setVerifiedState('MATCH');
+    setVerifiedState(simulateTamper ? 'MISMATCH' : 'MATCH');
   };
 
-  const quickSamples = ['MLK-7F3K-92QD', 'MLK-4B2N-88LK', 'MLK-99ZZ-31AA'];
+  const quickSamples = ['MLK-7F3K-92QD', 'MLK-4B2N-88LK', 'MLK-ITEM-9201'];
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       {/* Header Banner */}
       <div className="text-center space-y-3">
         <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
-          Trace Your Donation
+          {t('traceTitle')}
         </h1>
         <p className="text-base sm:text-lg text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto">
-          Enter your receipt code to verify your contribution’s journey from intake to needy student disbursements.
+          {t('traceSubtitle')}
         </p>
       </div>
 
@@ -74,20 +94,20 @@ export const TracePage: React.FC = () => {
                 type="text"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                placeholder="e.g. MLK-7F3K-92QD or M-Pesa Code"
+                placeholder={t('tracePlaceholder')}
                 className="pl-11 font-mono uppercase tracking-wider text-base"
                 required
               />
             </div>
             <Button type="submit" variant="emerald" className="sm:w-36 gap-2">
               <Search className="w-4 h-4" />
-              Trace Lot
+              {t('traceButton')}
             </Button>
           </form>
 
           {/* Quick Demo Pickers */}
           <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
-            <span className="font-medium">Quick sample receipts:</span>
+            <span className="font-medium">{t('quickSamples')}</span>
             {quickSamples.map((sample) => (
               <button
                 key={sample}
@@ -95,6 +115,7 @@ export const TracePage: React.FC = () => {
                 onClick={() => {
                   setSearchInput(sample);
                   setActiveCode(sample);
+                  setSearchParams({ code: sample });
                 }}
                 className="font-mono px-2 py-1 rounded-md bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition-colors"
               >
@@ -118,8 +139,8 @@ export const TracePage: React.FC = () => {
       {/* Not Found */}
       {!isLoading && !donation && !isError && (
         <EmptyState
-          title="Receipt Not Found"
-          description="We couldn't locate a verified donation with this code. Please check your M-Pesa confirmation or receipt."
+          title={t('receiptNotFound')}
+          description={t('receiptNotFoundDesc')}
           actionLabel="Try Sample Code MLK-7F3K-92QD"
           onAction={() => {
             setSearchInput('MLK-7F3K-92QD');
@@ -136,7 +157,7 @@ export const TracePage: React.FC = () => {
             <div className="bg-zinc-50/70 dark:bg-zinc-900/60 p-6 border-b border-zinc-200 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs font-bold text-zinc-500 uppercase">Receipt Code</span>
+                  <span className="font-mono text-xs font-bold text-zinc-500 uppercase">{t('receiptCode')}</span>
                   <span className="font-mono text-sm font-extrabold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
                     {donation.receiptCode}
                   </span>
@@ -151,9 +172,9 @@ export const TracePage: React.FC = () => {
               <div className="flex items-center gap-2.5">
                 {donation.donorBadge && <DonorBadge tier={donation.donorBadge} />}
                 <div className="text-right">
-                  <p className="text-xs text-zinc-500 font-medium">Donor Recognition</p>
+                  <p className="text-xs text-zinc-500 font-medium">{t('donorRecognition')}</p>
                   <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
-                    {donation.donorDisplayMode === 'ANONYMOUS' ? 'Anonymous Giver' : donation.donorAlias}
+                    {donation.donorDisplayMode === 'ANONYMOUS' ? t('anonymous') : donation.donorAlias}
                   </p>
                 </div>
               </div>
@@ -163,11 +184,11 @@ export const TracePage: React.FC = () => {
               {/* Channel and Metadata Bar */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200/70 dark:border-zinc-800/70 text-xs">
                 <div>
-                  <span className="text-zinc-500 block mb-0.5">Rail Channel</span>
+                  <span className="text-zinc-500 block mb-0.5">{t('railChannel')}</span>
                   <StatusChip status={donation.channel} />
                 </div>
                 <div>
-                  <span className="text-zinc-500 block mb-0.5">Recorded (EAT)</span>
+                  <span className="text-zinc-500 block mb-0.5">{t('recordedTime')}</span>
                   <span className="font-medium text-zinc-800 dark:text-zinc-200">
                     {new Date(donation.recordedAt).toLocaleDateString('en-KE', {
                       month: 'short',
@@ -179,7 +200,7 @@ export const TracePage: React.FC = () => {
                   </span>
                 </div>
                 <div>
-                  <span className="text-zinc-500 block mb-0.5">Source Reference</span>
+                  <span className="text-zinc-500 block mb-0.5">{t('sourceReference')}</span>
                   <span className="font-mono font-medium text-zinc-800 dark:text-zinc-200">{donation.sourceRef}</span>
                 </div>
                 <div>
@@ -189,6 +210,15 @@ export const TracePage: React.FC = () => {
                   </span>
                 </div>
               </div>
+
+              {/* Visual Sankey Lot Allocation Flow */}
+              <SankeyFlow
+                totalAmountMinor={donation.amountMinor}
+                currency={donation.currency}
+                channel={donation.channel}
+                receiptCode={donation.receiptCode}
+                allocations={donation.allocations}
+              />
 
               {/* Impact / Allocation Breakdown */}
               <div className="space-y-4">
@@ -260,24 +290,56 @@ export const TracePage: React.FC = () => {
                     </div>
                   </div>
 
-                  <Button
-                    variant="emerald"
-                    size="sm"
-                    onClick={handleVerifyOnChain}
-                    isLoading={isVerifying}
-                    className="gap-2 shrink-0"
-                  >
-                    <CheckCircle2 className="w-4 h-4" />
-                    Verify Direct on Chain
-                  </Button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      variant={verifiedState === 'MISMATCH' ? 'destructive' : 'emerald'}
+                      size="sm"
+                      onClick={handleVerifyOnChain}
+                      isLoading={isVerifying}
+                      className="gap-2 shrink-0"
+                    >
+                      {verifiedState === 'MISMATCH' ? (
+                        <>
+                          <AlertTriangle className="w-4 h-4" />
+                          Tamper Detected!
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="w-4 h-4" />
+                          Verify Direct on Chain
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
 
-                {/* Collapsible Technical Details */}
-                <div className="pt-2 border-t border-emerald-500/20">
+                {/* Verification Result Banner */}
+                {verifiedState === 'MATCH' ? (
+                  <div className="p-3 rounded-lg bg-emerald-100/70 dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-800 text-xs font-semibold text-emerald-900 dark:text-emerald-200 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>Authentic Notarization: Local record hash matches on-chain state on Polygon Amoy.</span>
+                    </div>
+                    <span className="text-[10px] uppercase font-bold text-emerald-700 dark:text-emerald-300">
+                      Zero Drift
+                    </span>
+                  </div>
+                ) : (
+                  <div className="p-3 rounded-lg bg-rose-100/90 dark:bg-rose-950/90 border border-rose-300 dark:border-rose-800 text-xs font-semibold text-rose-950 dark:text-rose-200 flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="block font-bold">Integrity Alert (Rule R17 Fired):</span>
+                      <span>The record hash in the local database differs from the anchored fingerprint on Polygon Amoy. This record may have been modified after notarization.</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Demo Simulation Switch */}
+                <div className="pt-2 border-t border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
                   <button
                     type="button"
                     onClick={() => setTechDetailsOpen(!techDetailsOpen)}
-                    className="flex items-center gap-1.5 text-xs font-semibold text-emerald-800 dark:text-emerald-300 hover:underline"
+                    className="flex items-center gap-1.5 font-semibold text-emerald-800 dark:text-emerald-300 hover:underline"
                   >
                     <span>Technical cryptographic details</span>
                     <ChevronDown
@@ -285,37 +347,56 @@ export const TracePage: React.FC = () => {
                     />
                   </button>
 
-                  {techDetailsOpen && (
-                    <div className="mt-3 p-3.5 rounded-lg bg-white dark:bg-zinc-900 text-xs font-mono space-y-2 border border-zinc-200 dark:border-zinc-800">
+                  <label className="flex items-center gap-2 text-[11px] text-zinc-500 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={simulateTamper}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setSimulateTamper(checked);
+                        setVerifiedState(checked ? 'MISMATCH' : 'MATCH');
+                      }}
+                      className="rounded border-zinc-300 text-rose-600 focus:ring-rose-500"
+                    />
+                    <span>Demo mode: Simulate tampered record (test Rule R17)</span>
+                  </label>
+                </div>
+
+                {/* Collapsible Technical Details */}
+                {techDetailsOpen && (
+                  <div className="mt-3 p-3.5 rounded-lg bg-white dark:bg-zinc-900 text-xs font-mono space-y-2 border border-zinc-200 dark:border-zinc-800">
+                    <div>
+                      <span className="text-zinc-500 block">Record Hash (keccak256):</span>
+                      <span className="break-all text-zinc-800 dark:text-zinc-200">
+                        {simulateTamper
+                          ? '0xbad000000000000000000000000000000000000000000000000000000000dead'
+                          : donation.recordHash}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-zinc-500 block">Polygon Amoy Tx Hash:</span>
+                      <a
+                        href={`https://amoy.polygonscan.com/tx/${donation.txHash}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="break-all text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1"
+                      >
+                        {donation.txHash}
+                        <ExternalLink className="w-3 h-3 shrink-0" />
+                      </a>
+                    </div>
+                    <div className="flex gap-6 pt-1">
                       <div>
-                        <span className="text-zinc-500 block">Record Hash (keccak256):</span>
-                        <span className="break-all text-zinc-800 dark:text-zinc-200">{donation.recordHash}</span>
+                        <span className="text-zinc-500">Block: </span>
+                        <span className="text-zinc-800 dark:text-zinc-200">{donation.blockNumber}</span>
                       </div>
                       <div>
-                        <span className="text-zinc-500 block">Polygon Amoy Tx Hash:</span>
-                        <a
-                          href={`https://amoy.polygonscan.com/tx/${donation.txHash}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="break-all text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1"
-                        >
-                          {donation.txHash}
-                          <ExternalLink className="w-3 h-3 shrink-0" />
-                        </a>
-                      </div>
-                      <div className="flex gap-6 pt-1">
-                        <div>
-                          <span className="text-zinc-500">Block: </span>
-                          <span className="text-zinc-800 dark:text-zinc-200">{donation.blockNumber}</span>
-                        </div>
-                        <div>
-                          <span className="text-zinc-500">Network: </span>
-                          <span className="text-zinc-800 dark:text-zinc-200">Polygon Amoy (80002)</span>
-                        </div>
+                        <span className="text-zinc-500">Network: </span>
+                        <span className="text-zinc-800 dark:text-zinc-200">Polygon Amoy (80002)</span>
                       </div>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

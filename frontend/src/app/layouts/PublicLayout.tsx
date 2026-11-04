@@ -1,17 +1,23 @@
 import React from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { ShieldCheck, Search, BarChart3, FileText, ArrowRight, Lock } from 'lucide-react';
+import { ShieldCheck, Search, BarChart3, FileText, ArrowRight, Lock, Award } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { LanguageToggle } from '@/components/LanguageToggle';
+import { useTranslation } from '@/app/i18n/I18nContext';
+import { useAuth } from '@/app/auth/AuthContext';
 
 export const PublicLayout: React.FC = () => {
   const location = useLocation();
+  const { t } = useTranslation();
+  const { user } = useAuth();
 
   const navLinks = [
-    { label: 'Trace Donation', path: '/trace', icon: Search },
-    { label: 'Transparency Dashboard', path: '/dashboard', icon: BarChart3 },
-    { label: 'Anchored Reports', path: '/reports', icon: FileText },
+    { label: t('navTrace'), path: '/trace', icon: Search },
+    { label: t('navDashboard'), path: '/dashboard', icon: BarChart3 },
+    { label: t('navWall'), path: '/wall', icon: Award },
+    { label: t('navReports'), path: '/reports', icon: FileText },
   ];
 
   return (
@@ -19,9 +25,7 @@ export const PublicLayout: React.FC = () => {
       {/* Top Banner Notice */}
       <div className="bg-emerald-600 dark:bg-emerald-700 text-white text-xs sm:text-sm font-medium py-1.5 px-4 text-center flex items-center justify-center gap-2">
         <ShieldCheck className="w-4 h-4 shrink-0" aria-hidden="true" />
-        <span>
-          Malkia Tamper-Proof Ledger: Funds stay on verified M-Pesa & Bank rails; records anchored on Polygon Amoy.
-        </span>
+        <span>{t('bannerNotice')}</span>
       </div>
 
       {/* Main Public Header */}
@@ -36,7 +40,7 @@ export const PublicLayout: React.FC = () => {
                 CharityChain
               </span>
               <span className="hidden sm:inline-block ml-2 text-xs font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
-                Malkia Public Ledger
+                {t('tagline')}
               </span>
             </div>
           </Link>
@@ -64,17 +68,28 @@ export const PublicLayout: React.FC = () => {
             })}
           </nav>
 
-          {/* Portal Switch & Theme Toggle */}
-          <div className="flex items-center gap-2 sm:gap-3">
+          {/* Controls: Language Toggle, Theme Toggle, Staff Portal */}
+          <div className="flex items-center gap-2 sm:gap-2.5">
+            <LanguageToggle />
             <ThemeToggle />
-            <Link to="/app">
-              <Button variant="outline" size="sm" className="gap-2">
-                <Lock className="w-3.5 h-3.5 text-zinc-500" aria-hidden="true" />
-                <span className="hidden sm:inline">Committee & Signatories</span>
-                <span className="sm:hidden">Staff</span>
-                <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
-              </Button>
-            </Link>
+            {user ? (
+              <Link to="/app">
+                <Button variant="emerald" size="sm" className="gap-2">
+                  <span className="hidden sm:inline">Go to Portal ({user.name})</span>
+                  <span className="sm:hidden">Portal</span>
+                  <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+                </Button>
+              </Link>
+            ) : (
+              <Link to="/login">
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Lock className="w-3.5 h-3.5 text-zinc-500" aria-hidden="true" />
+                  <span className="hidden sm:inline">Staff Sign In</span>
+                  <span className="sm:hidden">Login</span>
+                  <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </header>
@@ -87,14 +102,14 @@ export const PublicLayout: React.FC = () => {
       {/* Footer */}
       <footer className="border-t border-zinc-200 dark:border-zinc-800 py-8 bg-white dark:bg-zinc-900/60 text-xs text-zinc-500 dark:text-zinc-400">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p>© 2026 Malkia Campus Charity. Registered Student & Staff Support Group.</p>
+          <p>{t('copyright')}</p>
           <div className="flex items-center gap-6">
-            <span>Independent Browser-to-RPC Verification</span>
+            <span>{t('browserRpc')}</span>
             <span className="w-1 h-1 rounded-full bg-zinc-300 dark:bg-zinc-700" />
-            <span>Zero PII On-Chain (HMAC-SHA256)</span>
+            <span>{t('zeroPii')}</span>
             <span className="w-1 h-1 rounded-full bg-zinc-300 dark:bg-zinc-700" />
             <Link to="/app" className="underline hover:text-zinc-700 dark:hover:text-zinc-300">
-              Staff Portal
+              {t('staff')} Portal
             </Link>
           </div>
         </div>

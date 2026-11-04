@@ -124,3 +124,25 @@ export interface UserSession {
   walletAddress?: string;
 }
 
+export interface RecognitionEntry {
+  id: string;
+  displayName: string;
+  displayMode: 'ALIAS' | 'NAMED';
+  tier: BadgeTier;
+  awardedMonth: string;
+  isConsistentGiver?: boolean;
+}
+
+export interface DonorClaimProfile {
+  receiptCode: string;
+  donorRef: string;
+  cumulativeMinor: number;
+  activeTier: BadgeTier;
+  nextTier?: BadgeTier;
+  nextTierThresholdMinor?: number;
+  consecutiveMonthsCount: number;
+  isConsistentGiver: boolean;
+  displayMode: DisplayMode;
+  displayName: string;
+}
+

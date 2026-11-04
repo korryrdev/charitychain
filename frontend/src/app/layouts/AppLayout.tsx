@@ -14,58 +14,68 @@ import {
   LogOut,
   ChevronDown,
   UserCheck,
+  Network,
 } from 'lucide-react';
 import { useAuth } from '@/app/auth/AuthContext';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { LanguageToggle } from '@/components/LanguageToggle';
+import { useTranslation } from '@/app/i18n/I18nContext';
 import { cn } from '@/lib/utils';
 import type { UserRole } from '@/types';
 
 export const AppLayout: React.FC = () => {
   const { user, role, setRole, logout } = useAuth();
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navItems = [
     {
-      label: 'Cases & Approvals',
+      label: t('navCases'),
       path: '/app/cases',
       icon: FileCheck2,
       roles: ['COMMITTEE', 'TREASURER', 'SIGNATORY', 'ADMIN', 'SUBGROUP_REP'] as UserRole[],
     },
     {
-      label: 'Submit New Case',
+      label: t('navNewCase'),
       path: '/app/cases/new',
       icon: PlusCircle,
       roles: ['SUBGROUP_REP', 'COMMITTEE', 'ADMIN'] as UserRole[],
     },
     {
-      label: '2-of-3 Release Queue',
+      label: t('navSigning'),
       path: '/app/signing',
       icon: KeyRound,
       badge: '2-of-3',
       roles: ['SIGNATORY', 'COMMITTEE', 'ADMIN'] as UserRole[],
     },
     {
-      label: 'Bank Deposits & Verification',
+      label: t('navDonations'),
       path: '/app/donations',
       icon: Coins,
       roles: ['TREASURER', 'COMMITTEE', 'ADMIN'] as UserRole[],
     },
     {
-      label: 'Pharmacy Quick Item Log',
+      label: t('navPharmacy'),
       path: '/app/pharmacy',
       icon: PackageCheck,
       roles: ['CUSTODIAN', 'COMMITTEE', 'ADMIN'] as UserRole[],
     },
     {
-      label: 'Forensic Alert Inbox',
+      label: t('navAlerts'),
       path: '/app/alerts',
       icon: AlertTriangle,
       roles: ['COMMITTEE', 'TREASURER', 'SIGNATORY', 'AUDITOR', 'ADMIN'] as UserRole[],
     },
     {
-      label: 'Quarterly Report Builder',
+      label: t('navGraph'),
+      path: '/app/graph',
+      icon: Network,
+      roles: ['COMMITTEE', 'TREASURER', 'SIGNATORY', 'AUDITOR', 'ADMIN'] as UserRole[],
+    },
+    {
+      label: t('navReportBuilder'),
       path: '/app/reports',
       icon: FileSpreadsheet,
       roles: ['COMMITTEE', 'TREASURER', 'ADMIN'] as UserRole[],
@@ -100,6 +110,7 @@ export const AppLayout: React.FC = () => {
           <span className="font-bold text-base">Malkia Admin</span>
         </Link>
         <div className="flex items-center gap-2">
+          <LanguageToggle />
           <ThemeToggle />
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -189,6 +200,10 @@ export const AppLayout: React.FC = () => {
         {/* Bottom Actions */}
         <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 space-y-2">
           <div className="flex items-center justify-between pb-2 border-b border-zinc-100 dark:border-zinc-800/80">
+            <span className="text-xs font-semibold text-zinc-500">Language / Lugha</span>
+            <LanguageToggle />
+          </div>
+          <div className="flex items-center justify-between pb-2 border-b border-zinc-100 dark:border-zinc-800/80">
             <span className="text-xs font-semibold text-zinc-500">Theme</span>
             <ThemeToggle showLabel />
           </div>
@@ -204,7 +219,7 @@ export const AppLayout: React.FC = () => {
             className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition-colors"
           >
             <LogOut className="w-4 h-4 shrink-0" />
-            <span>Sign Out</span>
+            <span>{t('signOut')}</span>
           </button>
         </div>
       </aside>

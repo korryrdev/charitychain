@@ -5,6 +5,8 @@ import type {
   TransparencyStats,
   UserSession,
   NeedCategory,
+  RecognitionEntry,
+  DonorClaimProfile,
 } from '@/types';
 
 // Mock seed data matching PRD specifications
@@ -86,6 +88,60 @@ const MOCK_DONATIONS: Record<string, DonationTrace> = {
     donorAlias: 'Alumni Association Class of 2022',
     donorBadge: 'GOLD',
     allocations: [],
+  },
+  'MLK-ITEM-9201': {
+    id: 'itm-1',
+    receiptCode: 'MLK-ITEM-9201',
+    sourceRef: 'PHARM-LOT-9201',
+    channel: 'IN_KIND',
+    amountMinor: 15,
+    currency: 'ITM',
+    recordedAt: '2026-10-24T12:00:00Z',
+    status: 'PARTIALLY_ALLOCATED',
+    earmark: 'BOOKS',
+    txHash: '0x99aa88bb77cc66dd55ee44ff33aa22bb11cc00dd99887766554433221100ffaa',
+    blockNumber: 4221500,
+    recordHash: '0x3344556677889900aabbccddeeff00112233445566778899aabbccddeeff0011',
+    donorDisplayMode: 'NAMED',
+    donorAlias: 'Graduating Class of 2025',
+    donorBadge: 'SILVER',
+    allocations: [
+      {
+        id: 'alloc-itm-1',
+        caseId: 'case-0143',
+        caseNumber: 'CASE-2026-0143',
+        caseCategory: 'BOOKS',
+        amountMinor: 3,
+        allocatedAt: '2026-10-26T10:00:00Z',
+      },
+    ],
+  },
+  'MLK-ITEM-8812': {
+    id: 'itm-2',
+    receiptCode: 'MLK-ITEM-8812',
+    sourceRef: 'PHARM-LOT-8812',
+    channel: 'IN_KIND',
+    amountMinor: 20,
+    currency: 'ITM',
+    recordedAt: '2026-10-22T09:30:00Z',
+    status: 'PARTIALLY_ALLOCATED',
+    earmark: 'MEDICAL',
+    txHash: '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+    blockNumber: 4219400,
+    recordHash: '0x556677889900aabbccddeeff00112233445566778899aabbccddeeff00112233',
+    donorDisplayMode: 'ALIAS',
+    donorAlias: 'University Hospital Staff Donation',
+    donorBadge: 'GOLD',
+    allocations: [
+      {
+        id: 'alloc-itm-2',
+        caseId: 'case-0145',
+        caseNumber: 'CASE-2026-0145',
+        caseCategory: 'MEDICAL',
+        amountMinor: 5,
+        allocatedAt: '2026-10-23T15:00:00Z',
+      },
+    ],
   },
 };
 
@@ -259,6 +315,54 @@ export const api = {
     return { ...target };
   },
 
+  // Committee Approve Decision
+  approveCase: async (caseId: string, approvedAmountMinor: number, approverId: string): Promise<CaseRecord> => {
+    await new Promise((r) => setTimeout(r, 400));
+    const target = MOCK_CASES.find((c) => c.id === caseId);
+    if (!target) throw new Error('Case not found');
+    if (target.submitterId === approverId) {
+      throw new Error('Segregation of Duties (Rule R03): Submitter cannot approve their own case.');
+    }
+    target.state = 'APPROVED';
+    target.approvedAmountMinor = approvedAmountMinor;
+    target.updatedAt = new Date().toISOString();
+    return { ...target };
+  },
+
+  // Committee Reject Decision
+  rejectCase: async (caseId: string, reason: string): Promise<CaseRecord> => {
+    await new Promise((r) => setTimeout(r, 400));
+    const target = MOCK_CASES.find((c) => c.id === caseId);
+    if (!target) throw new Error('Case not found');
+    target.state = 'REJECTED';
+    target.updatedAt = new Date().toISOString();
+    return { ...target };
+  },
+
+  // Record Disbursement
+  recordDisbursement: async (
+    caseId: string,
+    amountMinor: number,
+    methodRef: string,
+    evidenceCid: string
+  ): Promise<CaseRecord> => {
+    await new Promise((r) => setTimeout(r, 500));
+    const target = MOCK_CASES.find((c) => c.id === caseId);
+    if (!target) throw new Error('Case not found');
+    if (target.state !== 'AUTHORIZED') {
+      throw new Error('Invariant Violation: Disbursement requires 2-of-3 AUTHORIZED state.');
+    }
+    const maxAllowed = target.approvedAmountMinor || target.requestedAmountMinor;
+    if (amountMinor > maxAllowed) {
+      throw new Error(`Rule R02 Violation: Disbursement cannot exceed authorized ceiling of ${maxAllowed} minor units.`);
+    }
+    target.state = 'DISBURSED';
+    target.disbursedAmountMinor = amountMinor;
+    target.evidenceCid = evidenceCid;
+    target.updatedAt = new Date().toISOString();
+    return { ...target };
+  },
+
   // Forensic Alerts
   getForensicAlerts: async (): Promise<ForensicAlert[]> => {
     await new Promise((r) => setTimeout(r, 300));
@@ -275,5 +379,174 @@ export const api = {
       target.resolutionNote = note;
     }
   },
+
+  // Register Tangible Item Lot into Donation Ledger
+  registerInKindItem: (item: {
+    receiptCode: string;
+    category: string;
+    quantity: number;
+    donorLabel: string;
+    txHash: string;
+    blockNumber: number;
+  }): DonationTrace => {
+    const trace: DonationTrace = {
+      id: `itm-${Date.now()}`,
+      receiptCode: item.receiptCode,
+      sourceRef: `PHARM-LOT-${item.receiptCode.slice(-4)}`,
+      channel: 'IN_KIND',
+      amountMinor: item.quantity,
+      currency: 'ITM',
+      recordedAt: new Date().toISOString(),
+      status: 'POOLED',
+      earmark: 'BOOKS',
+      txHash: item.txHash,
+      blockNumber: item.blockNumber,
+      recordHash: `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`,
+      donorDisplayMode: item.donorLabel.toLowerCase().includes('anonymous') ? 'ANONYMOUS' : 'ALIAS',
+      donorAlias: item.donorLabel || 'Hospital Walk-in Donor',
+      donorBadge: 'BRONZE',
+      allocations: [],
+    };
+    MOCK_DONATIONS[item.receiptCode.toUpperCase()] = trace;
+    return trace;
+  },
+
+  // Issue In-Kind Stock to Case
+  issueInKindStock: (receiptCode: string, caseNumber: string, quantity: number): void => {
+    const target = MOCK_DONATIONS[receiptCode.toUpperCase()];
+    if (target) {
+      target.allocations.push({
+        id: `alloc-${Date.now()}`,
+        caseId: `case-${Date.now()}`,
+        caseNumber,
+        caseCategory: 'BOOKS',
+        amountMinor: quantity,
+        allocatedAt: new Date().toISOString(),
+      });
+      target.status = 'PARTIALLY_ALLOCATED';
+    }
+  },
+
+  // Recognition Wall (FR-DON-12)
+  getRecognitionWall: async (): Promise<{ entries: RecognitionEntry[]; anonymousCount: number }> => {
+    await new Promise((r) => setTimeout(r, 300));
+    return { ...MOCK_RECOGNITION, entries: [...MOCK_RECOGNITION.entries] };
+  },
+
+  // Donor Claim Profile (FR-DON-11)
+  getDonorClaimProfile: async (receiptCode: string): Promise<DonorClaimProfile> => {
+    await new Promise((r) => setTimeout(r, 400));
+    const normalized = receiptCode.trim().toUpperCase();
+    const donation = MOCK_DONATIONS[normalized];
+    if (!donation) {
+      throw new Error('Receipt code not found. Please check your payment confirmation.');
+    }
+
+    return {
+      receiptCode: normalized,
+      donorRef: `dref-${normalized.slice(-4).toLowerCase()}`,
+      cumulativeMinor: donation.amountMinor >= 50000 ? 250000 : 50000,
+      activeTier: donation.donorBadge || 'BRONZE',
+      nextTier: 'SILVER',
+      nextTierThresholdMinor: 100000,
+      consecutiveMonthsCount: 3,
+      isConsistentGiver: true,
+      displayMode: donation.donorDisplayMode || 'ANONYMOUS',
+      displayName: donation.donorAlias || '',
+    };
+  },
+
+  // Update Donor Display Preferences (FR-DON-05, FR-DON-06)
+  updateDonorPreferences: async (
+    receiptCode: string,
+    displayMode: 'ANONYMOUS' | 'ALIAS' | 'NAMED',
+    displayName: string
+  ): Promise<void> => {
+    await new Promise((r) => setTimeout(r, 400));
+    const prohibitedWords = ['admin', 'malkia', 'official', 'scam', 'fraud'];
+    if (displayMode !== 'ANONYMOUS' && prohibitedWords.some((w) => displayName.toLowerCase().includes(w))) {
+      throw new Error('Prohibited or reserved name detected (Rule FR-DON-05). Please choose another alias.');
+    }
+
+    const normalized = receiptCode.trim().toUpperCase();
+    const donation = MOCK_DONATIONS[normalized];
+    if (donation) {
+      donation.donorDisplayMode = displayMode;
+      donation.donorAlias = displayMode === 'ANONYMOUS' ? undefined : displayName;
+    }
+
+    if (displayMode !== 'ANONYMOUS' && displayName.trim()) {
+      const existing = MOCK_RECOGNITION.entries.find((e) => e.displayName === displayName);
+      if (!existing) {
+        MOCK_RECOGNITION.entries.unshift({
+          id: `rec-${Date.now()}`,
+          displayName: displayName.trim(),
+          displayMode,
+          tier: donation?.donorBadge || 'BRONZE',
+          awardedMonth: 'November 2026',
+          isConsistentGiver: true,
+        });
+      }
+    }
+  },
+};
+
+const MOCK_RECOGNITION: { entries: RecognitionEntry[]; anonymousCount: number } = {
+  anonymousCount: 142,
+  entries: [
+    {
+      id: 'rec-1',
+      displayName: 'Alumni Association Class of 2018',
+      displayMode: 'NAMED',
+      tier: 'PATRON',
+      awardedMonth: 'August 2026',
+      isConsistentGiver: true,
+    },
+    {
+      id: 'rec-2',
+      displayName: 'Dr. Kamau N.',
+      displayMode: 'ALIAS',
+      tier: 'GOLD',
+      awardedMonth: 'September 2026',
+      isConsistentGiver: true,
+    },
+    {
+      id: 'rec-3',
+      displayName: 'University Hospital Staff Fellowship',
+      displayMode: 'NAMED',
+      tier: 'GOLD',
+      awardedMonth: 'October 2026',
+    },
+    {
+      id: 'rec-4',
+      displayName: 'Wanjiku M.',
+      displayMode: 'ALIAS',
+      tier: 'SILVER',
+      awardedMonth: 'October 2026',
+      isConsistentGiver: true,
+    },
+    {
+      id: 'rec-5',
+      displayName: 'Graduating Class of 2025',
+      displayMode: 'NAMED',
+      tier: 'SILVER',
+      awardedMonth: 'October 2026',
+    },
+    {
+      id: 'rec-6',
+      displayName: 'Ochieng B.',
+      displayMode: 'ALIAS',
+      tier: 'BRONZE',
+      awardedMonth: 'October 2026',
+      isConsistentGiver: true,
+    },
+    {
+      id: 'rec-7',
+      displayName: 'Faith K.',
+      displayMode: 'ALIAS',
+      tier: 'BRONZE',
+      awardedMonth: 'October 2026',
+    },
+  ],
 };
 

@@ -2,17 +2,19 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { api } from '@/lib/api';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
+import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { StatusChip } from '@/components/StatusChip';
 import { Money } from '@/components/Money';
 import { useAuth } from '@/app/auth/AuthContext';
-import { FileCheck2, PlusCircle, Filter, ArrowRight, UserCheck } from 'lucide-react';
-import type { CaseState } from '@/types';
+import { PlusCircle, Filter, ArrowRight, Eye } from 'lucide-react';
+import { CaseDetailModal } from './CaseDetailModal';
+import type { CaseRecord } from '@/types';
 
 export const CasesPage: React.FC = () => {
   const { role } = useAuth();
   const [filterState, setFilterState] = useState<string>('ALL');
+  const [selectedCase, setSelectedCase] = useState<CaseRecord | null>(null);
 
   const { data: cases = [], isLoading } = useQuery({
     queryKey: ['cases'],
@@ -127,18 +129,25 @@ export const CasesPage: React.FC = () => {
                         <StatusChip status={c.state} />
                       </td>
                       <td className="py-4 px-4 sm:px-6 text-right">
-                        {c.state === 'APPROVED' ? (
-                          <Link to="/app/signing">
-                            <Button size="sm" variant="emerald" className="gap-1 text-xs">
-                              Sign Release
-                              <ArrowRight className="w-3.5 h-3.5" />
-                            </Button>
-                          </Link>
-                        ) : (
-                          <Button size="sm" variant="outline" className="text-xs">
-                            View Details
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setSelectedCase(c)}
+                            className="text-xs gap-1"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            {c.state === 'SUBMITTED' ? 'Review & Decide' : 'Details'}
                           </Button>
-                        )}
+                          {c.state === 'APPROVED' && (
+                            <Link to="/app/signing">
+                              <Button size="sm" variant="emerald" className="gap-1 text-xs">
+                                Sign
+                                <ArrowRight className="w-3.5 h-3.5" />
+                              </Button>
+                            </Link>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -148,6 +157,12 @@ export const CasesPage: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Case Detail & Decision Modal */}
+      <CaseDetailModal
+        caseRecord={selectedCase}
+        onClose={() => setSelectedCase(null)}
+      />
     </div>
   );
 };
