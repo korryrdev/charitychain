@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/app/auth/AuthContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -19,6 +19,8 @@ import type { UserRole } from '@/types';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = (location.state as any)?.from?.pathname || '/app';
   const { login } = useAuth();
 
   const [email, setEmail] = useState('chair@malkia.charity');
@@ -75,12 +77,13 @@ export const LoginPage: React.FC = () => {
   const handleTotpSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     login(email, selectedRole);
-    navigate('/app');
+    navigate(from, { replace: true });
   };
 
   const handleQuickDemoLogin = (account: (typeof demoAccounts)[0]) => {
     login(account.email, account.role);
-    navigate(account.role === 'CUSTODIAN' ? '/app/pharmacy' : '/app');
+    const dest = from !== '/app' ? from : account.role === 'CUSTODIAN' ? '/app/pharmacy' : '/app';
+    navigate(dest, { replace: true });
   };
 
   return (
