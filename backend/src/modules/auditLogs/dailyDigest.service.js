@@ -133,3 +133,4 @@ export function createDailyDigestService({ database = prisma, alerts = alertsSer
 }
 
 export const dailyDigestService = createDailyDigestService();
+

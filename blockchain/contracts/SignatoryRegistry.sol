@@ -122,3 +122,4 @@ contract SignatoryRegistry is ISignatoryRegistry, AccessControl {
         emit SignatoryRemoved(signatory, signer1, signer2);
     }
 }
+

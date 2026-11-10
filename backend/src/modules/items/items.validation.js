@@ -18,3 +18,4 @@ export const issueInventorySchema = z.object({
   quantity: z.coerce.number().int().positive(),
   notes: z.string().trim().max(500).optional(),
 });
+

@@ -20,3 +20,4 @@ export function createCryptoRouter(service = stablecoinService) {
 
 export const cryptoRouter = createCryptoRouter();
 export default cryptoRouter;
+

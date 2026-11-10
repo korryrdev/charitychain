@@ -298,3 +298,4 @@ export class FraudSimulator {
 }
 
 export const fraudSimulator = new FraudSimulator();
+

@@ -74,3 +74,4 @@ export function verifyMerkleProof(leaf, proof, expectedRoot) {
     : expectedRoot.replace(/^0x/, '');
   return hash.toString('hex') === rootHex;
 }
+

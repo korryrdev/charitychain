@@ -98,3 +98,4 @@ export default {
   computeSourceRefHash,
   DEFAULT_DONOR_PREFERENCES
 };
+

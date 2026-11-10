@@ -34,3 +34,4 @@ export const recordDisbursementSchema = z.object({
   evidenceHash: z.string().regex(/^0x[a-f0-9]{64}$/).optional(),
   notes: z.string().trim().max(1000).optional(),
 });
+

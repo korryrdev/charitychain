@@ -167,3 +167,4 @@ export function createRecognitionWallService({ database = prisma, alerts = alert
 }
 
 export const recognitionWallService = createRecognitionWallService();
+

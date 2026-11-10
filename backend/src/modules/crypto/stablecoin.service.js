@@ -93,3 +93,4 @@ export function createStablecoinService({ database = prisma } = {}) {
 }
 
 export const stablecoinService = createStablecoinService();
+

@@ -326,3 +326,4 @@ FOR EACH ROW EXECUTE FUNCTION prevent_append_only_mutation();
 CREATE TRIGGER donation_raw_callbacks_append_only
 BEFORE UPDATE OR DELETE ON "donation_raw_callbacks"
 FOR EACH ROW EXECUTE FUNCTION prevent_append_only_mutation();
+

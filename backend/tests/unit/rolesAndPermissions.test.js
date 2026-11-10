@@ -67,3 +67,4 @@ describe('G02: Roles and Permission Matrix (FR-AUTH-01, FR-AUTH-03)', () => {
     expect(PERMISSIONS.SYSTEM_ADMINISTER).toBe('system:administer');
   });
 });
+

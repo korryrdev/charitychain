@@ -86,3 +86,4 @@ export function createCertificateService({ database = prisma } = {}) {
 }
 
 export const certificateService = createCertificateService();
+

@@ -73,3 +73,4 @@ describe('G09: Bank Deposit Maker-Checker (FR-INT-06, R04)', () => {
     ).rejects.toThrow(ConflictError);
   });
 });
+

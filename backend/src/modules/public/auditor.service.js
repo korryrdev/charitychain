@@ -101,3 +101,4 @@ export function createAuditorService({ database = prisma, digest = dailyDigestSe
 }
 
 export const auditorService = createAuditorService();
+

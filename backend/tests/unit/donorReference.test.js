@@ -38,3 +38,4 @@ describe('G06: Donor Reference Model (D9, FR-DON-01, FR-DON-02)', () => {
     expect(DEFAULT_DONOR_PREFERENCES.publicAlias).toBeNull();
   });
 });
+

@@ -49,3 +49,4 @@ export function createItemsRouter(service = itemsService) {
 
 export const itemsRouter = createItemsRouter();
 export default itemsRouter;
+

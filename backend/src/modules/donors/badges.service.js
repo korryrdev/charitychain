@@ -143,3 +143,4 @@ export function createBadgesService({ database = prisma } = {}) {
 }
 
 export const badgesService = createBadgesService();
+

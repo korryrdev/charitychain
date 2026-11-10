@@ -17,3 +17,4 @@ export const darajaC2bPayloadSchema = z.object({
   MiddleName: z.string().optional(),
   LastName: z.string().optional(),
 }).passthrough();
+

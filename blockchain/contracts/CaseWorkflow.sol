@@ -220,3 +220,4 @@ contract CaseWorkflow is ICaseWorkflow, EIP712, AccessControl, Pausable {
         _unpause();
     }
 }
+
