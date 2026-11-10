@@ -6,6 +6,7 @@ import { createGracefulShutdown, installSignalHandlers } from './bootstrap/grace
 import { startWorkers } from './bootstrap/startWorkers.js';
 import { validateEnvironment } from './bootstrap/validateEnvironment.js';
 import { env } from './config/environment.js';
+import { createOutboxProcessor } from './events/outboxProcessor.js';
 import { logger as defaultLogger } from './observability/logger.js';
 
 function listen(app, { port, host }) {
@@ -21,7 +22,7 @@ export async function startServer({
   database = prisma,
   logger = defaultLogger,
   app,
-  workers = [],
+  workers,
   port,
   host = '0.0.0.0',
   installProcessSignalHandlers = true
@@ -29,11 +30,15 @@ export async function startServer({
   const validatedEnvironment = validateEnvironment(environment);
   await connectDatabase({ database, logger });
 
+  const configuredWorkers = workers ?? (validatedEnvironment.FEATURE_BACKGROUND_JOBS_ENABLED
+    ? [createOutboxProcessor({ database, logger, leaseSeconds: validatedEnvironment.OUTBOX_LEASE_SECONDS, batchSize: validatedEnvironment.OUTBOX_BATCH_SIZE }).createWorker({ pollIntervalMs: validatedEnvironment.OUTBOX_POLL_INTERVAL_MS })]
+    : []);
+
   let startedWorkers = [];
   let server;
 
   try {
-    startedWorkers = await startWorkers(workers, { logger });
+    startedWorkers = await startWorkers(configuredWorkers, { logger });
     const application =
       app ??
       createApp({

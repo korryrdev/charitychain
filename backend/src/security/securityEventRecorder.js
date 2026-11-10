@@ -1,3 +1,2 @@
-'use strict';
-
-// securityEventRecorder: implementation pending.
+import { redactSensitiveData } from './sensitiveDataRedactor.js';
+export function createSecurityEventRecorder({ append, clock = () => new Date() } = {}) { if (typeof append !== 'function') throw new TypeError('A security event append function is required.'); return Object.freeze({ record({ action, actorId = null, entityType = 'SECURITY', entityId = null, outcome = 'SUCCESS', metadata = {} }) { if (!action) throw new TypeError('A security action is required.'); return append({ action, actorId, entityType, entityId, outcome, metadata: redactSensitiveData(metadata), occurredAt: clock() }); } }); }

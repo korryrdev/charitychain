@@ -1,3 +1,2 @@
-'use strict';
-
-// sensitiveDataRedactor: implementation pending.
+const sensitive = /password|secret|token|authorization|cookie|phone|email|private.?key|rawpayload/i;
+export function redactSensitiveData(value) { if (Array.isArray(value)) return value.map(redactSensitiveData); if (!value || typeof value !== 'object') return value; return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, sensitive.test(key) ? '[REDACTED]' : redactSensitiveData(item)])); }

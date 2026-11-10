@@ -1,3 +1,2 @@
-'use strict';
-
-// webhookVerifier: implementation pending.
+import { createHmac, timingSafeEqual } from 'node:crypto';
+export function verifyWebhookSignature({ rawBody, signature, secret, algorithm = 'sha256' }) { if (!rawBody || !signature || !secret) return false; const expected = Buffer.from(createHmac(algorithm, secret).update(rawBody).digest('hex')); const received = Buffer.from(String(signature).replace(/^sha256=/i, '')); return expected.length === received.length && timingSafeEqual(expected, received); }
