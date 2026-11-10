@@ -13,8 +13,10 @@
     "web3": "^4.16.0"
   },
   "devDependencies": {
+    "@nomicfoundation/edr-linux-x64-gnu": "^0.25.0",
     "@nomicfoundation/hardhat-toolbox-viem": "^5.0.7",
     "@nomicfoundation/hardhat-zod-utils": "^3.0.8",
-    "hardhat": "^3.21.2"
+    "hardhat": "^3.21.2",
+    "viem": "^2.57.17"
   }
 }

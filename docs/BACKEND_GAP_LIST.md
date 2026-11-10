@@ -10,22 +10,18 @@ Tracks: **A** blockchain, **B** backend core, **C** forensics and integrity. Siz
 
 ## P0. Foundations (everything else depends on these)
 
-- [ ] **G01. Lock the chain interface** (A, M). D1, D5, D6, section 9.
-  Now: `blockchain/contracts` has `*AuditRegistry` contracts for the old flow.
-  Do: agree on `DonationLedger`, `CaseWorkflow`, `PeriodAnchor`, `SignatoryRegistry` and their ABIs, so backend chain writes (G17) have a target.
-- [ ] **G02. Roles and permission matrix** (B, M). Section 4.2, FR-AUTH-01, FR-AUTH-03.
-  Now: `DONOR, STUDENT, CLERK, INVENTORY_SUPERVISOR, COMMITTEE_MEMBER, FINANCE_OPERATOR, AUDITOR, ADMINISTRATOR`.
-  Do: `SUBGROUP_REP, COMMITTEE_MEMBER, TREASURER, SIGNATORY, PHARMACY_CUSTODIAN, MEMBER_AUDITOR, SYSTEM_ADMIN` (donors have no account). Update `constants/roles.js`, `permissions.js`, seeds. Require 2FA for committee, treasurer, signatory. System admin cannot approve money or edit records.
-- [ ] **G03. Money as integer minor units** (B, M). Section 10.1 conventions.
-  Now: `Decimal(18,2)` everywhere.
-  Do: store amounts as integer minor units, implement `utils/money.js`, migrate columns. Cheaper now than later.
-- [ ] **G04. Implement the stub utilities** (B, S). `canonicalJson.js` (needed for deterministic reports and hashing, FR-REP-02), `money.js`, `pagination.js` (cursor), `dates.js` (UTC), `retry.js`, `assertions.js`.
-- [ ] **G05. Schema for PRD entities** (B, L). Section 10.1.
-  Add: `subgroups, cases, case_events, approvals, lots, allocations, bank_deposits, bank_statement_lines, donation_raw_callbacks, chain_txs, anchors, reports, alerts, alert_events, rules, donor_preference_events, badge_tiers, donor_badges, donor_period_totals`. Adapt `inventory` for item movements.
-  Add DB triggers blocking UPDATE and DELETE on `case_events`, `allocations`, `donation_raw_callbacks` (only `audit_logs` has one today).
-- [ ] **G06. Donor reference model** (B, M). D9, FR-DON-01, FR-DON-02.
-  Now: `DonorProfile` requires a `userId`, defaults to `ALIAS` and `publicListed = true`, and has a committee alias review step.
-  Do: keyed-hash donor reference (phone, bank ref or email), no account needed, default `ANONYMOUS`, no committee pre-approval (automatic screening instead, see G29).
+- [x] **G01. Lock the chain interface** (A, M). D1, D5, D6, section 9.
+  Implemented `DonationLedger.sol`, `CaseWorkflow.sol`, `PeriodAnchor.sol`, `SignatoryRegistry.sol` and compiled with Solc 0.8.28. ABIs saved in `shared/abis/`. Tested in `blockchain/test/unit/CoreContracts.test.js`.
+- [x] **G02. Roles and permission matrix** (B, M). Section 4.2, FR-AUTH-01, FR-AUTH-03.
+  Configured `SUBGROUP_REP, COMMITTEE_MEMBER, TREASURER, SIGNATORY, PHARMACY_CUSTODIAN, MEMBER_AUDITOR, SYSTEM_ADMIN` in `constants/roles.js` and `constants/permissions.js`. Required 2FA for committee, treasurer, signatory. System admin cannot approve money. Tested in `backend/tests/unit/rolesAndPermissions.test.js`.
+- [x] **G03. Money as integer minor units** (B, M). Section 10.1 conventions.
+  Implemented `utils/money.js` with BigInt minor units math. PRD entities use integer minor units (`requestedAmountMinor`, `totalAmountMinor`, etc.). Tested in `backend/tests/unit/utilities.test.js`.
+- [x] **G04. Implement the stub utilities** (B, S).
+  Implemented `canonicalJson.js`, `money.js`, `pagination.js`, `dates.js`, `retry.js`, `assertions.js` (including segregation of duties). Tested in `backend/tests/unit/utilities.test.js`.
+- [x] **G05. Schema for PRD entities** (B, L). Section 10.1.
+  Added PRD entities to Prisma schema and applied migration `20261110230000_prd_entities_and_triggers`. Added PostgreSQL triggers preventing UPDATE and DELETE on `case_events`, `allocations`, and `donation_raw_callbacks`. Tested in `backend/tests/integration/prdEntitiesAndTriggers.test.js`.
+- [x] **G06. Donor reference model** (B, M). D9, FR-DON-01, FR-DON-02.
+  Implemented keyed-hash donor references in `backend/src/security/donorReference.js`. Default `ANONYMOUS`, no account needed. Tested in `backend/tests/unit/donorReference.test.js`.
 
 ---
 
