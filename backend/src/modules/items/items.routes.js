@@ -10,6 +10,15 @@ import { PERMISSIONS } from '../../constants/permissions.js';
 export function createItemsRouter(service = itemsService) {
   const router = Router();
 
+  router.get('/', async (req, res, next) => {
+    try {
+      const items = await service.listItems();
+      res.status(200).json({ items });
+    } catch (err) {
+      next(err);
+    }
+  });
+
   router.post(
     '/',
     authorize(PERMISSIONS.ITEM_LOG_CREATE),

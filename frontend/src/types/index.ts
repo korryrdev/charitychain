@@ -1,4 +1,4 @@
-export type Channel = 'MPESA' | 'BANK' | 'IN_KIND';
+export type Channel = 'MPESA' | 'BANK' | 'IN_KIND' | 'CRYPTO';
 
 export type CaseState =
   | 'DRAFT'
@@ -86,9 +86,9 @@ export interface ForensicAlert {
   ruleId: string;
   ruleTitle: string;
   severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
-  riskScore: number; // 0 to 100
+  riskScore: number;
   why: string;
-  subjectKind: 'donation' | 'case' | 'disbursement' | 'user' | 'pool' | 'day';
+  subjectKind: 'donation' | 'case' | 'disbursement' | 'user' | 'pool' | 'day' | 'system';
   subjectId: string;
   status: 'OPEN' | 'INVESTIGATING' | 'RESOLVED' | 'FALSE_POSITIVE';
   createdAt: string;
@@ -122,6 +122,7 @@ export interface UserSession {
   name: string;
   role: UserRole;
   walletAddress?: string;
+  token?: string;
 }
 
 export interface RecognitionEntry {
@@ -146,3 +147,26 @@ export interface DonorClaimProfile {
   displayName: string;
 }
 
+export interface BankDeposit {
+  id: string;
+  depositReference: string;
+  donorRef: string;
+  amountMinor: number;
+  currency: string;
+  status: 'PENDING_VERIFICATION' | 'VERIFIED' | 'REJECTED';
+  enteredByUserId: string;
+  verifiedByUserId?: string;
+  createdAt: string;
+  verifiedAt?: string;
+}
+
+export interface QuarterlyReport {
+  id: string;
+  year: number;
+  quarter: number;
+  version: number;
+  reportHash: string;
+  periodRoot: string;
+  canonicalJson: any;
+  createdAt: string;
+}

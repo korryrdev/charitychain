@@ -8,6 +8,13 @@ import { ValidationError } from '../../errors/ValidationError.js';
 import { logger } from '../../observability/logger.js';
 
 export class ItemsService {
+  async listItems() {
+    return prisma.donationLot.findMany({
+      where: { channel: 'IN_KIND' },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   async logItemDonation({ category, itemName, quantity, condition, estimatedValue, photoUrl, donorLabel, loggedByUserId }) {
     if (quantity <= 0) {
       throw new ValidationError('Quantity must be greater than zero.');
@@ -91,19 +98,38 @@ export class ItemsService {
   }
 
   async issueItemsToCase({ caseId, itemId, quantity, notes, actorUserId }) {
-    const malkiaCase = await prisma.malkiaCase.findUnique({
-      where: { id: caseId },
+    const malkiaCase = await prisma.malkiaCase.findFirst({
+      where: {
+        OR: [{ id: caseId }, { caseNumber: caseId }],
+      },
     });
     if (!malkiaCase) {
-      throw new ConflictError(`Case with ID "${caseId}" not found.`);
+      throw new ConflictError(`Case with ID or Number "${caseId}" not found.`);
     }
 
-    const item = await prisma.inventoryItem.findUnique({
-      where: { id: itemId },
+    let item = await prisma.inventoryItem.findFirst({
+      where: {
+        OR: [
+          { id: itemId },
+          { sku: itemId },
+          { normalizedName: itemId.toLowerCase().trim() },
+        ],
+      },
       include: { category: true },
     });
     if (!item) {
-      throw new ConflictError(`Inventory item with ID "${itemId}" not found.`);
+      const lot = await prisma.donationLot.findFirst({
+        where: { OR: [{ id: itemId }, { receiptCode: itemId }] },
+      });
+      if (lot) {
+        item = await prisma.inventoryItem.findFirst({
+          where: { category: { name: lot.earmark } },
+          include: { category: true },
+        });
+      }
+    }
+    if (!item) {
+      throw new ConflictError(`Inventory item or lot with reference "${itemId}" not found.`);
     }
 
     const availableLots = await prisma.donationLot.findMany({

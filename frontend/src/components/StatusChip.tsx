@@ -79,6 +79,10 @@ const statusStyles: Record<ChipType, { label: string; className: string }> = {
     label: 'Hospital Pharmacy Item',
     className: 'bg-amber-50 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300 border-amber-200 dark:border-amber-800',
   },
+  CRYPTO: {
+    label: 'Testnet Stablecoin',
+    className: 'bg-violet-50 text-violet-800 dark:bg-violet-950/50 dark:text-violet-300 border-violet-200 dark:border-violet-800',
+  },
 };
 
 export const StatusChip: React.FC<StatusChipProps> = ({ status, className }) => {

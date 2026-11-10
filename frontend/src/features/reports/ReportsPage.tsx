@@ -1,62 +1,39 @@
 import React, { useState } from 'react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
+import { useQuery } from '@tanstack/react-query';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { FileSpreadsheet, ShieldCheck, Download, CheckCircle2, QrCode, ExternalLink } from 'lucide-react';
+import { FileSpreadsheet, ShieldCheck, Download, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
 import { Money } from '@/components/Money';
-
-interface AnchoredReport {
-  id: string;
-  year: number;
-  quarter: number;
-  totalInflowMinor: number;
-  totalOutflowMinor: number;
-  beneficiariesCount: number;
-  reportHash: string;
-  periodRoot: string;
-  txHash: string;
-  anchoredAt: string;
-}
+import { api } from '@/lib/api';
+import type { QuarterlyReport } from '@/types';
 
 export const ReportsPage: React.FC = () => {
   const [verifyInput, setVerifyInput] = useState('');
   const [verifyResult, setVerifyResult] = useState<'MATCH' | 'NONE' | 'ERROR'>('NONE');
 
-  const reports: AnchoredReport[] = [
-    {
-      id: 'rep-2026-q3',
-      year: 2026,
-      quarter: 3,
-      totalInflowMinor: 145000000, // KES 1.45M
-      totalOutflowMinor: 121000000, // KES 1.21M
-      beneficiariesCount: 184,
-      reportHash: '0x4f12ab78cd90ef34567890abcdef1234567890abcdef1234567890abcdef1234',
-      periodRoot: '0x992384a8bc983719284719284719284719284719284719284719284719284719',
-      txHash: '0x88bb77aa66cc55dd44ee33ff22001199887766554433221100ffeeddccbbaa99',
-      anchoredAt: '2026-10-01T00:15:00Z',
-    },
-    {
-      id: 'rep-2026-q2',
-      year: 2026,
-      quarter: 2,
-      totalInflowMinor: 98000000,
-      totalOutflowMinor: 89000000,
-      beneficiariesCount: 120,
-      reportHash: '0x1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b',
-      periodRoot: '0x7766554433221100ffeeddccbbaa99887766554433221100ffeeddccbbaa9988',
-      txHash: '0x3344556677889900aabbccddeeff00112233445566778899aabbccddeeff0011',
-      anchoredAt: '2026-07-01T00:12:00Z',
-    },
-  ];
+  const { data: reports = [], isLoading } = useQuery<QuarterlyReport[]>({
+    queryKey: ['quarterly-reports'],
+    queryFn: () => api.getQuarterlyReports(),
+  });
 
   const handleVerify = (e: React.FormEvent) => {
     e.preventDefault();
+    const query = verifyInput.trim().toLowerCase();
     const match = reports.some(
       (r) =>
-        r.reportHash.toLowerCase() === verifyInput.trim().toLowerCase() ||
-        r.txHash.toLowerCase() === verifyInput.trim().toLowerCase()
+        r.reportHash.toLowerCase() === query ||
+        r.periodRoot.toLowerCase() === query
     );
     setVerifyResult(match ? 'MATCH' : 'ERROR');
+  };
+
+  const downloadReportJson = (report: QuarterlyReport) => {
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(report, null, 2));
+    const dlAnchor = document.createElement('a');
+    dlAnchor.setAttribute('href', dataStr);
+    dlAnchor.setAttribute('download', `quarterly-report-${report.year}-Q${report.quarter}-v${report.version}.json`);
+    dlAnchor.click();
   };
 
   return (
@@ -68,7 +45,6 @@ export const ReportsPage: React.FC = () => {
         </h1>
       </div>
 
-      {/* Verify-a-Report Card */}
       <Card className="border-emerald-500/30 bg-emerald-50/20 dark:bg-emerald-950/20">
         <CardHeader>
           <CardTitle className="text-base font-bold flex items-center gap-2">
@@ -79,7 +55,7 @@ export const ReportsPage: React.FC = () => {
         <CardContent>
           <form onSubmit={handleVerify} className="flex flex-col sm:flex-row gap-3">
             <Input
-              placeholder="Paste printed Report Hash (e.g. 0x4f12ab78cd90...)"
+              placeholder="Paste Report Hash or Period Root (0x...)"
               value={verifyInput}
               onChange={(e) => {
                 setVerifyInput(e.target.value);
@@ -101,84 +77,98 @@ export const ReportsPage: React.FC = () => {
           )}
 
           {verifyResult === 'ERROR' && (
-            <div className="mt-4 p-3 rounded-lg bg-rose-50 dark:bg-rose-950/80 border border-rose-300 dark:border-rose-800 text-rose-900 dark:text-rose-200 text-xs font-semibold">
-              No matching on-chain anchor found for this hash. The file may have been altered or tampered with.
+            <div className="mt-4 p-3 rounded-lg bg-rose-50 dark:bg-rose-950/80 border border-rose-300 dark:border-rose-800 text-rose-900 dark:text-rose-200 text-xs font-semibold flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              No matching anchored record found for this hash. The file may have been altered or tampered with.
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Reports List */}
       <div className="space-y-4">
         <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">Published reports</h2>
-        {reports.map((r) => (
-          <Card key={r.id} className="p-5 sm:p-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-2.5">
-                  <span className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
-                    Quarter {r.quarter}, {r.year} Report
-                  </span>
-                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
-                    Anchored
-                  </span>
-                </div>
 
-                <div className="flex flex-wrap gap-4 text-xs text-zinc-500 pt-1">
-                  <span>
-                    Total Inflow: <Money amountMinor={r.totalInflowMinor} className="text-zinc-800 dark:text-zinc-200 font-bold" />
-                  </span>
-                  <span>•</span>
-                  <span>
-                    Total Outflow: <Money amountMinor={r.totalOutflowMinor} className="text-zinc-800 dark:text-zinc-200 font-bold" />
-                  </span>
-                  <span>•</span>
-                  <span>Beneficiaries: <strong className="text-zinc-800 dark:text-zinc-200">{r.beneficiariesCount}</strong></span>
-                </div>
-
-                <div className="pt-2 font-mono text-[11px] text-zinc-500 space-y-1">
-                  <div>
-                    <span className="text-zinc-400">Canonical Hash: </span>
-                    <span className="text-zinc-700 dark:text-zinc-300">{r.reportHash}</span>
-                  </div>
-                  <div>
-                    <span className="text-zinc-400">Amoy Tx: </span>
-                    <a
-                      href={`https://amoy.polygonscan.com/tx/${r.txHash}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-emerald-600 hover:underline inline-flex items-center gap-1"
-                    >
-                      {r.txHash.slice(0, 24)}...
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 self-start md:self-center">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    setVerifyInput(r.reportHash);
-                    setVerifyResult('MATCH');
-                  }}
-                  className="gap-1.5 text-xs"
-                >
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                  Verify Hash
-                </Button>
-                <Button size="sm" variant="emerald" className="gap-1.5 text-xs">
-                  <Download className="w-3.5 h-3.5" />
-                  Download PDF
-                </Button>
-              </div>
-            </div>
+        {isLoading ? (
+          <Card className="p-8 text-center text-zinc-500 flex items-center justify-center gap-2">
+            <Loader2 className="w-5 h-5 animate-spin" />
+            <span>Loading published reports...</span>
           </Card>
-        ))}
+        ) : reports.length === 0 ? (
+          <Card className="p-8 text-center text-zinc-500 text-sm">
+            No quarterly reports published yet.
+          </Card>
+        ) : (
+          reports.map((r) => {
+            const inflowMinor = Number(r.canonicalJson?.totalInflowMinor || 0);
+            const outflowMinor = Number(r.canonicalJson?.totalDisbursedMinor || 0);
+            const disbursementsCount = r.canonicalJson?.disbursementsCount ?? 0;
+
+            return (
+              <Card key={r.id} className="p-5 sm:p-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
+                        Quarter {r.quarter}, {r.year} Report (v{r.version})
+                      </span>
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                        Anchored
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap gap-4 text-xs text-zinc-500 pt-1">
+                      <span>
+                        Total Inflow: <Money amountMinor={inflowMinor} className="text-zinc-800 dark:text-zinc-200 font-bold" />
+                      </span>
+                      <span>•</span>
+                      <span>
+                        Total Outflow: <Money amountMinor={outflowMinor} className="text-zinc-800 dark:text-zinc-200 font-bold" />
+                      </span>
+                      <span>•</span>
+                      <span>Disbursements: <strong className="text-zinc-800 dark:text-zinc-200">{disbursementsCount}</strong></span>
+                    </div>
+
+                    <div className="pt-2 font-mono text-[11px] text-zinc-500 space-y-1">
+                      <div>
+                        <span className="text-zinc-400">Canonical Hash: </span>
+                        <span className="text-zinc-700 dark:text-zinc-300 break-all">{r.reportHash}</span>
+                      </div>
+                      <div>
+                        <span className="text-zinc-400">Period Root: </span>
+                        <span className="text-zinc-700 dark:text-zinc-300 break-all">{r.periodRoot}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 self-start md:self-center">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setVerifyInput(r.reportHash);
+                        setVerifyResult('MATCH');
+                      }}
+                      className="gap-1.5 text-xs"
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                      Verify Hash
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="emerald"
+                      onClick={() => downloadReportJson(r)}
+                      className="gap-1.5 text-xs"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      Download JSON
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            );
+          })
+        )}
       </div>
     </div>
   );
 };
-

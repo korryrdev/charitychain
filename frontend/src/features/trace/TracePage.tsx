@@ -23,6 +23,7 @@ import {
   Sparkles,
   AlertTriangle,
   RefreshCw,
+  Award,
 } from 'lucide-react';
 import type { DonationTrace } from '@/types';
 
@@ -146,6 +147,15 @@ export const TracePage: React.FC = () => {
                   <span className="font-mono text-sm font-extrabold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
                     {donation.receiptCode}
                   </span>
+                  <a
+                    href={`/api/v1/public/certificate/${donation.receiptCode}?format=svg`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-md bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700 hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors ml-2"
+                  >
+                    <Award className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Certificate</span>
+                  </a>
                 </div>
                 <div className="flex items-center gap-3">
                   <Money amountMinor={donation.amountMinor} currency={donation.currency} className="text-3xl font-extrabold text-zinc-900 dark:text-zinc-50" />

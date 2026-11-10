@@ -168,6 +168,18 @@ export const ClaimPreferencesPage: React.FC = () => {
                   <div className="h-full bg-emerald-600 rounded-full" style={{ width: '50%' }} />
                 </div>
               </div>
+
+              <div className="pt-2 flex justify-end">
+                <a
+                  href={`/api/v1/public/certificate/${claimProfile.receiptCode}?format=svg`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 transition-colors"
+                >
+                  <Award className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Download Thank-You Certificate (SVG)</span>
+                </a>
+              </div>
             </CardContent>
           </Card>
 

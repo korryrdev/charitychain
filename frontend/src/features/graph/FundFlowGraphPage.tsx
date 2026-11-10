@@ -1,5 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/lib/api';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -64,7 +66,11 @@ export const FundFlowGraphPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [zoomLevel, setZoomLevel] = useState(1);
 
-  // Seed graph nodes matching PRD & current data
+  const { data: liveGraph } = useQuery({
+    queryKey: ['fund-flow-graph'],
+    queryFn: () => api.getFundFlowGraph(),
+  });
+
   const rawNodes: GraphNode[] = useMemo(
     () => [
       // Column 0: Inflow Lots
@@ -276,9 +282,53 @@ export const FundFlowGraphPage: React.FC = () => {
     []
   );
 
-  // Apply filters
+  const { nodes: graphNodes, edges: graphEdges } = useMemo(() => {
+    if (!liveGraph?.nodes || liveGraph.nodes.length === 0) {
+      return { nodes: rawNodes, edges: rawEdges };
+    }
+
+    const lots = liveGraph.nodes.filter((n: any) => n.type === 'LOT');
+    const cases = liveGraph.nodes.filter((n: any) => n.type === 'CASE');
+
+    const mappedLots: GraphNode[] = lots.map((l: any, i: number) => ({
+      id: l.id,
+      label: l.label,
+      sublabel: `${l.channel || 'DONATION'} Inflow`,
+      type: 'INFLOW',
+      channel: l.channel,
+      amountMinor: Number(l.amountMinor || 0),
+      currency: l.currency || 'KES',
+      colIndex: 0,
+      yRatio: (i + 1) / (lots.length + 1),
+    }));
+
+    const mappedCases: GraphNode[] = cases.map((c: any, i: number) => ({
+      id: c.id,
+      label: c.label,
+      sublabel: `Case ${c.status || 'ACTIVE'}`,
+      type: 'CASE',
+      amountMinor: Number(c.amountMinor || 0),
+      currency: 'KES',
+      colIndex: 2,
+      yRatio: (i + 1) / (cases.length + 1),
+    }));
+
+    const dynamicEdges: GraphEdge[] = (liveGraph.edges || []).map((e: any) => ({
+      id: e.id,
+      source: e.source,
+      target: e.target,
+      amountMinor: Number(e.amountMinor || 0),
+      currency: 'KES',
+    }));
+
+    return {
+      nodes: mappedLots.length > 0 || mappedCases.length > 0 ? [...mappedLots, ...mappedCases] : rawNodes,
+      edges: dynamicEdges.length > 0 ? dynamicEdges : rawEdges,
+    };
+  }, [liveGraph, rawNodes, rawEdges]);
+
   const filteredNodes = useMemo(() => {
-    return rawNodes.filter((node) => {
+    return graphNodes.filter((node) => {
       if (filterChannel !== 'ALL') {
         if (node.channel && node.channel !== filterChannel) return false;
       }
@@ -293,17 +343,17 @@ export const FundFlowGraphPage: React.FC = () => {
       }
       return true;
     });
-  }, [rawNodes, filterChannel, showFlaggedOnly, searchQuery]);
+  }, [graphNodes, filterChannel, showFlaggedOnly, searchQuery]);
 
   const activeNodeIds = useMemo(() => new Set(filteredNodes.map((n) => n.id)), [filteredNodes]);
 
   const filteredEdges = useMemo(() => {
-    return rawEdges.filter((edge) => activeNodeIds.has(edge.source) && activeNodeIds.has(edge.target));
-  }, [rawEdges, activeNodeIds]);
+    return graphEdges.filter((edge) => activeNodeIds.has(edge.source) && activeNodeIds.has(edge.target));
+  }, [graphEdges, activeNodeIds]);
 
   const selectedNode = useMemo(() => {
-    return rawNodes.find((n) => n.id === selectedNodeId) || null;
-  }, [rawNodes, selectedNodeId]);
+    return graphNodes.find((n) => n.id === selectedNodeId) || graphNodes[0] || null;
+  }, [graphNodes, selectedNodeId]);
 
   // Layout parameters for SVG
   const width = 1100;

@@ -13,8 +13,8 @@ export const createItemDonationSchema = z.object({
 });
 
 export const issueInventorySchema = z.object({
-  caseId: z.string().uuid(),
-  itemId: z.string().uuid(),
+  caseId: z.string().trim().min(1).max(128),
+  itemId: z.string().trim().min(1).max(128),
   quantity: z.coerce.number().int().positive(),
   notes: z.string().trim().max(500).optional(),
 });

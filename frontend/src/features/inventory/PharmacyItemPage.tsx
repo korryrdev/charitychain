@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -8,14 +9,11 @@ import {
   PackageCheck,
   CheckCircle2,
   History,
-  ShieldCheck,
-  ExternalLink,
-  Layers,
   ArrowRight,
   Send,
   Boxes,
-  QrCode,
   Tag,
+  Loader2,
 } from 'lucide-react';
 
 interface InKindItem {
@@ -27,63 +25,70 @@ interface InKindItem {
   condition: string;
   loggedAt: string;
   donorLabel: string;
-  txHash: string;
-  blockNumber: number;
 }
 
 export const PharmacyItemPage: React.FC = () => {
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'INTAKE' | 'INVENTORY'>('INTAKE');
 
-  // Intake Form State
   const [category, setCategory] = useState('Medical Textbooks / Study Materials');
   const [quantity, setQuantity] = useState('10');
-  const [condition, setCondition] = useState('Good / Lightly Used');
+  const [condition, setCondition] = useState('GOOD');
   const [donorLabel, setDonorLabel] = useState('');
   const [justLoggedItem, setJustLoggedItem] = useState<InKindItem | null>(null);
 
-  // Issue Stock Modal State
   const [issueModalItem, setIssueModalItem] = useState<InKindItem | null>(null);
-  const [issueQuantity, setIssueQuantity] = useState('2');
-  const [targetCaseRef, setTargetCaseRef] = useState('CASE-2026-0143');
+  const [issueQuantity, setIssueQuantity] = useState('1');
+  const [targetCaseRef, setTargetCaseRef] = useState('');
 
-  const [inventory, setInventory] = useState<InKindItem[]>([
-    {
-      id: 'itm-1',
-      receiptCode: 'MLK-ITEM-9201',
-      category: 'Medical Textbooks / Study Materials',
-      quantity: 15,
-      remainingQuantity: 12,
-      condition: 'Good / Lightly Used',
-      donorLabel: 'Graduating Class of 2025',
-      loggedAt: '2026-10-24T12:00:00Z',
-      txHash: '0x99aa88bb77cc66dd55ee44ff33aa22bb11cc00dd99887766554433221100ffaa',
-      blockNumber: 4221500,
+  const { data: inventory = [], isLoading } = useQuery<InKindItem[]>({
+    queryKey: ['inventory-items'],
+    queryFn: () => api.getInKindItems(),
+  });
+
+  const registerMutation = useMutation({
+    mutationFn: (data: {
+      category: string;
+      itemName: string;
+      quantity: number;
+      condition: 'NEW' | 'GOOD' | 'FAIR' | 'USABLE';
+      donorLabel?: string;
+    }) => api.registerInKindItem(data),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ['inventory-items'] });
+      const lot = res?.lot || {};
+      const logged: InKindItem = {
+        id: lot.id || `itm-${Date.now()}`,
+        receiptCode: lot.receiptCode || 'MLK-ITEM-NEW',
+        category,
+        quantity: parseInt(quantity, 10),
+        remainingQuantity: parseInt(quantity, 10),
+        condition,
+        loggedAt: new Date().toISOString(),
+        donorLabel: donorLabel.trim() || 'Hospital Walk-in Donor',
+      };
+      setJustLoggedItem(logged);
+      setQuantity('10');
+      setDonorLabel('');
     },
-    {
-      id: 'itm-2',
-      receiptCode: 'MLK-ITEM-8812',
-      category: 'Prescription Antibiotics & First Aid',
-      quantity: 20,
-      remainingQuantity: 15,
-      condition: 'New / Sealed',
-      donorLabel: 'University Hospital Staff Donation',
-      loggedAt: '2026-10-22T09:30:00Z',
-      txHash: '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
-      blockNumber: 4219400,
+    onError: (err: any) => {
+      alert(err?.message || 'Failed to record in-kind item donation.');
     },
-    {
-      id: 'itm-3',
-      receiptCode: 'MLK-ITEM-4401',
-      category: 'Personal Hygiene & Care Kits',
-      quantity: 8,
-      remainingQuantity: 8,
-      condition: 'New / Sealed',
-      donorLabel: 'Campus Red Cross Chapter',
-      loggedAt: '2026-10-26T14:15:00Z',
-      txHash: '0x556677889900aabbccddeeff00112233445566778899aabbccddeeff00112233',
-      blockNumber: 4222100,
+  });
+
+  const issueMutation = useMutation({
+    mutationFn: (data: { receiptCode: string; caseNumber: string; quantity: number }) =>
+      api.issueInKindStock(data.receiptCode, data.caseNumber, data.quantity),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['inventory-items'] });
+      alert(`Successfully issued stock to ${targetCaseRef}! Recorded on ledger.`);
+      setIssueModalItem(null);
+      setTargetCaseRef('');
     },
-  ]);
+    onError: (err: any) => {
+      alert(err?.message || 'Failed to issue item stock.');
+    },
+  });
 
   const categories = [
     'Medical Textbooks / Study Materials',
@@ -93,43 +98,25 @@ export const PharmacyItemPage: React.FC = () => {
     'Dry Food & Meal Rations',
   ];
 
-  const conditions = ['New / Sealed', 'Good / Lightly Used', 'Acceptable'];
+  const conditions = [
+    { label: 'New / Sealed', value: 'NEW' },
+    { label: 'Good / Lightly Used', value: 'GOOD' },
+    { label: 'Fair Condition', value: 'FAIR' },
+    { label: 'Usable', value: 'USABLE' },
+  ];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const qty = parseInt(quantity, 10);
     if (!qty || qty <= 0) return;
 
-    const receiptSuffix = Math.floor(1000 + Math.random() * 9000);
-    const fakeTx = `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
-    const generatedReceipt = `MLK-ITEM-${receiptSuffix}`;
-
-    const newItem: InKindItem = {
-      id: `itm-${Date.now()}`,
-      receiptCode: generatedReceipt,
+    registerMutation.mutate({
       category,
+      itemName: category,
       quantity: qty,
-      remainingQuantity: qty,
-      condition,
-      donorLabel: donorLabel.trim() || 'Anonymous Hospital Walk-in',
-      loggedAt: new Date().toISOString(),
-      txHash: fakeTx,
-      blockNumber: 4222300 + Math.floor(Math.random() * 50),
-    };
-
-    api.registerInKindItem({
-      receiptCode: newItem.receiptCode,
-      category: newItem.category,
-      quantity: newItem.quantity,
-      donorLabel: newItem.donorLabel,
-      txHash: newItem.txHash,
-      blockNumber: newItem.blockNumber,
+      condition: condition as any,
+      donorLabel: donorLabel.trim() || undefined,
     });
-
-    setInventory([newItem, ...inventory]);
-    setJustLoggedItem(newItem);
-    setQuantity('5');
-    setDonorLabel('');
   };
 
   const handleIssueStock = (e: React.FormEvent) => {
@@ -140,37 +127,28 @@ export const PharmacyItemPage: React.FC = () => {
       alert('Issue quantity exceeds available stock!');
       return;
     }
+    if (!targetCaseRef.trim()) {
+      alert('Please enter a target case reference (e.g. case number or ID).');
+      return;
+    }
 
-    api.issueInKindStock(issueModalItem.receiptCode, targetCaseRef, qtyToIssue);
-
-    setInventory((prev) =>
-      prev.map((item) => {
-        if (item.id === issueModalItem.id) {
-          return {
-            ...item,
-            remainingQuantity: item.remainingQuantity - qtyToIssue,
-          };
-        }
-        return item;
-      })
-    );
-
-    alert(`Successfully issued ${qtyToIssue} items from Lot ${issueModalItem.receiptCode} to ${targetCaseRef}! Recorded on inventory ledger.`);
-    setIssueModalItem(null);
+    issueMutation.mutate({
+      receiptCode: issueModalItem.receiptCode,
+      caseNumber: targetCaseRef.trim(),
+      quantity: qtyToIssue,
+    });
   };
 
   return (
     <div className="w-full space-y-6">
-      {/* Title & Desk Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 flex items-center gap-2.5">
             <PackageCheck className="w-6 h-6 text-emerald-600" />
-            Pharmacy
+            Pharmacy & inventory
           </h1>
         </div>
 
-        {/* Tab Switcher */}
         <div className="flex items-center gap-1.5 p-1 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-xs font-semibold self-start sm:self-auto">
           <button
             type="button"
@@ -197,9 +175,8 @@ export const PharmacyItemPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Just Logged Success Certificate Card */}
       {justLoggedItem && (
-        <Card className="border-emerald-500/40 bg-emerald-50/30 dark:bg-emerald-950/20 overflow-hidden shadow-md animate-in fade-in slide-in-from-top-2">
+        <Card className="border-emerald-500/40 bg-emerald-50/30 dark:bg-emerald-950/20 overflow-hidden shadow-md">
           <div className="p-5 sm:p-6 space-y-4">
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-3">
@@ -223,15 +200,11 @@ export const PharmacyItemPage: React.FC = () => {
               </button>
             </div>
 
-            {/* Generated Receipt Code & Blockchain Tracking Link */}
             <div className="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 font-mono text-xs">
               <div>
                 <span className="text-[11px] text-zinc-400 block font-sans">Item Lot Receipt Code (Hand to Donor):</span>
                 <span className="text-base font-extrabold text-emerald-700 dark:text-emerald-400">
                   {justLoggedItem.receiptCode}
-                </span>
-                <span className="block text-[11px] text-zinc-500 font-sans mt-0.5">
-                  Tx Hash: {justLoggedItem.txHash.slice(0, 16)}... (Block #{justLoggedItem.blockNumber})
                 </span>
               </div>
 
@@ -250,7 +223,6 @@ export const PharmacyItemPage: React.FC = () => {
 
       {activeTab === 'INTAKE' ? (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Quick Intake Form */}
           <Card className="lg:col-span-7">
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-bold flex items-center gap-2">
@@ -303,8 +275,8 @@ export const PharmacyItemPage: React.FC = () => {
                       className="w-full h-11 min-h-[44px] rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-xs px-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
                     >
                       {conditions.map((cond) => (
-                        <option key={cond} value={cond}>
-                          {cond}
+                        <option key={cond.value} value={cond.value}>
+                          {cond.label}
                         </option>
                       ))}
                     </select>
@@ -320,15 +292,20 @@ export const PharmacyItemPage: React.FC = () => {
               </CardContent>
 
               <CardFooter className="pt-2">
-                <Button type="submit" variant="emerald" size="lg" className="w-full text-sm font-bold gap-2">
+                <Button
+                  type="submit"
+                  variant="emerald"
+                  size="lg"
+                  className="w-full text-sm font-bold gap-2"
+                  disabled={registerMutation.isPending}
+                >
                   <PackageCheck className="w-5 h-5" />
-                  Key In & Anchor Item Lot on Chain
+                  {registerMutation.isPending ? 'Recording on Ledger...' : 'Key In & Anchor Item Lot on Chain'}
                 </Button>
               </CardFooter>
             </form>
           </Card>
 
-          {/* Recent Pharmacy Receipts */}
           <Card className="lg:col-span-5">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-bold flex items-center gap-2">
@@ -337,30 +314,40 @@ export const PharmacyItemPage: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="divide-y divide-zinc-200 dark:divide-zinc-800 text-xs">
-                {inventory.map((item) => (
-                  <div key={item.id} className="p-4 space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400">
-                        {item.receiptCode}
-                      </span>
-                      <span className="font-mono font-bold text-zinc-900 dark:text-zinc-100">
-                        {item.quantity} units
-                      </span>
+              {isLoading ? (
+                <div className="p-8 text-center text-zinc-500 flex items-center justify-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Loading recent drops...</span>
+                </div>
+              ) : inventory.length === 0 ? (
+                <div className="p-8 text-center text-zinc-500 text-xs">
+                  No in-kind items logged yet.
+                </div>
+              ) : (
+                <div className="divide-y divide-zinc-200 dark:divide-zinc-800 text-xs">
+                  {inventory.slice(0, 5).map((item) => (
+                    <div key={item.id} className="p-4 space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400">
+                          {item.receiptCode}
+                        </span>
+                        <span className="font-mono font-bold text-zinc-900 dark:text-zinc-100">
+                          {item.quantity} units
+                        </span>
+                      </div>
+                      <p className="font-semibold text-zinc-800 dark:text-zinc-200">{item.category}</p>
+                      <div className="flex items-center justify-between text-[11px] text-zinc-500">
+                        <span>{item.donorLabel}</span>
+                        <span>{new Date(item.loggedAt).toLocaleDateString()}</span>
+                      </div>
                     </div>
-                    <p className="font-semibold text-zinc-800 dark:text-zinc-200">{item.category}</p>
-                    <div className="flex items-center justify-between text-[11px] text-zinc-500">
-                      <span>{item.donorLabel}</span>
-                      <span>{new Date(item.loggedAt).toLocaleDateString()}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
       ) : (
-        /* Inventory Stock & Case Issuing Tab */
         <div className="space-y-4">
           <Card>
             <CardHeader>
@@ -430,7 +417,6 @@ export const PharmacyItemPage: React.FC = () => {
         </div>
       )}
 
-      {/* Issue to Student Case Modal */}
       {issueModalItem && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <Card className="max-w-md w-full bg-white dark:bg-zinc-900 shadow-2xl border-zinc-200 dark:border-zinc-800">
@@ -457,7 +443,7 @@ export const PharmacyItemPage: React.FC = () => {
                   label="Target Case Reference"
                   value={targetCaseRef}
                   onChange={(e) => setTargetCaseRef(e.target.value)}
-                  placeholder="e.g. CASE-2026-0143"
+                  placeholder="e.g. C-ITEM-1234 or Case Number"
                   required
                 />
 
@@ -476,8 +462,8 @@ export const PharmacyItemPage: React.FC = () => {
                 <Button type="button" variant="outline" size="sm" onClick={() => setIssueModalItem(null)}>
                   Cancel
                 </Button>
-                <Button type="submit" variant="emerald" size="sm">
-                  Record Distribution
+                <Button type="submit" variant="emerald" size="sm" disabled={issueMutation.isPending}>
+                  {issueMutation.isPending ? 'Recording...' : 'Record Distribution'}
                 </Button>
               </CardFooter>
             </form>
