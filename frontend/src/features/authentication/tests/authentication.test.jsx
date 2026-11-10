@@ -1,3 +1,4 @@
-'use strict';
-
-// authentication test: implementation pending.
+import { describe, expect, it, vi } from 'vitest';
+import { createAuthApi } from '../services/auth.api.js';
+import { validateLogin, validateMfa, validateRegistration } from '../validation/auth.schema.js';
+describe('authentication foundation', () => { it('validates registration, sign-in, and MFA payloads before transport', () => { expect(validateRegistration({ name: 'A', email: 'invalid', password: 'short', confirmPassword: 'different' })).toEqual(expect.objectContaining({ name: expect.any(String), email: expect.any(String), password: expect.any(String), confirmPassword: expect.any(String) })); expect(validateLogin({ email: 'donor@example.org', password: 'password' })).toEqual({}); expect(validateMfa({ code: '123456' })).toEqual({}); }); it('sends auth API requests through the central client', async () => { const client = { post: vi.fn().mockResolvedValue({ user: { id: 'u1' } }) }; const api = createAuthApi(client); await api.login({ email: ' DONOR@EXAMPLE.ORG ', password: 'password' }); expect(client.post).toHaveBeenCalledWith('/auth/login', { email: 'donor@example.org', password: 'password' }); }); });

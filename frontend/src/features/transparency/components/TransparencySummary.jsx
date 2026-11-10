@@ -1,3 +1,2 @@
-'use strict';
-
-// TransparencySummary: implementation pending.
+function money(value, currency = 'KES') { return new Intl.NumberFormat('en-KE', { style: 'currency', currency, maximumFractionDigits: 0 }).format(Number(value ?? 0)); }
+export function TransparencySummary({ dashboard }) { const cards = [{ label: 'Confirmed inflows', value: money(dashboard?.donations?.total, dashboard?.currency), note: `${dashboard?.donations?.count ?? 0} recorded donations` }, { label: 'Reconciled outflows', value: money(dashboard?.disbursements?.total, dashboard?.currency), note: `${dashboard?.disbursements?.count ?? 0} completed disbursements` }, { label: 'Central pool balance', value: money(dashboard?.centralPoolBalance, dashboard?.currency), note: 'Confirmed inflows less reconciled outflows' }]; return <section className="transparency-summary" aria-label="Public transparency summary">{cards.map((card) => <article key={card.label}><span>{card.label}</span><strong>{card.value}</strong><small>{card.note}</small></article>)}</section>; }

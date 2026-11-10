@@ -1,3 +1,7 @@
-'use strict';
-
-// LoginForm: implementation pending.
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Button } from '../../../components/common/Button.jsx';
+import { FormField } from '../../../components/forms/FormField.jsx';
+import { Alert } from '../../../components/feedback/Alert.jsx';
+import { validateLogin } from '../validation/auth.schema.js';
+export function LoginForm({ onSubmit, pending = false, error = null }) { const [values, setValues] = useState({ email: '', password: '' }); const [errors, setErrors] = useState({}); const submit = async (event) => { event.preventDefault(); const nextErrors = validateLogin(values); setErrors(nextErrors); if (!Object.keys(nextErrors).length) await onSubmit(values); }; return <form noValidate onSubmit={submit}><h1>Sign in</h1>{error && <Alert tone="danger" title="Unable to sign in">{error}</Alert>}<FormField id="email" label="Email address" error={errors.email}><input id="email" type="email" autoComplete="email" value={values.email} onChange={(event) => setValues({ ...values, email: event.target.value })} aria-invalid={Boolean(errors.email)} /></FormField><FormField id="password" label="Password" error={errors.password}><input id="password" type="password" autoComplete="current-password" value={values.password} onChange={(event) => setValues({ ...values, password: event.target.value })} aria-invalid={Boolean(errors.password)} /></FormField><Button type="submit" loading={pending}>Sign in</Button><p><Link to="/auth/password-recovery">Forgot your password?</Link></p><p>New here? <Link to="/auth/register">Create an account</Link>.</p></form>; }

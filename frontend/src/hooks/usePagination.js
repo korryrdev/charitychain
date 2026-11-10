@@ -1,3 +1,2 @@
-'use strict';
-
-// usePagination: implementation pending.
+import { useMemo, useState } from 'react';
+export function usePagination({ initialPage = 1, pageSize = 25, total = 0 } = {}) { const [page, setPage] = useState(initialPage); const pageCount = Math.max(1, Math.ceil(total / pageSize)); const safePage = Math.min(Math.max(1, page), pageCount); return useMemo(() => ({ page: safePage, pageSize, pageCount, offset: (safePage - 1) * pageSize, setPage: (next) => setPage(Math.min(Math.max(1, next), pageCount)) }), [safePage, pageSize, pageCount]); }

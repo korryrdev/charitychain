@@ -1,1 +1,17 @@
-{}
+{
+  "name": "CharityChain",
+  "short_name": "CharityChain",
+  "description": "Transparent donations and accountable student assistance.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f2f7f4",
+  "theme_color": "#16643f",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

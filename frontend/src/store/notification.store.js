@@ -1,3 +1,2 @@
-'use strict';
-
-// notification store: implementation pending.
+export function createNotificationStore() { let items = []; const listeners = new Set(); const publish = () => listeners.forEach((listener) => listener(items)); return Object.freeze({ get: () => items, subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); }, set(next) { items = [...next]; publish(); }, markRead(id) { items = items.map((item) => item.id === id ? { ...item, read: true } : item); publish(); } }); }
+export const notificationStore = createNotificationStore();

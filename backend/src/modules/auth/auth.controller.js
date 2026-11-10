@@ -1,4 +1,6 @@
 import { accountVerificationService } from './accountVerification.service.js';
+import { randomBytes } from 'node:crypto';
+import { authenticationConfig } from '../../config/authentication.js';
 import { authService } from './auth.service.js';
 import { mfaService } from './mfa.service.js';
 import { passwordResetService } from './passwordReset.service.js';
@@ -21,6 +23,15 @@ function applyHeaders(response, headers) {
   });
 }
 
+function issueCsrfCookie(response) {
+  response.cookie('charitychain_csrf', randomBytes(32).toString('base64url'), {
+    httpOnly: false,
+    secure: authenticationConfig.session.cookie.secure,
+    sameSite: authenticationConfig.session.cookie.sameSite,
+    path: '/'
+  });
+}
+
 export function createAuthController({
   service = authService,
   verificationService = accountVerificationService,
@@ -32,7 +43,13 @@ export function createAuthController({
     register: async (request, response, next) => {
       try {
         const result = await service.register(request.body);
-        response.status(201).json({ user: result.user, requiresVerification: true });
+        response.status(201).json({
+          user: result.user,
+          requiresVerification: true,
+          ...(result.developmentVerificationToken
+            ? { developmentVerificationToken: result.developmentVerificationToken }
+            : {})
+        });
       } catch (error) {
         next(error);
       }
@@ -49,6 +66,7 @@ export function createAuthController({
       try {
         const result = await service.login(request.body, requestHeaders(request));
         applyHeaders(response, result.headers);
+        issueCsrfCookie(response);
         response.status(200).json(result.response);
       } catch (error) {
         next(error);

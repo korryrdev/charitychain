@@ -1,3 +1,5 @@
-'use strict';
-
-// RegisterPage: implementation pending.
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { RegisterForm } from '../../features/authentication/components/RegisterForm.jsx';
+import { useAuth } from '../../features/authentication/hooks/useAuth.js';
+export function RegisterPage() { const { register, verifyAccount, login } = useAuth(); const navigate = useNavigate(); const [pending, setPending] = useState(false); const [error, setError] = useState(null); const submit = async (values) => { setPending(true); setError(null); try { const result = await register(values); if (result.developmentVerificationToken) { await verifyAccount({ email: values.email, token: result.developmentVerificationToken }); const session = await login(values); navigate(session.roles?.includes('DONOR') ? '/donor' : '/', { replace: true }); return; } navigate('/auth/verify-account', { state: { email: values.email } }); } catch (cause) { setError(cause.message); } finally { setPending(false); } }; return <main className="auth-page"><RegisterForm onSubmit={submit} pending={pending} error={error} /></main>; }

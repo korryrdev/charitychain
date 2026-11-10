@@ -4,6 +4,7 @@ import { assertUserCanSignIn } from './auth.policy.js';
 import { accountVerificationService } from './accountVerification.service.js';
 import { authRepository } from './auth.repository.js';
 import { authEngine } from './betterAuth.js';
+import { env } from '../../config/environment.js';
 
 function unwrap(result) {
   return result?.response ?? result;
@@ -28,7 +29,10 @@ export function createAuthService({
         await donorProvisioning.provision(result.user.id);
         const token = await verificationService.issue(input.email);
         await sendVerification({ email: input.email, token, user: result.user });
-        return result;
+        return {
+          ...result,
+          ...(env.NODE_ENV === 'production' ? {} : { developmentVerificationToken: token })
+        };
       } catch (error) {
         await repository.deleteUser(result.user.id).catch(() => {});
         throw error;
@@ -37,11 +41,29 @@ export function createAuthService({
     async login(input, headers) {
       const user = await repository.findUserByEmail(input.email);
       assertUserCanSignIn(user);
-      return engine.api.signInEmail({
+      const result = await engine.api.signInEmail({
         body: { email: input.email, password: input.password },
         headers,
         returnHeaders: true
       });
+      const response = result.response ?? result;
+      const roles = user.roles.map((assignment) => assignment.role.code);
+      const permissions = [
+        ...new Set(
+          user.roles.flatMap(
+            (assignment) => assignment.role.permissions?.map((item) => item.permission.code) ?? []
+          )
+        )
+      ];
+      return {
+        ...(result.response ? result : { response }),
+        response: {
+          ...response,
+          roles,
+          permissions,
+          mfaVerified: Boolean(user.twoFactorEnabled)
+        }
+      };
     },
     logout(headers) {
       return engine.api.signOut({ headers, returnHeaders: true });

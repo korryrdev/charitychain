@@ -1,3 +1,5 @@
-'use strict';
-
-// DonorDashboardPage: implementation pending.
+import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { donorIdentityApi } from '../../features/donorIdentity/services/donorIdentity.api.js';
+import { TierBadge } from '../../features/recognitionTiers/components/TierBadge.jsx';
+export function DonorDashboardPage() { const [profile, setProfile] = useState(null); useEffect(() => { donorIdentityApi.mine().then((response) => setProfile(response.donor)).catch(() => setProfile(null)); }, []); return <main className="portal-page donor-page"><p className="section-kicker">Donor portal</p><h1>Make support count.</h1><div className="donor-dashboard-grid"><section><span>Confirmed contribution value</span><strong>KES {Number(profile?.totalContribution ?? 0).toLocaleString()}</strong><TierBadge tier={profile?.recognitionTier} /></section><section><span>Public identity</span><strong>{profile?.publicAlias ?? 'Loading…'}</strong><Link to="/donor/identity">Manage visibility</Link></section></div><div className="portal-action-grid"><Link to="/donor/donate">Donate money <span>→</span></Link><Link to="/donor/donations">Donation history <span>→</span></Link><Link to="/donor/receipts">Receipts <span>→</span></Link></div></main>; }

@@ -1,3 +1,2 @@
-'use strict';
-
-// DonationTimeline: implementation pending.
+const steps = ['CREATED', 'PAYMENT_REQUESTED', 'PROVIDER_PENDING', 'CONFIRMED', 'RECONCILED'];
+export function DonationTimeline({ donation }) { const current = steps.indexOf(donation?.status); return <ol className="donation-timeline">{steps.map((step, index) => <li key={step} className={index <= current ? 'is-complete' : ''}><span>{index + 1}</span><strong>{step.replaceAll('_', ' ').toLowerCase()}</strong></li>)}</ol>; }

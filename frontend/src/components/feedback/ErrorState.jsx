@@ -1,3 +1,1 @@
-'use strict';
-
-// ErrorState: implementation pending.
+export function ErrorState({ title = 'Unable to load this information', error, onRetry }) { return <section className="error-state" role="alert"><h2>{title}</h2><p>{error?.message ?? 'Please try again.'}</p>{onRetry && <button type="button" onClick={onRetry}>Try again</button>}</section>; }

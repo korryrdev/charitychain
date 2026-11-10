@@ -1,3 +1,2 @@
-'use strict';
-
-// donation schema: implementation pending.
+export const PAYMENT_METHODS = Object.freeze([{ value: 'MPESA_STK', label: 'M-Pesa STK Push', hint: 'Confirm the prompt on your phone.' }, { value: 'MPESA_PAYBILL', label: 'M-Pesa Paybill', hint: 'Use the payment reference issued for the donation.' }, { value: 'BANK', label: 'Bank transfer', hint: 'Use the issued bank payment reference.' }]);
+export function validateDonation(values) { const errors = {}; const amount = Number(values.amount); if (!Number.isFinite(amount) || amount <= 0) errors.amount = 'Enter a contribution amount greater than zero.'; if (amount > 10_000_000) errors.amount = 'The maximum online contribution is KES 10,000,000.'; if (!PAYMENT_METHODS.some((method) => method.value === values.channel)) errors.channel = 'Choose a supported payment method.'; if (!['UNRESTRICTED', 'TUITION', 'UPKEEP'].includes(values.purpose)) errors.purpose = 'Choose a support purpose.'; return errors; }

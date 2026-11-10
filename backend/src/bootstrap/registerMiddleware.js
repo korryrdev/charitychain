@@ -28,7 +28,9 @@ export function registerMiddleware(
       ...corsOptions,
       origin(origin, callback) {
         if (!origin || corsOptions.allowedOrigins.includes(origin)) return callback(null, true);
-        return callback(new Error('Origin is not allowed by CORS policy.'));
+        const error = new Error('Origin is not allowed by CORS policy.');
+        error.statusCode = 403;
+        return callback(error);
       }
     })
   );

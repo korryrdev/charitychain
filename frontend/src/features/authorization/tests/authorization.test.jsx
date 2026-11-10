@@ -1,3 +1,3 @@
-'use strict';
-
-// authorization test: implementation pending.
+import { describe, expect, it } from 'vitest';
+import { defaultAuthorizedPath, hasAnyPermission, hasEveryPermission, hasRole } from '../permissions.js';
+describe('authorization rules', () => { const session = { roles: ['CLERK'], permissions: ['inventory:read', 'goods-collection:record'] }; it('uses server-issued permissions and roles only', () => { expect(hasEveryPermission(session, ['inventory:read', 'goods-collection:record'])).toBe(true); expect(hasAnyPermission(session, ['system:administer', 'inventory:read'])).toBe(true); expect(hasRole(session, ['ADMIN', 'CLERK'])).toBe(true); expect(defaultAuthorizedPath(session)).toBe('/clerk'); }); });

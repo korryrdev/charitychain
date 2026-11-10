@@ -1,3 +1,1 @@
-'use strict';
-
-// currency: implementation pending.
+export function formatCurrency(value, { currency = 'KES', locale = 'en-KE' } = {}) { const amount = Number(value); if (!Number.isFinite(amount)) return '—'; return new Intl.NumberFormat(locale, { style: 'currency', currency, minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount); }

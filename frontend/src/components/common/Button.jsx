@@ -1,3 +1,1 @@
-'use strict';
-
-// Button: implementation pending.
+export function Button({ children, variant = 'primary', type = 'button', loading = false, disabled = false, ...props }) { return <button type={type} className={`button button--${variant}`} disabled={disabled || loading} aria-busy={loading || undefined} {...props}>{loading ? 'Working…' : children}</button>; }

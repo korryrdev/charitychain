@@ -11,23 +11,11 @@ CharityChain is a transparent donation, assistance, inventory, and forensic-audi
 - IPFS local service
 - npm workspaces
 
-## Prerequisites
+## Run locally
 
-- Node.js 22.12 or newer
-- npm 10 or newer
-- Docker Desktop with Docker Compose
+CharityChain supports a complete Docker Compose stack and an equivalent local-development workflow. The Docker stack starts PostgreSQL, IPFS, the database bootstrap, API, and frontend; the local workflow is useful when actively editing source code.
 
-## Local setup
-
-1. Copy `.env.example` to `.env` and replace development-only values where required.
-2. Run `npm install`.
-3. Run `docker compose up -d postgres ipfs`.
-4. Run `npm run db:generate` and `npm run db:migrate`.
-5. Run `npm run dev`.
-
-Frontend: `http://localhost:5173`
-
-API liveness: `http://localhost:3000/api/v1/health/live`
+See [setup-and-running.md](documentation/setup-and-running.md) for prerequisites, exact versions, environment configuration, migrations, seed data, simulator commands, health checks, testing, and troubleshooting.
 
 ## Verification
 

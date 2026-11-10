@@ -1,3 +1,7 @@
-'use strict';
-
-// auth schema: implementation pending.
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+function errorsFor(values, rules) { return Object.entries(rules).reduce((errors, [field, rule]) => { const message = rule(values[field], values); if (message) errors[field] = message; return errors; }, {}); }
+export function validateRegistration(values) { return errorsFor(values, { name: (value) => String(value ?? '').trim().length >= 2 ? null : 'Enter your full name.', email: (value) => emailPattern.test(String(value ?? '').trim()) ? null : 'Enter a valid email address.', password: (value) => String(value ?? '').length >= 12 ? null : 'Use at least 12 characters for your password.', confirmPassword: (value, input) => value === input.password ? null : 'Passwords do not match.' }); }
+export function validateLogin(values) { return errorsFor(values, { email: (value) => emailPattern.test(String(value ?? '').trim()) ? null : 'Enter a valid email address.', password: (value) => String(value ?? '').length > 0 ? null : 'Enter your password.' }); }
+export function validateEmail(values) { return errorsFor(values, { email: (value) => emailPattern.test(String(value ?? '').trim()) ? null : 'Enter a valid email address.' }); }
+export function validatePasswordReset(values) { return { ...validateEmail(values), ...errorsFor(values, { token: (value) => String(value ?? '').length >= 32 ? null : 'Use the complete password-reset token.', userId: (value) => String(value ?? '').length > 0 ? null : 'A user identifier is required.', password: (value) => String(value ?? '').length >= 12 ? null : 'Use at least 12 characters for your password.', confirmPassword: (value, input) => value === input.password ? null : 'Passwords do not match.' }) }; }
+export function validateMfa(values) { return errorsFor(values, { code: (value) => /^\d{6}$/.test(String(value ?? '')) ? null : 'Enter the six-digit code.' }); }

@@ -1,3 +1,6 @@
-'use strict';
-
-// DonationDetailPage: implementation pending.
+import { useEffect, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { DonationStatus } from '../../features/moneyDonations/components/DonationStatus.jsx';
+import { DonationTimeline } from '../../features/moneyDonations/components/DonationTimeline.jsx';
+import { moneyDonationsApi } from '../../features/moneyDonations/services/moneyDonations.api.js';
+export function DonationDetailPage() { const { donationId } = useParams(); const [state, setState] = useState({ loading: true, donation: null, error: null }); useEffect(() => { let active = true; moneyDonationsApi.get(donationId).then((response) => active && setState({ loading: false, donation: response.donation, error: null })).catch((error) => active && setState({ loading: false, donation: null, error: error.message })); return () => { active = false; }; }, [donationId]); if (state.loading) return <main className="portal-page"><p role="status">Loading donation…</p></main>; if (state.error) return <main className="portal-page"><p role="alert">{state.error}</p></main>; const donation = state.donation; return <main className="portal-page donor-page"><Link to="/donor/donations">← Donation history</Link><p className="section-kicker">Donation detail</p><h1>KES {Number(donation.amount).toLocaleString()}</h1><DonationStatus status={donation.status} /><DonationTimeline donation={donation} /><dl className="detail-list"><dt>Tracking ID</dt><dd>{donation.trackingId}</dd><dt>Payment channel</dt><dd>{donation.channel.replaceAll('_', ' ')}</dd><dt>Purpose</dt><dd>{donation.purpose}</dd><dt>Recorded</dt><dd>{new Date(donation.createdAt).toLocaleString()}</dd>{donation.receipt && <><dt>Receipt number</dt><dd>{donation.receipt.receiptNumber}</dd></>}</dl></main>; }

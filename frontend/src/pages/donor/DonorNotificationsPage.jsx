@@ -1,3 +1,3 @@
-'use strict';
-
-// DonorNotificationsPage: implementation pending.
+import { notificationStore } from '../../store/notification.store.js';
+import { useEffect, useState } from 'react';
+export function DonorNotificationsPage() { const [items, setItems] = useState(() => notificationStore.get()); useEffect(() => notificationStore.subscribe(setItems), []); return <main className="portal-page donor-page"><p className="section-kicker">Notifications</p><h1>Donation updates.</h1><div className="notification-list">{items.length ? items.map((item) => <article key={item.id}><strong>{item.title ?? 'CharityChain update'}</strong><p>{item.message}</p></article>) : <p>Donation and receipt updates will appear here.</p>}</div></main>; }

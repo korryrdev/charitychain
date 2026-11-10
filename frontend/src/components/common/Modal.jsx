@@ -1,3 +1,2 @@
-'use strict';
-
-// Modal: implementation pending.
+import { useEffect, useRef } from 'react';
+export function Modal({ open, title, children, onClose }) { const ref = useRef(null); useEffect(() => { if (open) ref.current?.focus(); }, [open]); if (!open) return null; return <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose?.(); }}><section ref={ref} className="modal" role="dialog" aria-modal="true" aria-label={title} tabIndex="-1"><header className="modal__header"><h2>{title}</h2><button type="button" aria-label="Close dialog" onClick={onClose}>×</button></header>{children}</section></div>; }

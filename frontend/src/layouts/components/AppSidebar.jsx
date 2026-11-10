@@ -1,3 +1,2 @@
-'use strict';
-
-// AppSidebar: implementation pending.
+import { NavLink } from 'react-router-dom';
+export function AppSidebar({ items, open = true, onNavigate }) { return <aside className={`app-sidebar${open ? ' app-sidebar--open' : ''}`} aria-label="Portal navigation"><nav><ul>{items.map((item) => <li key={item.to}><NavLink to={item.to} onClick={onNavigate} className={({ isActive }) => isActive ? 'is-active' : undefined}>{item.label}</NavLink></li>)}</ul></nav></aside>; }

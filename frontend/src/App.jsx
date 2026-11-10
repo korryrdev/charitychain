@@ -1,4 +1,4 @@
-import { Link, Route, Routes } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 export function FoundationStatus() {
   return (
@@ -13,15 +13,8 @@ export function FoundationStatus() {
   );
 }
 
-function FrontendHealth() {
+export function FrontendHealth() {
   return <output aria-label="frontend health">ok</output>;
 }
 
-export default function App() {
-  return (
-    <Routes>
-      <Route path="/" element={<FoundationStatus />} />
-      <Route path="/health" element={<FrontendHealth />} />
-    </Routes>
-  );
-}
+export default FoundationStatus;
