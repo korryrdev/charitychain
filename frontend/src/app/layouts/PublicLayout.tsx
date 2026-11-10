@@ -1,10 +1,11 @@
 import React from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Search, BarChart3, FileText, ArrowRight, Lock, Award } from 'lucide-react';
+import { Search, BarChart3, FileText, ArrowRight, Lock, Award, ShieldAlert, Boxes } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { LanguageToggle } from '@/components/LanguageToggle';
+import { SkipLink } from '@/components/SkipLink';
 import { useTranslation } from '@/app/i18n/I18nContext';
 import { useAuth } from '@/app/auth/AuthContext';
 
@@ -18,10 +19,12 @@ export const PublicLayout: React.FC = () => {
     { label: t('navDashboard'), path: '/dashboard', icon: BarChart3 },
     { label: t('navWall'), path: '/wall', icon: Award },
     { label: t('navReports'), path: '/reports', icon: FileText },
+    { label: 'Relief Catalogue', path: '/goods-catalogue', icon: Boxes },
   ];
 
   return (
     <div className="min-h-screen flex flex-col bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100">
+      <SkipLink />
 
       {/* Main Public Header */}
       <header className="sticky top-0 z-40 w-full border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md">
@@ -87,7 +90,7 @@ export const PublicLayout: React.FC = () => {
       </header>
 
       {/* Main Body */}
-      <main className="flex-1 w-full w-full px-4 sm:px-6 lg:px-8 py-8">
+      <main id="main-content" className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-8">
         <Outlet />
       </main>
 
@@ -96,6 +99,12 @@ export const PublicLayout: React.FC = () => {
         <div className="w-full px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p>{t('copyright')}</p>
           <div className="flex items-center gap-6">
+            <Link to="/report-fraud" className="underline hover:text-zinc-700 dark:hover:text-zinc-300">
+              Report Suspected Fraud
+            </Link>
+            <Link to="/goods-catalogue" className="underline hover:text-zinc-700 dark:hover:text-zinc-300">
+              In-Kind Catalogue
+            </Link>
             <Link to="/app" className="underline hover:text-zinc-700 dark:hover:text-zinc-300">
               {t('staff')} Portal
             </Link>

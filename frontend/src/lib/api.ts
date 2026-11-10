@@ -24,9 +24,14 @@ async function fetchApi<T>(url: string, options?: RequestInit): Promise<T> {
   }
 
   const claimToken = localStorage.getItem('charitychain_claim_token');
+  const csrfMatch = typeof document !== 'undefined' ? document.cookie.match(/(?:^|; )charitychain_csrf=([^;]*)/) : null;
+  const csrfToken = csrfMatch ? decodeURIComponent(csrfMatch[1]) : undefined;
+  const requestId = globalThis.crypto?.randomUUID?.() || `req-${Date.now()}`;
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    'X-Request-ID': requestId,
+    ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(claimToken && !token ? { Authorization: `Bearer ${claimToken}` } : {}),
     ...((options?.headers as Record<string, string>) || {}),

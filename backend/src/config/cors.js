@@ -1,9 +1,17 @@
 import { deepFreeze, env } from './environment.js';
 
 function parseOrigins(environment) {
-  const origins = environment.CORS_ALLOWED_ORIGINS?.split(',')
+  const configuredOrigins = environment.CORS_ALLOWED_ORIGINS?.split(',')
     .map((origin) => origin.trim())
-    .filter(Boolean) ?? [environment.APP_URL];
+    .filter(Boolean);
+  const origins = configuredOrigins?.length
+    ? configuredOrigins
+    : [
+        environment.APP_URL,
+        ...(environment.NODE_ENV === 'development'
+          ? ['http://localhost:5173', 'http://127.0.0.1:5173']
+          : [])
+      ];
   return [...new Set(origins)];
 }
 

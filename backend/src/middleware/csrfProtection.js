@@ -2,6 +2,13 @@ import { timingSafeEqual } from 'node:crypto';
 import { AuthorizationError } from '../errors/AuthorizationError.js';
 
 const safeMethods = new Set(['GET', 'HEAD', 'OPTIONS']);
+const unauthenticatedAuthPaths = new Set([
+  '/api/v1/public/auth/register',
+  '/api/v1/public/auth/verify-account',
+  '/api/v1/public/auth/login',
+  '/api/v1/public/auth/password-reset/request',
+  '/api/v1/public/auth/password-reset/complete'
+]);
 
 function tokensMatch(first, second) {
   if (typeof first !== 'string' || typeof second !== 'string') return false;
@@ -18,8 +25,10 @@ export function createCsrfProtection({
   headerName = 'x-csrf-token'
 } = {}) {
   return function csrfProtection(request, _response, next) {
+    const requestPath = request.originalUrl?.split('?')[0];
     if (
       safeMethods.has(request.method) ||
+      unauthenticatedAuthPaths.has(requestPath) ||
       request.get('authorization')?.startsWith('Bearer ') ||
       !request.cookies?.[sessionCookieName]
     ) {

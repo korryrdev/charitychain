@@ -19,6 +19,7 @@ import {
 import { useAuth } from '@/app/auth/AuthContext';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { LanguageToggle } from '@/components/LanguageToggle';
+import { SkipLink } from '@/components/SkipLink';
 import { useTranslation } from '@/app/i18n/I18nContext';
 import { cn } from '@/lib/utils';
 import type { UserRole } from '@/types';
@@ -225,7 +226,8 @@ export const AppLayout: React.FC = () => {
 
       {/* Main Content Pane */}
       <div className="flex-1 lg:pl-64 flex flex-col min-h-screen">
-        <main className="flex-1 w-full min-w-0 p-4 sm:p-6 lg:p-8">
+        <SkipLink />
+        <main id="main-content" className="flex-1 w-full min-w-0 p-4 sm:p-6 lg:p-8">
           <Outlet />
         </main>
       </div>

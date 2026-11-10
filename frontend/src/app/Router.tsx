@@ -16,6 +16,8 @@ import { DonationsPage } from '@/features/donations/DonationsPage';
 import { PharmacyItemPage } from '@/features/inventory/PharmacyItemPage';
 import { AlertsPage } from '@/features/alerts/AlertsPage';
 import { FundFlowGraphPage } from '@/features/graph/FundFlowGraphPage';
+import { FraudReportPage } from '@/features/public/FraudReportPage';
+import { GoodsCataloguePage } from '@/features/public/GoodsCataloguePage';
 
 export const router = createBrowserRouter([
   // Public Portal
@@ -29,6 +31,8 @@ export const router = createBrowserRouter([
       { path: 'wall', element: <RecognitionWallPage /> },
       { path: 'donor/claim', element: <ClaimPreferencesPage /> },
       { path: 'reports', element: <ReportsPage /> },
+      { path: 'report-fraud', element: <FraudReportPage /> },
+      { path: 'goods-catalogue', element: <GoodsCataloguePage /> },
       { path: 'login', element: <LoginPage /> },
     ],
   },
