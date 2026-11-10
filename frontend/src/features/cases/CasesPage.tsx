@@ -32,11 +32,8 @@ export const CasesPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-            Cases & Approvals Queue
+            Cases
           </h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            Review student cases raised by official campus sub-groups and manage approvals.
-          </p>
         </div>
 
         {['SUBGROUP_REP', 'COMMITTEE', 'ADMIN'].includes(role) && (

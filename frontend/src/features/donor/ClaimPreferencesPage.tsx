@@ -82,11 +82,8 @@ export const ClaimPreferencesPage: React.FC = () => {
       {/* Page Header */}
       <div className="text-center space-y-2">
         <h1 className="text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
-          Donor Privacy & Recognition
+          Display preferences
         </h1>
-        <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 max-w-lg mx-auto">
-          Enter your receipt code to privately review your verified giving, compute your badge tier, and control your public visibility.
-        </p>
       </div>
 
       {/* Step 1: Receipt Code Lookup */}
@@ -94,10 +91,10 @@ export const ClaimPreferencesPage: React.FC = () => {
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-bold flex items-center gap-2">
             <KeyRound className="w-4 h-4 text-emerald-600" />
-            1. Enter Your Receipt Code
+            Receipt code
           </CardTitle>
           <CardDescription>
-            Found on your M-Pesa SMS confirmation, bank wire slip, or physical pharmacy receipt.
+            From your M-Pesa SMS, bank slip or pharmacy receipt.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -179,11 +176,8 @@ export const ClaimPreferencesPage: React.FC = () => {
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-bold flex items-center gap-2">
                 <Eye className="w-4 h-4 text-emerald-600" />
-                2. Choose Public Display Mode
+                Display mode
               </CardTitle>
-              <CardDescription>
-                You control whether your name appears on the Public Recognition Wall. Anonymous is always our default.
-              </CardDescription>
             </CardHeader>
 
             <form onSubmit={handleSavePreferences}>
@@ -245,7 +239,7 @@ export const ClaimPreferencesPage: React.FC = () => {
                       className="text-xs"
                     />
                     <span className="text-[11px] text-zinc-400 block">
-                      Screened automatically against impersonation and reserved keywords (Rule FR-DON-05).
+                      Names are screened for impersonation.
                     </span>
                   </div>
                 )}
@@ -268,9 +262,6 @@ export const ClaimPreferencesPage: React.FC = () => {
                     </div>
                     {displayMode !== 'ANONYMOUS' && <DonorBadge tier={claimProfile.activeTier} />}
                   </div>
-                  <span className="text-[10px] text-zinc-400 block italic">
-                    Amounts and exact donation dates are strictly omitted per Rule FR-DON-12.
-                  </span>
                 </div>
 
                 {saveSuccess && (

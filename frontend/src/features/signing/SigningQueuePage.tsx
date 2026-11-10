@@ -86,11 +86,8 @@ export const SigningQueuePage: React.FC = () => {
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 flex items-center gap-2.5">
           <KeyRound className="w-6 h-6 text-emerald-600" />
-          2-of-3 Signatory Fund Release Queue
+          Signing queue
         </h1>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-          In accordance with Malkia Executive Committee governance, fund release requires at least two independent EIP-712 wallet signatures before money can be disbursed.
-        </p>
       </div>
 
       {/* Connected Signatory Persona & Switcher */}
@@ -248,11 +245,8 @@ export const SigningQueuePage: React.FC = () => {
               <div>
                 <CardTitle className="text-base font-bold flex items-center gap-2">
                   <FileCode className="w-4 h-4 text-emerald-600" />
-                  EIP-712 Typed Data Signature
+                  Sign release
                 </CardTitle>
-                <CardDescription className="text-xs mt-0.5">
-                  Confirm structured authorization for fund release on Polygon Amoy.
-                </CardDescription>
               </div>
               <button
                 onClick={() => setSigningModalCase(null)}

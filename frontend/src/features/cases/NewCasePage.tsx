@@ -60,11 +60,8 @@ export const NewCasePage: React.FC = () => {
 
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-          Submit Student Need Case
+          New case
         </h1>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          Raise a case through your official campus sub-group. Beneficiary personal data remains encrypted off-chain.
-        </p>
       </div>
 
       <Card>

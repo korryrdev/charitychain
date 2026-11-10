@@ -67,7 +67,7 @@ export const DonationsPage: React.FC = () => {
         if (d.id === id) {
           // Check maker-checker rule
           if (d.enteredBy === (user?.email || 'current-user')) {
-            alert('Segregation of Duties Enforced: Maker cannot verify own deposit entry (Rule R04).');
+            alert('You cannot verify a deposit you entered.');
             return d;
           }
           return {
@@ -86,19 +86,15 @@ export const DonationsPage: React.FC = () => {
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 flex items-center gap-2.5">
           <Coins className="w-6 h-6 text-emerald-600" />
-          Bank Wire Deposits & Maker-Checker Verification
+          Bank deposits
         </h1>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-          Direct bank deposits require dual verification (two distinct treasurers or committee members) before lot creation and blockchain anchoring.
-        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Entry Form */}
         <Card className="lg:col-span-1">
           <CardHeader>
-            <CardTitle className="text-base font-bold">Log Bank Deposit</CardTitle>
-            <CardDescription>Enter bank statement wire details.</CardDescription>
+            <CardTitle className="text-base font-bold">Log deposit</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleCreate} className="space-y-4">
@@ -129,9 +125,9 @@ export const DonationsPage: React.FC = () => {
         {/* Verification Queue */}
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle className="text-base font-bold">Maker-Checker Verification Queue</CardTitle>
+            <CardTitle className="text-base font-bold">Pending verification</CardTitle>
             <CardDescription>
-              A deposit cannot be verified by the person who entered it (Rule R04).
+              You cannot verify a deposit you entered.
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0">

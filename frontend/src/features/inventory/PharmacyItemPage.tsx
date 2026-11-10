@@ -160,17 +160,14 @@ export const PharmacyItemPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="w-full space-y-6">
       {/* Title & Desk Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 flex items-center gap-2.5">
             <PackageCheck className="w-6 h-6 text-emerald-600" />
-            University Hospital Pharmacy Custodian Desk
+            Pharmacy
           </h1>
-          <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-            Malkia Hospital Drop-off Hub. Physical items are logged, anchored on Polygon Amoy (`Channel.IN_KIND`), and tracked to student distributions.
-          </p>
         </div>
 
         {/* Tab Switcher */}
@@ -211,10 +208,10 @@ export const PharmacyItemPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
-                    Physical Item Notarized on Polygon Amoy!
+                    Item logged
                   </h3>
                   <p className="text-xs text-zinc-600 dark:text-zinc-400">
-                    {justLoggedItem.quantity} units of {justLoggedItem.category} logged into Malkia inventory.
+                    {justLoggedItem.quantity} units of {justLoggedItem.category}
                   </p>
                 </div>
               </div>
@@ -258,11 +255,8 @@ export const PharmacyItemPage: React.FC = () => {
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-bold flex items-center gap-2">
                 <Tag className="w-4 h-4 text-emerald-600" />
-                Key In New Tangible Item Drop-off
+                Log item
               </CardTitle>
-              <CardDescription>
-                Designed for speed on a custodian's phone or tablet. Complete in under 30 seconds.
-              </CardDescription>
             </CardHeader>
 
             <form onSubmit={handleSubmit}>
@@ -339,7 +333,7 @@ export const PharmacyItemPage: React.FC = () => {
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-bold flex items-center gap-2">
                 <History className="w-4 h-4 text-zinc-500" />
-                Recent Hospital Drop-offs
+                Recent drop-offs
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
@@ -372,11 +366,8 @@ export const PharmacyItemPage: React.FC = () => {
             <CardHeader>
               <CardTitle className="text-base font-bold flex items-center gap-2">
                 <Boxes className="w-4 h-4 text-emerald-600" />
-                Current Hospital Pharmacy In-Kind Stock
+                Stock
               </CardTitle>
-              <CardDescription>
-                Physical goods in stock ready to be issued to verified student cases (FR-FLOW-05).
-              </CardDescription>
             </CardHeader>
 
             <CardContent className="p-0">
@@ -446,10 +437,10 @@ export const PharmacyItemPage: React.FC = () => {
             <CardHeader>
               <CardTitle className="text-base font-bold flex items-center gap-2">
                 <Send className="w-4 h-4 text-emerald-600" />
-                Issue Items to Student Need Case
+                Issue items
               </CardTitle>
               <CardDescription>
-                Transfer physical inventory from Lot {issueModalItem.receiptCode} to an approved case.
+                Lot {issueModalItem.receiptCode}
               </CardDescription>
             </CardHeader>
 

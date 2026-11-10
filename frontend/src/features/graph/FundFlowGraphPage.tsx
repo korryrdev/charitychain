@@ -331,11 +331,8 @@ export const FundFlowGraphPage: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 flex items-center gap-2.5">
             <Network className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
-            Interactive Fund Flow Network
+            Fund flow
           </h1>
-          <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-            Visual audit graph tracking every contribution through pooling, student need approvals, 2-of-3 multi-sig, and final payouts.
-          </p>
         </div>
 
         {/* Action Controls */}
@@ -640,7 +637,6 @@ export const FundFlowGraphPage: React.FC = () => {
                 <span className="w-3 h-3 rounded-full bg-amber-500 inline-block ring-2 ring-amber-300 dark:ring-amber-800" /> Flagged Risk
               </span>
             </div>
-            <span className="text-[11px] text-zinc-400">Strict Rule: Real money on MPESA/Bank, Polygon Amoy as notary.</span>
           </div>
         </Card>
 

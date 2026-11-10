@@ -35,7 +35,7 @@ export const LoginPage: React.FC = () => {
       title: 'Pharmacy Custodian',
       name: 'Jane Atieno',
       email: 'pharmacy@malkia.charity',
-      desc: 'Hospital pharmacy desk. Keys in physical items & issues stock.',
+      desc: 'Logs and issues pharmacy items',
       icon: PackageCheck,
       color: 'bg-amber-500',
     },
@@ -44,7 +44,7 @@ export const LoginPage: React.FC = () => {
       title: 'Committee Member',
       name: 'David Kimani',
       email: 'committee@malkia.charity',
-      desc: 'Reviews student need cases & determines approved amounts.',
+      desc: 'Reviews and approves cases',
       icon: FileCheck2,
       color: 'bg-emerald-600',
     },
@@ -53,7 +53,7 @@ export const LoginPage: React.FC = () => {
       title: 'Executive Signatory',
       name: 'Wanjiku Mwangi',
       email: 'signatory1@malkia.charity',
-      desc: 'Signs 2-of-3 EIP-712 wallet releases for fund disbursements.',
+      desc: 'Signs fund releases',
       icon: KeyRound,
       color: 'bg-purple-600',
     },
@@ -62,7 +62,7 @@ export const LoginPage: React.FC = () => {
       title: 'Treasurer',
       name: 'Kevin Otieno',
       email: 'treasurer@malkia.charity',
-      desc: 'Enters bank wire statements & reconciles accounts.',
+      desc: 'Enters and verifies bank deposits',
       icon: Coins,
       color: 'bg-blue-600',
     },
@@ -94,11 +94,8 @@ export const LoginPage: React.FC = () => {
             M
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-            Malkia Governance Portal
+            Staff sign in
           </h1>
-          <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400">
-            Authorized access for Committee, Executive Signatories, and Pharmacy Custodians.
-          </p>
         </div>
 
         {/* Credentials / 2FA Form Card */}
@@ -108,11 +105,8 @@ export const LoginPage: React.FC = () => {
               <CardHeader className="pb-4">
                 <CardTitle className="text-base font-bold flex items-center gap-2">
                   <Lock className="w-4 h-4 text-emerald-600" />
-                  Step 1: Account Authentication
+                  Sign in
                 </CardTitle>
-                <CardDescription>
-                  Enter your registered university email and credentials.
-                </CardDescription>
               </CardHeader>
 
               <CardContent className="space-y-4">
@@ -148,16 +142,16 @@ export const LoginPage: React.FC = () => {
               <CardHeader className="pb-4">
                 <CardTitle className="text-base font-bold flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                  Step 2: Two-Factor Authentication (2FA)
+                  Verification code
                 </CardTitle>
                 <CardDescription>
-                  Enter the 6-digit TOTP code from your authenticator app (PRD FR-AUTH-01).
+                  Enter the 6-digit code from your authenticator app.
                 </CardDescription>
               </CardHeader>
 
               <CardContent className="space-y-4">
                 <Input
-                  label="TOTP 6-Digit Code"
+                  label="6-digit code"
                   type="text"
                   maxLength={6}
                   placeholder="e.g. 592810"
@@ -166,9 +160,6 @@ export const LoginPage: React.FC = () => {
                   className="text-center font-mono text-lg tracking-widest"
                   autoFocus
                 />
-                <p className="text-[11px] text-zinc-500 text-center">
-                  Demo tip: Any 6 digits or clicking Verify will authenticate into your session.
-                </p>
               </CardContent>
 
               <CardFooter className="flex flex-col gap-2 pt-2">
@@ -193,7 +184,7 @@ export const LoginPage: React.FC = () => {
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-xs font-bold text-zinc-400 uppercase tracking-wider">
             <UserCheck className="w-3.5 h-3.5" />
-            1-Click Persona Sign-in (Demo Fast Pass)
+            Quick demo sign-in
           </div>
 
           <div className="grid grid-cols-1 gap-2">

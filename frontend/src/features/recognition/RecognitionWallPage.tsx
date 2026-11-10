@@ -59,25 +59,22 @@ export const RecognitionWallPage: React.FC = () => {
   const handleReport = (id: string, name: string) => {
     setReportedId(id);
     setTimeout(() => {
-      alert(`Report submitted for review: "${name}". The committee will audit this entry per Rule FR-DON-06.`);
+      alert(`Report submitted for review: "${name}". The committee will review it.`);
       setReportedId(null);
     }, 400);
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8">
+    <div className="w-full space-y-8">
       {/* Header Banner */}
       <div className="text-center space-y-3">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 text-xs font-semibold">
           <Award className="w-3.5 h-3.5" />
-          <span>Honoring Community Generosity</span>
+          <span>Thank You for Your Kindness</span>
         </div>
         <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
-          Public Recognition Wall
+          Supporters
         </h1>
-        <p className="text-sm sm:text-base text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto">
-          Celebrating donors and alumni whose gifts sustain students in need. Every badge is deterministically computed from verified on-chain lots.
-        </p>
       </div>
 
       {/* KDPA 2019 Inference Protection Callout (FR-DON-12) */}
@@ -89,17 +86,14 @@ export const RecognitionWallPage: React.FC = () => {
             </div>
             <div className="text-xs space-y-1">
               <span className="font-bold text-zinc-900 dark:text-zinc-100 block">
-                Strict Donor Privacy (Rule FR-DON-12 & Kenya Data Protection Act)
+                Amounts and exact times are never shown
               </span>
-              <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed max-w-3xl">
-                To prevent financial profiling and inference attacks, <strong>no amounts or exact timestamps are ever displayed</strong> on this wall. Donors appear solely by their chosen alias or name, active tier, and month of award.
-              </p>
             </div>
           </div>
 
           <Link to="/donor/claim" className="shrink-0 w-full sm:w-auto">
             <Button size="sm" variant="emerald" className="w-full sm:w-auto text-xs gap-1.5 shadow-sm">
-              <span>Claim Receipt & Set Name</span>
+              <span>Set display name</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Button>
           </Link>
@@ -116,9 +110,6 @@ export const RecognitionWallPage: React.FC = () => {
             <div>
               <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
                 {anonymousCount} Anonymous Supporters
-              </p>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                Contributing quietly without public recognition. Every cent still fully tracked on the public ledger.
               </p>
             </div>
           </div>
@@ -177,7 +168,7 @@ export const RecognitionWallPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => handleReport(entry.id, entry.displayName)}
-                  title="Report abusive or impersonating name (FR-DON-06)"
+                  title="Report this name"
                   className="text-zinc-400 hover:text-rose-500 dark:hover:text-rose-400 transition-colors p-1"
                 >
                   <Flag className="w-3.5 h-3.5" />

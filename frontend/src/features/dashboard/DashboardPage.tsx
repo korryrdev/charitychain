@@ -39,7 +39,6 @@ export const DashboardPage: React.FC = () => {
     {
       title: 'Active Pool Balance',
       amountMinor: stats.activePoolBalanceMinor,
-      description: 'Available for current student cases',
       icon: Wallet,
       color: 'text-emerald-600',
       bgColor: 'bg-emerald-50 dark:bg-emerald-950/50',
@@ -63,7 +62,6 @@ export const DashboardPage: React.FC = () => {
     {
       title: 'Students Supported',
       rawCount: stats.totalBeneficiariesHelped,
-      description: 'Needy campus beneficiaries helped',
       icon: Users,
       color: 'text-amber-600',
       bgColor: 'bg-amber-50 dark:bg-amber-950/50',
@@ -75,11 +73,8 @@ export const DashboardPage: React.FC = () => {
       {/* Header */}
       <div>
         <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
-          Public Transparency Dashboard
+          Transparency
         </h1>
-        <p className="text-sm sm:text-base text-zinc-600 dark:text-zinc-400 mt-1">
-          Real-time audited overview of all contributions, pool balance, and verified campus disbursements.
-        </p>
       </div>
 
       {/* Key Metric Cards */}
@@ -105,7 +100,7 @@ export const DashboardPage: React.FC = () => {
                     {card.rawCount?.toLocaleString()}
                   </span>
                 )}
-                <p className="text-xs text-zinc-500 mt-1">{card.description}</p>
+                {card.description && <p className="text-xs text-zinc-500 mt-1">{card.description}</p>}
               </div>
             </Card>
           );
@@ -121,9 +116,6 @@ export const DashboardPage: React.FC = () => {
               <PieChart className="w-4 h-4 text-emerald-600" />
               Disbursements by Need Category
             </CardTitle>
-            <CardDescription>
-              Allocation breakdown of funds delivered to verified student needs.
-            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -158,9 +150,6 @@ export const DashboardPage: React.FC = () => {
               <Receipt className="w-4 h-4 text-blue-600" />
               Collection Channels
             </CardTitle>
-            <CardDescription>
-              Tamper-evident inflow intake across M-Pesa, bank wire, and hospital pharmacy.
-            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">

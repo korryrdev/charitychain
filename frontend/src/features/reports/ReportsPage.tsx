@@ -60,15 +60,12 @@ export const ReportsPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8 max-w-5xl mx-auto">
+    <div className="space-y-8 w-full">
       <div>
         <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50 flex items-center gap-2.5">
           <FileSpreadsheet className="w-7 h-7 text-emerald-600" />
-          Anchored Quarterly Financial Reports
+          Quarterly reports
         </h1>
-        <p className="text-sm sm:text-base text-zinc-600 dark:text-zinc-400 mt-1">
-          Every quarter Malkia anchors a canonical JSON summary and Merkle ledger root on Polygon Amoy. Download the report or verify any printed hash.
-        </p>
       </div>
 
       {/* Verify-a-Report Card */}
@@ -76,11 +73,8 @@ export const ReportsPage: React.FC = () => {
         <CardHeader>
           <CardTitle className="text-base font-bold flex items-center gap-2">
             <ShieldCheck className="w-5 h-5 text-emerald-600" />
-            Verify a Printed Report Hash or QR Fingerprint
+            Verify a report
           </CardTitle>
-          <CardDescription>
-            Confirm that the PDF handed out at Malkia's full membership meeting matches the immutable blockchain record.
-          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleVerify} className="flex flex-col sm:flex-row gap-3">
@@ -116,7 +110,7 @@ export const ReportsPage: React.FC = () => {
 
       {/* Reports List */}
       <div className="space-y-4">
-        <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">Official Anchored Quarters</h2>
+        <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">Published reports</h2>
         {reports.map((r) => (
           <Card key={r.id} className="p-5 sm:p-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

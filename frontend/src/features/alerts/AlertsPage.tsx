@@ -40,11 +40,8 @@ export const AlertsPage: React.FC = () => {
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 flex items-center gap-2.5">
           <AlertTriangle className="w-6 h-6 text-amber-600" />
-          Forensic Fund Flow Alert Inbox
+          Alerts
         </h1>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-          Automated rule engine monitoring suspicious patterns, pool balance drift, self-approvals, and concentration risks.
-        </p>
       </div>
 
       {/* Alerts List */}
@@ -126,9 +123,6 @@ export const AlertsPage: React.FC = () => {
               <CardTitle className="text-lg font-bold">
                 Resolve Alert {selectedAlert.ruleId}: {selectedAlert.ruleTitle}
               </CardTitle>
-              <CardDescription>
-                Auditable action: Document the findings of your investigation before resolving.
-              </CardDescription>
             </CardHeader>
 
             <CardContent className="space-y-4">

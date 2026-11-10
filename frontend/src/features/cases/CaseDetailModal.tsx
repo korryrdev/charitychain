@@ -186,7 +186,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({ caseRecord, on
                 <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/70 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 text-xs font-semibold flex items-start gap-2">
                   <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                   <span>
-                    Segregation of Duties (Rule R03): You submitted this case and cannot approve it. Another committee member must review.
+                    You submitted this case, so another committee member must review it.
                   </span>
                 </div>
               ) : (

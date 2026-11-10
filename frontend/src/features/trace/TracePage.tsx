@@ -35,9 +35,6 @@ export const TracePage: React.FC = () => {
   const [searchInput, setSearchInput] = useState(initialCode);
   const [activeCode, setActiveCode] = useState(initialCode);
   const [techDetailsOpen, setTechDetailsOpen] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [verifiedState, setVerifiedState] = useState<'MATCH' | 'MISMATCH'>('MATCH');
-  const [simulateTamper, setSimulateTamper] = useState(false);
 
   useEffect(() => {
     if (queryParam && queryParam !== activeCode) {
@@ -58,30 +55,18 @@ export const TracePage: React.FC = () => {
       const code = searchInput.trim().toUpperCase();
       setActiveCode(code);
       setSearchParams({ code });
-      setVerifiedState(simulateTamper ? 'MISMATCH' : 'MATCH');
     }
-  };
-
-  const handleVerifyOnChain = async () => {
-    setIsVerifying(true);
-    // Simulating Web3.js direct RPC call to Polygon Amoy DonationLedger.recordHashOf(donationId)
-    await new Promise((r) => setTimeout(r, 600));
-    setIsVerifying(false);
-    setVerifiedState(simulateTamper ? 'MISMATCH' : 'MATCH');
   };
 
   const quickSamples = ['MLK-7F3K-92QD', 'MLK-4B2N-88LK', 'MLK-ITEM-9201'];
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="w-full space-y-8">
       {/* Header Banner */}
       <div className="text-center space-y-3">
         <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
           {t('traceTitle')}
         </h1>
-        <p className="text-base sm:text-lg text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto">
-          {t('traceSubtitle')}
-        </p>
       </div>
 
       {/* Search Bar */}
@@ -234,7 +219,7 @@ export const TracePage: React.FC = () => {
 
                 {donation.allocations.length === 0 ? (
                   <div className="p-5 rounded-lg border border-dashed border-zinc-300 dark:border-zinc-800 text-center text-xs text-zinc-500">
-                    This donation is currently pooled in Malkia's verified fund, ready to be allocated in the next committee review cycle.
+                    Not yet allocated. It is held in the emergency pool.
                   </div>
                 ) : (
                   <div className="divide-y divide-zinc-200 dark:divide-zinc-800 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden">
@@ -257,7 +242,7 @@ export const TracePage: React.FC = () => {
                               </span>
                             </div>
                             <p className="text-xs text-zinc-500 mt-0.5">
-                              Allocated on {new Date(alloc.allocatedAt).toLocaleDateString()} via FIFO Lot Matching
+                              Allocated {new Date(alloc.allocatedAt).toLocaleDateString('en-KE', { day: 'numeric', month: 'short', year: 'numeric' })}
                             </p>
                           </div>
                         </div>
@@ -273,128 +258,63 @@ export const TracePage: React.FC = () => {
                 )}
               </div>
 
-              {/* Independent Web3 Verification Box */}
-              <div className="rounded-xl border border-emerald-500/30 bg-emerald-50/40 dark:bg-emerald-950/20 p-5 space-y-4">
+              {/* Verified Audit Ledger Card */}
+              <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30 p-5 space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-xs">
-                      <ShieldCheck className="w-6 h-6" />
+                    <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-700 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                      <ShieldCheck className="w-5 h-5" />
                     </div>
                     <div>
                       <h4 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                        Blockchain Immutability Proof
+                        Recorded on audit ledger
                       </h4>
-                      <p className="text-xs text-zinc-600 dark:text-zinc-400">
-                        Verified and locked on Polygon Amoy. Records cannot be rewritten or forged.
-                      </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Button
-                      variant={verifiedState === 'MISMATCH' ? 'destructive' : 'emerald'}
-                      size="sm"
-                      onClick={handleVerifyOnChain}
-                      isLoading={isVerifying}
-                      className="gap-2 shrink-0"
-                    >
-                      {verifiedState === 'MISMATCH' ? (
-                        <>
-                          <AlertTriangle className="w-4 h-4" />
-                          Tamper Detected!
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle2 className="w-4 h-4" />
-                          Verify Direct on Chain
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Verification Result Banner */}
-                {verifiedState === 'MATCH' ? (
-                  <div className="p-3 rounded-lg bg-emerald-100/70 dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-800 text-xs font-semibold text-emerald-900 dark:text-emerald-200 flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <span>Authentic Notarization: Local record hash matches on-chain state on Polygon Amoy.</span>
-                    </div>
-                    <span className="text-[10px] uppercase font-bold text-emerald-700 dark:text-emerald-300">
-                      Zero Drift
-                    </span>
-                  </div>
-                ) : (
-                  <div className="p-3 rounded-lg bg-rose-100/90 dark:bg-rose-950/90 border border-rose-300 dark:border-rose-800 text-xs font-semibold text-rose-950 dark:text-rose-200 flex items-start gap-2">
-                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-                    <div>
-                      <span className="block font-bold">Integrity Alert (Rule R17 Fired):</span>
-                      <span>The record hash in the local database differs from the anchored fingerprint on Polygon Amoy. This record may have been modified after notarization.</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Demo Simulation Switch */}
-                <div className="pt-2 border-t border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
                   <button
                     type="button"
                     onClick={() => setTechDetailsOpen(!techDetailsOpen)}
-                    className="flex items-center gap-1.5 font-semibold text-emerald-800 dark:text-emerald-300 hover:underline"
+                    className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:underline shrink-0"
                   >
-                    <span>Technical cryptographic details</span>
+                    <span>{techDetailsOpen ? 'Hide audit details' : 'View audit fingerprint'}</span>
                     <ChevronDown
                       className={`w-3.5 h-3.5 transition-transform ${techDetailsOpen ? 'rotate-180' : ''}`}
                     />
                   </button>
-
-                  <label className="flex items-center gap-2 text-[11px] text-zinc-500 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={simulateTamper}
-                      onChange={(e) => {
-                        const checked = e.target.checked;
-                        setSimulateTamper(checked);
-                        setVerifiedState(checked ? 'MISMATCH' : 'MATCH');
-                      }}
-                      className="rounded border-zinc-300 text-rose-600 focus:ring-rose-500"
-                    />
-                    <span>Demo mode: Simulate tampered record (test Rule R17)</span>
-                  </label>
                 </div>
 
                 {/* Collapsible Technical Details */}
                 {techDetailsOpen && (
-                  <div className="mt-3 p-3.5 rounded-lg bg-white dark:bg-zinc-900 text-xs font-mono space-y-2 border border-zinc-200 dark:border-zinc-800">
+                  <div className="mt-3 p-4 rounded-lg bg-white dark:bg-zinc-900 text-xs font-mono space-y-2.5 border border-zinc-200 dark:border-zinc-800">
                     <div>
-                      <span className="text-zinc-500 block">Record Hash (keccak256):</span>
+                      <span className="text-zinc-500 block text-[11px] mb-0.5">Audit Record Hash:</span>
                       <span className="break-all text-zinc-800 dark:text-zinc-200">
-                        {simulateTamper
-                          ? '0xbad000000000000000000000000000000000000000000000000000000000dead'
-                          : donation.recordHash}
+                        {donation.recordHash}
                       </span>
                     </div>
-                    <div>
-                      <span className="text-zinc-500 block">Polygon Amoy Tx Hash:</span>
-                      <a
-                        href={`https://amoy.polygonscan.com/tx/${donation.txHash}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="break-all text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1"
-                      >
-                        {donation.txHash}
-                        <ExternalLink className="w-3 h-3 shrink-0" />
-                      </a>
-                    </div>
-                    <div className="flex gap-6 pt-1">
+                    {donation.txHash && (
                       <div>
-                        <span className="text-zinc-500">Block: </span>
-                        <span className="text-zinc-800 dark:text-zinc-200">{donation.blockNumber}</span>
+                        <span className="text-zinc-500 block text-[11px] mb-0.5">Blockchain Notarization:</span>
+                        <a
+                          href={`https://amoy.polygonscan.com/tx/${donation.txHash}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="break-all text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1"
+                        >
+                          {donation.txHash}
+                          <ExternalLink className="w-3 h-3 shrink-0" />
+                        </a>
                       </div>
-                      <div>
-                        <span className="text-zinc-500">Network: </span>
-                        <span className="text-zinc-800 dark:text-zinc-200">Polygon Amoy (80002)</span>
+                    )}
+                    {donation.blockNumber && (
+                      <div className="flex gap-6 pt-1 text-[11px]">
+                        <div>
+                          <span className="text-zinc-500">Block: </span>
+                          <span className="text-zinc-800 dark:text-zinc-200">#{donation.blockNumber.toLocaleString()}</span>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 )}
               </div>
