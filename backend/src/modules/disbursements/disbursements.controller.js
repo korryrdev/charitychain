@@ -1,0 +1,5 @@
+'use strict';
+
+import { disbursementsService } from './disbursements.service.js';
+export function createDisbursementsController(service = disbursementsService) { const handle = (operation) => async (req,res,next) => { try { await operation(req,res); } catch (error) { next(error); } }; return { create: handle(async (req,res) => res.status(202).json({ disbursement: await service.createAndExecute(req.auth, req.params.applicationId, req.body) })), retry: handle(async (req,res) => res.status(202).json({ disbursement: await service.execute(req.auth, req.params.disbursementId) })), get: handle(async (req,res) => res.json({ disbursement: await service.get(req.auth, req.params.disbursementId) })), getForApplication: handle(async (req,res) => res.json({ disbursement: await service.getForApplication(req.auth, req.params.applicationId) })), callback: handle(async (req,res) => res.json({ disbursement: await service.callback(req.get('x-charitychain-callback-secret'), req.body) })) }; }
+export const disbursementsController = createDisbursementsController();

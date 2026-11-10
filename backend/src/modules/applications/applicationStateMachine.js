@@ -1,0 +1,3 @@
+import { ConflictError } from '../../errors/ConflictError.js';
+export const APPLICATION_TRANSITIONS = Object.freeze({ DRAFT: ['SUBMITTED','CANCELLED'], SUBMITTED: ['VETTING','CANCELLED'], VETTING: ['VERIFIED','MANUAL_REVIEW','REJECTED'], MANUAL_REVIEW: ['VERIFIED','REJECTED'], VERIFIED: ['AWAITING_APPROVALS'], AWAITING_APPROVALS: ['APPROVED','DECLINED'], APPROVED: ['DISBURSEMENT_PENDING'], DISBURSEMENT_PENDING: ['FUNDED'], REJECTED: [], DECLINED: [], FUNDED: [], CANCELLED: [] });
+export function assertApplicationTransition(from, to) { if (!APPLICATION_TRANSITIONS[from]?.includes(to)) throw new ConflictError(`Application cannot transition from ${from} to ${to}.`); }

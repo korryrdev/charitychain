@@ -1,0 +1,4 @@
+import { integrationsConfig } from '../../config/integrations.js';
+const hosts = { sandbox: 'https://sandbox.safaricom.co.ke', production: 'https://api.safaricom.co.ke' };
+export function createMpesaConfig(config = integrationsConfig.mpesa) { return Object.freeze({ ...config, baseUrl: hosts[config.environment], oauthPath: '/oauth/v1/generate?grant_type=client_credentials', stkPushPath: '/mpesa/stkpush/v1/processrequest', b2cPath: '/mpesa/b2c/v3/paymentrequest', b2bPath: '/mpesa/b2b/v1/paymentrequest', transactionStatusPath: '/mpesa/transactionstatus/v1/query', callbackUrl: `${config.callbackBaseUrl}/api/v1/webhooks/payments/mpesa`, disbursementResultUrl: `${config.callbackBaseUrl}/api/v1/webhooks/disbursements/mpesa`, disbursementTimeoutUrl: `${config.callbackBaseUrl}/api/v1/webhooks/disbursements/mpesa/timeout` }); }
+export const mpesaConfig = createMpesaConfig();

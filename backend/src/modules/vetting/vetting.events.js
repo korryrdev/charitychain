@@ -1,0 +1,1 @@
+export const VETTING_EVENTS = Object.freeze({ STARTED: 'vetting.started', COMPLETED: 'vetting.completed', MANUAL_REVIEW_REQUIRED: 'vetting.manual-review-required', FAILED: 'vetting.failed', POLICY_ACTIVATED: 'vetting.policy-activated' });

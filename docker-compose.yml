@@ -1,0 +1,33 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: charitychain-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-charitychain}
+      POSTGRES_USER: ${POSTGRES_USER:-charitychain}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-charitychain-local-only}
+    ports:
+      - "5433:5432"
+    volumes:
+      - charitychain_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-charitychain} -d ${POSTGRES_DB:-charitychain}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  ipfs:
+    image: ipfs/kubo:v0.39.0
+    container_name: charitychain-ipfs
+    restart: unless-stopped
+    ports:
+      - "4001:4001"
+      - "5001:5001"
+      - "8080:8080"
+    volumes:
+      - charitychain_ipfs_data:/data/ipfs
+
+volumes:
+  charitychain_postgres_data:
+  charitychain_ipfs_data:

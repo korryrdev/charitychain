@@ -1,0 +1,13 @@
+import { prisma } from '@charitychain/database';
+const include = { lines: { orderBy: { createdAt: 'asc' } }, inspections: { orderBy: { createdAt: 'asc' } }, cashDeposits: { orderBy: { recordedAt: 'asc' } }, donorProfile: true };
+export function createPhysicalDonationsRepository(database = prisma) { return {
+  create(data, lines) { return database.physicalDonation.create({ data: { ...data, lines: { create: lines } }, include }); },
+  findById(id) { return database.physicalDonation.findUnique({ where: { id }, include }); },
+  async list({ status, page, pageSize }) { const where = status ? { status } : {}; const [items,total] = await database.$transaction([database.physicalDonation.findMany({ where, include, orderBy: { createdAt: 'desc' }, skip: (page-1)*pageSize, take: pageSize }), database.physicalDonation.count({ where })]); return { items,total,page,pageSize }; },
+  async transition(id, currentStatus, status, data = {}) { const result = await database.physicalDonation.updateMany({ where: { id, status: currentStatus }, data: { ...data, status } }); if (!result.count) return null; return database.physicalDonation.findUniqueOrThrow({ where: { id }, include }); },
+  async inspect(donation, inspectorUserId, input, nextStatus) { return database.$transaction(async (transaction) => { for (const decision of input.lines) { const line = donation.lines.find((item) => item.id === decision.lineId); await transaction.physicalDonationLine.update({ where: { id: decision.lineId }, data: { acceptedQuantity: decision.acceptedQuantity, approvedUnitValue: decision.approvedUnitValue, rejectionReason: decision.rejectionReason, inspectionStatus: decision.acceptedQuantity === 0 ? 'REJECTED' : decision.acceptedQuantity === line.quantity ? 'ACCEPTED' : 'PARTIALLY_ACCEPTED' } }); } await transaction.physicalDonationInspection.create({ data: { physicalDonationId: donation.id, inspectorUserId, decision: input.decision, notes: input.notes } }); await transaction.physicalDonation.update({ where: { id: donation.id }, data: { status: nextStatus, inspectedAt: new Date(), finalizedAt: nextStatus === 'ACCEPTED' ? new Date() : null } }); return transaction.physicalDonation.findUniqueOrThrow({ where: { id: donation.id }, include }); }); },
+  createCashDeposit(data) { return database.physicalCashDeposit.create({ data }); },
+  findCashDeposit(reference) { return database.physicalCashDeposit.findUnique({ where: { depositReference: reference } }); },
+  matchCashDeposit(id) { return database.physicalCashDeposit.update({ where: { id }, data: { status: 'MATCHED', matchedAt: new Date() } }); }
+}; }
+export const physicalDonationsRepository = createPhysicalDonationsRepository();

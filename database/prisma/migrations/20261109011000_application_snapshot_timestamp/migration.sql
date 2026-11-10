@@ -1,0 +1,1 @@
+ALTER TABLE "assistance_applications" ADD COLUMN "financialSnapshotAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;

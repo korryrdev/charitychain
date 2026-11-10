@@ -1,0 +1,17 @@
+CREATE TYPE "ConfirmationTargetType" AS ENUM ('PHYSICAL_DONATION', 'GOODS_COLLECTION');
+CREATE TYPE "ConfirmationStatus" AS ENUM ('PENDING', 'PROCESSING', 'ACCEPTED', 'REJECTED', 'EXPIRED', 'SUPERSEDED', 'DELIVERY_FAILED');
+CREATE TYPE "ConfirmationDecision" AS ENUM ('YES', 'NO');
+CREATE TYPE "ConfirmationDeliveryStatus" AS ENUM ('QUEUED', 'SENT', 'DELIVERED', 'FAILED');
+CREATE TABLE "confirmation_requests" ("id" UUID NOT NULL, "targetType" "ConfirmationTargetType" NOT NULL, "targetId" UUID NOT NULL, "physicalDonationId" UUID, "tokenHash" TEXT NOT NULL, "tokenPrefix" TEXT NOT NULL, "status" "ConfirmationStatus" NOT NULL DEFAULT 'PENDING', "expiresAt" TIMESTAMP(3) NOT NULL, "sentAt" TIMESTAMP(3), "claimedAt" TIMESTAMP(3), "completedAt" TIMESTAMP(3), "createdByUserId" UUID, "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMP(3) NOT NULL, CONSTRAINT "confirmation_requests_pkey" PRIMARY KEY ("id"));
+CREATE TABLE "confirmation_responses" ("id" UUID NOT NULL, "confirmationRequestId" UUID NOT NULL, "decision" "ConfirmationDecision" NOT NULL, "sourceIpHash" TEXT, "userAgentHash" TEXT, "respondedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, CONSTRAINT "confirmation_responses_pkey" PRIMARY KEY ("id"));
+CREATE TABLE "confirmation_deliveries" ("id" UUID NOT NULL, "confirmationRequestId" UUID NOT NULL, "provider" TEXT NOT NULL, "providerMessageId" TEXT, "recipientHash" TEXT NOT NULL, "status" "ConfirmationDeliveryStatus" NOT NULL DEFAULT 'QUEUED', "failureReason" TEXT, "sentAt" TIMESTAMP(3), "deliveredAt" TIMESTAMP(3), "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, "updatedAt" TIMESTAMP(3) NOT NULL, CONSTRAINT "confirmation_deliveries_pkey" PRIMARY KEY ("id"));
+CREATE UNIQUE INDEX "confirmation_requests_tokenHash_key" ON "confirmation_requests"("tokenHash");
+CREATE INDEX "confirmation_requests_targetType_targetId_createdAt_idx" ON "confirmation_requests"("targetType", "targetId", "createdAt");
+CREATE INDEX "confirmation_requests_status_expiresAt_idx" ON "confirmation_requests"("status", "expiresAt");
+CREATE UNIQUE INDEX "confirmation_responses_confirmationRequestId_key" ON "confirmation_responses"("confirmationRequestId");
+CREATE UNIQUE INDEX "confirmation_deliveries_providerMessageId_key" ON "confirmation_deliveries"("providerMessageId");
+CREATE INDEX "confirmation_deliveries_confirmationRequestId_createdAt_idx" ON "confirmation_deliveries"("confirmationRequestId", "createdAt");
+CREATE INDEX "confirmation_deliveries_status_createdAt_idx" ON "confirmation_deliveries"("status", "createdAt");
+ALTER TABLE "confirmation_requests" ADD CONSTRAINT "confirmation_requests_physicalDonationId_fkey" FOREIGN KEY ("physicalDonationId") REFERENCES "physical_donations"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "confirmation_responses" ADD CONSTRAINT "confirmation_responses_confirmationRequestId_fkey" FOREIGN KEY ("confirmationRequestId") REFERENCES "confirmation_requests"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "confirmation_deliveries" ADD CONSTRAINT "confirmation_deliveries_confirmationRequestId_fkey" FOREIGN KEY ("confirmationRequestId") REFERENCES "confirmation_requests"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

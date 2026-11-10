@@ -1,0 +1,1 @@
+export const CONFIRMATION_EVENTS = Object.freeze({ CREATED: 'confirmation.created', SENT: 'confirmation.sent', ACCEPTED: 'confirmation.accepted', REJECTED: 'confirmation.rejected', EXPIRED: 'confirmation.expired', SUPERSEDED: 'confirmation.superseded', DELIVERY_FAILED: 'confirmation.delivery-failed' });
