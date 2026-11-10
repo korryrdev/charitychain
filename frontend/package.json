@@ -1,5 +1,5 @@
 {
-  "name": "charity-chain",
+  "name": "@charitychain/frontend",
   "private": true,
   "version": "0.0.0",
   "type": "module",
