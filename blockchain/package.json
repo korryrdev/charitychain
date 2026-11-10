@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "compile": "hardhat compile",
-    "test": "hardhat test",
+    "test": "node --test test/unit/*.test.js",
     "clean": "hardhat clean"
   },
   "dependencies": {

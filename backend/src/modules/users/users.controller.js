@@ -21,6 +21,12 @@ export function createUsersController(service = usersService) {
     ),
     updateStatus: handle(async (req, res) =>
       res.json({ user: await service.updateStatus(req.params.userId, req.body.status) })
+    ),
+    create: handle(async (req, res) =>
+      res.status(201).json({ user: await service.createUser(req.auth, req.body) })
+    ),
+    updateRoles: handle(async (req, res) =>
+      res.json({ user: await service.updateRoles(req.auth, req.params.userId, req.body.roles) })
     )
   };
 }

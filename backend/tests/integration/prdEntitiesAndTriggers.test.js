@@ -37,7 +37,7 @@ describe('G05: PRD Entities and Append-Only Database Triggers', () => {
         sourceRefHash: '0x' + 'bb'.repeat(32),
         donorRef: '0x' + 'cc'.repeat(32),
         totalAmountMinor: 500000n,
-        remainingAmountMinor: 500000n,
+        remainingAmountMinor: 450000n, // 50,000 allocated in test below
         channel: 'MPESA',
       },
     });

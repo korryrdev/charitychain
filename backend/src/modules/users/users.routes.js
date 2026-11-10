@@ -5,8 +5,10 @@ import { requireMfa } from '../../middleware/requireMfa.js';
 import { validateRequest } from '../../middleware/validateRequest.js';
 import { usersController } from './users.controller.js';
 import {
+  createUserSchema,
   listUsersQuerySchema,
   updateProfileSchema,
+  updateUserRolesSchema,
   updateUserStatusSchema,
   userIdParamsSchema
 } from './users.validation.js';
@@ -20,11 +22,23 @@ export function createUsersRouter(controller = usersController) {
     validateRequest({ query: listUsersQuerySchema }),
     controller.list
   );
+  router.post(
+    '/',
+    authorize(PERMISSIONS.USER_MANAGE),
+    validateRequest({ body: createUserSchema }),
+    controller.create
+  );
   router.get('/:userId', validateRequest({ params: userIdParamsSchema }), controller.get);
   router.patch(
     '/:userId/profile',
     validateRequest({ params: userIdParamsSchema, body: updateProfileSchema }),
     controller.updateProfile
+  );
+  router.patch(
+    '/:userId/roles',
+    authorize(PERMISSIONS.USER_MANAGE),
+    validateRequest({ params: userIdParamsSchema, body: updateUserRolesSchema }),
+    controller.updateRoles
   );
   router.patch(
     '/:userId/status',

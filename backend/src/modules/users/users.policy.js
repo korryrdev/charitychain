@@ -10,3 +10,8 @@ export function assertCanUpdateUser(auth, userId) {
   if (auth.user.id === userId || auth.permissions.includes(PERMISSIONS.USER_MANAGE)) return;
   throw new AuthorizationError();
 }
+
+export function assertCanManageUser(auth) {
+  if (auth?.permissions?.includes(PERMISSIONS.USER_MANAGE)) return;
+  throw new AuthorizationError();
+}
