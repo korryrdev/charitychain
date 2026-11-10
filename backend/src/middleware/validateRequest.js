@@ -27,7 +27,12 @@ export function validateRequest(schemas = {}) {
             formatIssues(result.error.issues)
           );
         }
-        request[segment] = result.data;
+        Object.defineProperty(request, segment, {
+          value: result.data,
+          writable: true,
+          configurable: true,
+          enumerable: true
+        });
       }
       next();
     } catch (error) {

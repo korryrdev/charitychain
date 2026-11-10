@@ -246,17 +246,74 @@ const MOCK_STATS: TransparencyStats = {
   ],
 };
 
+async function fetchApi<T>(url: string, options?: RequestInit): Promise<T | null> {
+  try {
+    const res = await fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options?.headers || {}),
+      },
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
 export const api = {
   // Public Trace
   getDonationTrace: async (receiptCode: string): Promise<DonationTrace | null> => {
-    await new Promise((r) => setTimeout(r, 400));
     const normalized = receiptCode.trim().toUpperCase();
-    return MOCK_DONATIONS[normalized] || null;
+    if (MOCK_DONATIONS[normalized]) {
+      return MOCK_DONATIONS[normalized];
+    }
+    if (normalized.startsWith('MAL-')) {
+      const remote = await fetchApi<{ donation: Record<string, any> }>('/api/v1/public/donations/track', {
+        method: 'POST',
+        body: JSON.stringify({ trackingId: normalized, verificationSecret: '' }),
+      });
+      if (remote?.donation) {
+        return {
+          id: remote.donation.id,
+          receiptCode: normalized,
+          sourceRef: remote.donation.channelReference || 'REF-OK',
+          channel: remote.donation.channel === 'BANK' ? 'BANK' : 'MPESA',
+          amountMinor: Math.round(Number(remote.donation.amount || 0) * 100),
+          currency: 'KES',
+          recordedAt: remote.donation.createdAt,
+          status: remote.donation.status === 'CONFIRMED' ? 'FULLY_ALLOCATED' : 'POOLED',
+          recordHash: remote.donation.recordHash || '0x0000000000000000000000000000000000000000000000000000000000000000',
+          donorDisplayMode: 'ALIAS',
+          allocations: [],
+        };
+      }
+    }
+    return null;
   },
 
   // Public Stats
   getTransparencyStats: async (): Promise<TransparencyStats> => {
-    await new Promise((r) => setTimeout(r, 200));
+    const remote = await fetchApi<{
+      dashboard: {
+        donations?: { total: number; count: number };
+        disbursements?: { total: number; count: number };
+        centralPoolBalance?: number;
+      };
+    }>('/api/v1/public/transparency/dashboard');
+
+    if (remote?.dashboard && (remote.dashboard.donations?.total || remote.dashboard.donations?.count)) {
+      const d = remote.dashboard;
+      return {
+        ...MOCK_STATS,
+        totalInflowMinor: Math.round(Number(d.donations?.total || 0) * 100),
+        totalOutflowMinor: Math.round(Number(d.disbursements?.total || 0) * 100),
+        activePoolBalanceMinor: Math.round(Number(d.centralPoolBalance || 0) * 100),
+        totalDonationsCount: d.donations?.count || 0,
+        totalCasesDisbursed: d.disbursements?.count || 0,
+      };
+    }
     return MOCK_STATS;
   },
 
@@ -429,7 +486,36 @@ export const api = {
 
   // Recognition Wall (FR-DON-12)
   getRecognitionWall: async (): Promise<{ entries: RecognitionEntry[]; anonymousCount: number }> => {
-    await new Promise((r) => setTimeout(r, 300));
+    const remote = await fetchApi<{
+      items: Array<{
+        id: string;
+        publicAlias?: string;
+        recognitionTier?: string;
+        totalContribution?: number;
+        displayNameMode?: string;
+        user?: { name: string };
+      }>;
+      total: number;
+    }>('/api/v1/public/donors?page=1&pageSize=50');
+
+    if (remote?.items && remote.items.length > 0) {
+      const entries: RecognitionEntry[] = remote.items.map((item) => {
+        const rawTier = (item.recognitionTier || 'SILVER').toUpperCase();
+        const tier = (rawTier === 'GOLD' || rawTier === 'BRONZE' ? rawTier : rawTier === 'PLATINUM' || rawTier === 'DIAMOND' ? 'PATRON' : 'SILVER') as 'BRONZE' | 'SILVER' | 'GOLD' | 'PATRON';
+        return {
+          id: item.id,
+          displayName:
+            item.displayNameMode === 'REAL_NAME' && item.user?.name
+              ? item.user.name
+              : item.publicAlias || 'Anonymous Supporter',
+          displayMode: item.displayNameMode === 'REAL_NAME' ? 'NAMED' : 'ALIAS',
+          tier,
+          awardedMonth: 'Oct 2026',
+          isConsistentGiver: false,
+        };
+      });
+      return { entries, anonymousCount: Math.max(0, remote.total - entries.length) };
+    }
     return { ...MOCK_RECOGNITION, entries: [...MOCK_RECOGNITION.entries] };
   },
 
