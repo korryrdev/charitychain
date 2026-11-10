@@ -1,0 +1,4 @@
+'use strict';
+
+import { ConflictError } from '../../errors/ConflictError.js';
+export function assertCollectionLimits(lines, policy) { const categories = new Set(lines.map(({ categoryCode }) => categoryCode)); if (categories.size > policy.maximumCategories) throw new ConflictError(`A collection may contain at most ${policy.maximumCategories} categories.`); const total = lines.reduce((sum, line) => sum + line.quantity, 0); if (total > policy.maximumTotalUnits) throw new ConflictError(`A collection may contain at most ${policy.maximumTotalUnits} total units.`); const perCategory = new Map(); for (const line of lines) perCategory.set(line.categoryCode, (perCategory.get(line.categoryCode) ?? 0) + line.quantity); for (const [code, quantity] of perCategory) { const limit = policy.categoryLimits[code] ?? policy.categoryLimits.DEFAULT; if (quantity > limit) throw new ConflictError(`${code} collection limit is ${limit} unit(s).`); } }

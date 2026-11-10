@@ -1,0 +1,11 @@
+import { z } from 'zod';
+export const inventoryIdParamsSchema = z.object({ batchId: z.uuid() }).strict();
+export const donationInventoryParamsSchema = z.object({ donationId: z.uuid() }).strict();
+export const createCategorySchema = z.object({ code: z.string().trim().regex(/^[A-Z0-9_]{2,40}$/), name: z.string().trim().min(2).max(100), description: z.string().trim().max(500).optional() }).strict();
+export const createLocationSchema = z.object({ code: z.string().trim().regex(/^[A-Z0-9_-]{2,40}$/), name: z.string().trim().min(2).max(100) }).strict();
+export const receiveDonationSchema = z.object({ locationId: z.uuid(), lines: z.array(z.object({ lineId: z.uuid(), categoryCode: z.string().trim().regex(/^[A-Z0-9_]{2,40}$/), categoryName: z.string().trim().min(2).max(100), sku: z.string().trim().regex(/^[A-Z0-9_-]{2,60}$/), batchNumber: z.string().trim().min(4).max(80), expiresAt: z.coerce.date().optional() }).strict()).min(1) }).strict();
+export const inventoryListQuerySchema = z.object({ categoryId: z.uuid().optional(), locationId: z.uuid().optional(), status: z.enum(['AVAILABLE','RESERVED','DEPLETED','EXPIRED','QUARANTINED','DISPOSED']).optional(), page: z.coerce.number().int().positive().default(1), pageSize: z.coerce.number().int().positive().max(100).default(25) }).strict();
+export const adjustmentSchema = z.object({ quantity: z.coerce.number().int().refine((value) => value !== 0), reason: z.string().trim().min(5).max(500), referenceId: z.string().trim().min(4).max(120) }).strict();
+export const reservationSchema = z.object({ batchId: z.uuid(), targetType: z.string().trim().min(2).max(50), targetId: z.string().trim().min(2).max(100), quantity: z.coerce.number().int().positive(), expiresAt: z.coerce.date().refine((date) => date > new Date(), 'Expiry must be in the future.') }).strict();
+export const reservationIdParamsSchema = z.object({ reservationId: z.uuid() }).strict();
+export const stockCountSchema = z.object({ locationId: z.uuid(), notes: z.string().trim().max(500).optional(), lines: z.array(z.object({ batchId: z.uuid(), countedQuantity: z.coerce.number().int().nonnegative(), reason: z.string().trim().max(500).optional() }).strict()).min(1) }).strict();

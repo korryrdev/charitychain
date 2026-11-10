@@ -1,0 +1,45 @@
+{
+  "name": "@charitychain/backend",
+  "version": "0.1.0",
+  "description": "CharityChain HTTP API and background processing service",
+  "private": true,
+  "type": "module",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "build": "node scripts/checkBuild.js && eslint src scripts tests --max-warnings=0",
+    "check": "npm run build && npm run test",
+    "test": "vitest run tests",
+    "test:unit": "vitest run tests/unit --maxWorkers=1",
+    "test:api": "vitest run tests/api --maxWorkers=1",
+    "test:integration": "vitest run tests/integration --maxWorkers=1 --testTimeout=30000",
+    "test:security": "vitest run tests/security --maxWorkers=1",
+    "test:verify": "node scripts/verifyBackend.js",
+    "test:watch": "vitest tests",
+    "test:coverage": "vitest run tests --coverage"
+  },
+  "dependencies": {
+    "@charitychain/database": "*",
+    "@charitychain/shared": "*",
+    "better-auth": "^1.7.18",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.3.0",
+    "helmet": "^8.1.0",
+    "pino": "^10.3.1",
+    "pino-http": "^11.0.0",
+    "web3": "^4.16.0",
+    "zod": "^4.6.6"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^5.1.0",
+    "eslint": "^9.39.5",
+    "supertest": "^7.2.2",
+    "vitest": "^5.1.0"
+  }
+}

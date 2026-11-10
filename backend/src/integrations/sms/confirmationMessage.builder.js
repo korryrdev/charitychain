@@ -1,0 +1,2 @@
+import { env } from '../../config/environment.js';
+export function buildPhysicalDonationConfirmation({ donorName, lines, token, expiresAt }) { const summary = lines.map((line) => `${line.quantity} ${line.unit} ${line.itemName}${line.declaredValue ? ` (KES ${line.declaredValue})` : ''}`).join(', '); const url = `${env.APP_URL}/confirm?token=${encodeURIComponent(token)}`; return `CharityChain confirmation for ${donorName}: ${summary}. Confirm YES or NO before ${expiresAt.toLocaleTimeString('en-KE', { timeZone: 'Africa/Nairobi' })}: ${url}`; }

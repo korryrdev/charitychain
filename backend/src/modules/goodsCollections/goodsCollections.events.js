@@ -1,0 +1,1 @@
+export const GOODS_COLLECTION_EVENTS = Object.freeze({ RESERVED: 'goods.collection.reserved', CONFIRMATION_SENT: 'goods.collection.confirmation.sent', CONFIRMED: 'goods.collection.confirmed', REJECTED: 'goods.collection.rejected', RELEASED: 'goods.collection.released', EXPIRED: 'goods.collection.expired' });

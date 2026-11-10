@@ -1,0 +1,3 @@
+'use strict';
+
+export function toGoodsCollection(item) { return Object.freeze({ id: item.id, reference: item.reference, studentId: item.studentId, registrationNumber: item.student?.registrationNumber, semesterId: item.semesterId, status: item.status, policyVersion: item.policyVersion, confirmationRequestId: item.confirmationRequestId, reservedAt: item.reservedAt, confirmedAt: item.confirmedAt, rejectedAt: item.rejectedAt, releasedAt: item.releasedAt, lines: item.lines.map((line) => ({ id: line.id, batchId: line.batchId, categoryCode: line.categoryCode, itemName: line.itemName, unit: line.unit, quantity: line.quantity, reservationId: line.reservationId })) }); }

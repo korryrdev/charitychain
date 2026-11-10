@@ -1,0 +1,16 @@
+'use strict';
+
+import { ConflictError } from '../../errors/ConflictError.js';
+import { assertCanManageCommittee } from './committee.policy.js';
+import { committeeRepository } from './committee.repository.js';
+
+function eligible(user) { return user?.status === 'ACTIVE' && user.emailVerified && user.twoFactorEnabled; }
+function prismaConflict(error, message) { if (error.code === 'P2002') throw new ConflictError(message); throw error; }
+export function createMembershipService(repository = committeeRepository) { return {
+  async appoint(auth, input) { assertCanManageCommittee(auth); const [user, currentMembership] = await Promise.all([repository.findUser(input.userId), repository.findCurrentByUser(input.userId)]); if (!user) throw new ConflictError('The selected user does not exist.'); if (currentMembership) throw new ConflictError('The user already has a current active or suspended committee membership.'); if (!eligible(user)) throw new ConflictError('Committee signatories must have an active, verified account with two-factor authentication enabled.'); if (input.termStartsAt > new Date()) throw new ConflictError('A signatory term cannot begin in the future.'); if (input.termEndsAt <= new Date()) throw new ConflictError('A signatory term must end in the future.'); try { return await repository.appoint({ userId: input.userId, seat: input.seat, appointedById: auth.user.id, termStartsAt: input.termStartsAt, termEndsAt: input.termEndsAt }, auth.user.id, input.reason); } catch (error) { return prismaConflict(error, 'The user or committee seat already has an active signatory assignment.'); } },
+  async suspend(auth, id, input) { assertCanManageCommittee(auth); return this.transition(auth, id, input, 'SUSPENDED', ['ACTIVE']); },
+  async reactivate(auth, id, input) { assertCanManageCommittee(auth); const membership = await repository.findMembership(id); if (!membership) throw new ConflictError('Committee membership not found.'); if (!eligible(membership.user) || membership.termEndsAt <= new Date()) throw new ConflictError('The member is no longer eligible for active signatory duties.'); try { return await this.transition(auth, id, input, 'ACTIVE', ['SUSPENDED']); } catch (error) { return prismaConflict(error, 'The committee seat or user already has another active membership.'); } },
+  async end(auth, id, input) { assertCanManageCommittee(auth); return this.transition(auth, id, input, 'ENDED', ['ACTIVE','SUSPENDED'], { endedAt: new Date(), endReason: input.reason }); },
+  async transition(auth, id, input, target, allowed, extra = {}) { const membership = await repository.findMembership(id); if (!membership) throw new ConflictError('Committee membership not found.'); if (membership.version !== input.version) throw new ConflictError('The committee membership changed concurrently.'); if (!allowed.includes(membership.status)) throw new ConflictError(`Membership cannot transition from ${membership.status} to ${target}.`); const updated = await repository.transition(membership, target, auth.user.id, input.reason, extra); if (!updated) throw new ConflictError('The committee membership changed concurrently.'); return updated; }
+}; }
+export const membershipService = createMembershipService();

@@ -1,0 +1,21 @@
+import { env } from '../../config/environment.js';
+import { AppError } from '../../errors/AppError.js';
+import { ERROR_CODES } from '../../errors/errorCodes.js';
+import { blindIndex } from '../../security/encryption.js';
+import { buildPhysicalDonationConfirmation } from '../../integrations/sms/confirmationMessage.builder.js';
+import { createSmsProvider } from '../../integrations/sms/smsProviderFactory.js';
+import { physicalDonationsService } from '../physicalDonations/physicalDonations.service.js';
+import { confirmationExpiryService } from './confirmationExpiry.service.js';
+import { confirmationsRepository } from './confirmations.repository.js';
+import { assertCanCreateConfirmation } from './confirmations.policy.js';
+import { createConfirmationToken, hashConfirmationToken } from './confirmationToken.service.js';
+
+function invalid(message = 'Confirmation is invalid or no longer active.', code = ERROR_CODES.CONFIRMATION_INVALID) { return new AppError({ message, code, statusCode: 409, expose: true }); }
+function view(request) { return { id: request.id, targetType: request.targetType, targetId: request.targetId, status: request.status, expiresAt: request.expiresAt, sentAt: request.sentAt, completedAt: request.completedAt, createdAt: request.createdAt, deliveries: request.deliveries?.map((delivery) => ({ provider: delivery.provider, status: delivery.status, sentAt: delivery.sentAt, deliveredAt: delivery.deliveredAt, failureReason: delivery.failureReason })) ?? [] }; }
+
+export function createConfirmationsService({ repository = confirmationsRepository, physicalDonations = physicalDonationsService, expiry = confirmationExpiryService, smsProvider = null, ttlMinutes = env.CONFIRMATION_TTL_MINUTES } = {}) { return {
+  async issueForPhysicalDonation(auth, donationId) { assertCanCreateConfirmation(auth); const provider = smsProvider ?? createSmsProvider(); const target = await physicalDonations.confirmationTarget(donationId); const token = createConfirmationToken(); const expiresAt = new Date(Date.now() + ttlMinutes * 60_000); const request = await repository.supersedeAndCreate({ targetType: 'PHYSICAL_DONATION', targetId: donationId, physicalDonationId: donationId, tokenHash: token.tokenHash, tokenPrefix: token.tokenPrefix, expiresAt, createdByUserId: auth.user.id }); const delivery = await repository.createDelivery({ confirmationRequestId: request.id, provider: provider.name, recipientHash: blindIndex(target.phoneNumber) }); try { const message = buildPhysicalDonationConfirmation({ ...target, token: token.token, expiresAt }); const sent = await provider.send({ to: target.phoneNumber, message }); await repository.markDeliverySent(delivery.id, sent.providerMessageId); return view(await repository.markRequestSent(request.id)); } catch (error) { await repository.markDeliveryFailed(delivery.id, error.message); await repository.markRequestDeliveryFailed(request.id); throw error; } },
+  async get(auth, id) { assertCanCreateConfirmation(auth); const request = await repository.findById(id); if (!request) throw invalid(); return view(request); },
+  async respond({ token, decision, ipAddress, userAgent }) { const tokenHash = hashConfirmationToken(token); let request = await repository.findByTokenHash(tokenHash); if (!request) throw invalid(); if (['ACCEPTED','REJECTED'].includes(request.status)) return { accepted: true, alreadyProcessed: true, status: request.status }; if (expiry.isExpired(request)) { await repository.expire(request.id); throw invalid('Confirmation has expired.', ERROR_CODES.CONFIRMATION_EXPIRED); } request = await repository.claim(request.id); if (!request) throw invalid(); try { if (request.targetType === 'PHYSICAL_DONATION') await physicalDonations.recordDonorDecision(request.targetId, decision === 'YES'); else throw invalid('Confirmation target is not supported.'); const completed = await repository.complete(request.id, decision, { sourceIpHash: ipAddress ? blindIndex(ipAddress) : null, userAgentHash: userAgent ? blindIndex(userAgent) : null }); return { accepted: true, alreadyProcessed: false, status: completed.status }; } catch (error) { await repository.release(request.id); throw error; } }
+}; }
+export const confirmationsService = createConfirmationsService();

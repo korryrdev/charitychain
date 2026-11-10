@@ -1,0 +1,14 @@
+CREATE TYPE "AssistanceApplicationType" AS ENUM ('TUITION','UPKEEP');
+CREATE TYPE "AssistanceApplicationStatus" AS ENUM ('DRAFT','SUBMITTED','VETTING','VERIFIED','MANUAL_REVIEW','REJECTED','AWAITING_APPROVALS','APPROVED','DECLINED','DISBURSEMENT_PENDING','FUNDED','CANCELLED');
+CREATE TABLE "assistance_applications" ("id" UUID NOT NULL,"reference" TEXT NOT NULL,"studentId" UUID NOT NULL,"semesterId" UUID NOT NULL,"type" "AssistanceApplicationType" NOT NULL,"requestedAmount" DECIMAL(18,2) NOT NULL,"currency" TEXT NOT NULL DEFAULT 'KES',"reason" TEXT NOT NULL,"status" "AssistanceApplicationStatus" NOT NULL DEFAULT 'DRAFT',"financialRecordId" UUID NOT NULL,"outstandingBalanceSnapshot" DECIMAL(18,2) NOT NULL,"version" INTEGER NOT NULL DEFAULT 1,"submittedAt" TIMESTAMP(3),"cancelledAt" TIMESTAMP(3),"completedAt" TIMESTAMP(3),"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,"updatedAt" TIMESTAMP(3) NOT NULL,CONSTRAINT "assistance_applications_pkey" PRIMARY KEY ("id"));
+CREATE TABLE "assistance_application_history" ("id" UUID NOT NULL,"applicationId" UUID NOT NULL,"fromStatus" "AssistanceApplicationStatus","toStatus" "AssistanceApplicationStatus" NOT NULL,"actorUserId" UUID,"reason" TEXT,"version" INTEGER NOT NULL,"createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,CONSTRAINT "assistance_application_history_pkey" PRIMARY KEY ("id"));
+CREATE UNIQUE INDEX "assistance_applications_reference_key" ON "assistance_applications"("reference");
+CREATE INDEX "assistance_applications_studentId_createdAt_idx" ON "assistance_applications"("studentId","createdAt");
+CREATE INDEX "assistance_applications_semesterId_status_createdAt_idx" ON "assistance_applications"("semesterId","status","createdAt");
+CREATE UNIQUE INDEX "assistance_applications_studentId_semesterId_type_key" ON "assistance_applications"("studentId","semesterId","type");
+CREATE INDEX "assistance_application_history_applicationId_createdAt_idx" ON "assistance_application_history"("applicationId","createdAt");
+CREATE INDEX "assistance_application_history_toStatus_createdAt_idx" ON "assistance_application_history"("toStatus","createdAt");
+ALTER TABLE "assistance_applications" ADD CONSTRAINT "assistance_applications_studentId_fkey" FOREIGN KEY ("studentId") REFERENCES "students"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "assistance_applications" ADD CONSTRAINT "assistance_applications_semesterId_fkey" FOREIGN KEY ("semesterId") REFERENCES "academic_semesters"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "assistance_applications" ADD CONSTRAINT "assistance_applications_financialRecordId_fkey" FOREIGN KEY ("financialRecordId") REFERENCES "student_financial_records"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "assistance_application_history" ADD CONSTRAINT "assistance_application_history_applicationId_fkey" FOREIGN KEY ("applicationId") REFERENCES "assistance_applications"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

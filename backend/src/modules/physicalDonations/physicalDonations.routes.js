@@ -1,0 +1,9 @@
+import { Router } from 'express';
+import { PERMISSIONS } from '../../constants/permissions.js';
+import { authorize } from '../../middleware/authorize.js';
+import { idempotency } from '../../middleware/idempotency.js';
+import { validateRequest } from '../../middleware/validateRequest.js';
+import { physicalDonationsController } from './physicalDonations.controller.js';
+import { cashDepositMatchSchema, cashDepositSchema, createPhysicalDonationSchema, inspectionSchema, physicalDonationIdParamsSchema, physicalDonationListQuerySchema } from './physicalDonations.validation.js';
+export function createPhysicalDonationsRouter(controller = physicalDonationsController) { const router = Router(); router.get('/', validateRequest({ query: physicalDonationListQuerySchema }), controller.list); router.post('/', authorize(PERMISSIONS.PHYSICAL_DONATION_RECORD), validateRequest({ body: createPhysicalDonationSchema }), idempotency, controller.create); router.get('/:donationId', validateRequest({ params: physicalDonationIdParamsSchema }), controller.get); router.post('/:donationId/submit', authorize(PERMISSIONS.PHYSICAL_DONATION_RECORD), validateRequest({ params: physicalDonationIdParamsSchema }), controller.submit); router.post('/:donationId/inspect', authorize(PERMISSIONS.PHYSICAL_DONATION_INSPECT), validateRequest({ params: physicalDonationIdParamsSchema, body: inspectionSchema }), controller.inspect); router.post('/:donationId/cash-deposits', authorize(PERMISSIONS.PHYSICAL_DONATION_RECORD), validateRequest({ params: physicalDonationIdParamsSchema, body: cashDepositSchema }), idempotency, controller.recordCashDeposit); router.post('/cash-deposits/match', authorize(PERMISSIONS.RECONCILIATION_EXECUTE), validateRequest({ body: cashDepositMatchSchema }), controller.matchCashDeposit); return router; }
+export const physicalDonationsRouter = createPhysicalDonationsRouter();

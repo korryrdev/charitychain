@@ -1,0 +1,1 @@
+export const PAYMENT_EVENTS = Object.freeze({ ATTEMPT_CREATED: 'payment.attempt.created', PROVIDER_ACCEPTED: 'payment.provider.accepted', PROVIDER_EVENT_RECEIVED: 'payment.provider.event.received', PAYMENT_SUCCEEDED: 'payment.succeeded', PAYMENT_FAILED: 'payment.failed', PAYMENT_REVERSED: 'payment.reversed' });

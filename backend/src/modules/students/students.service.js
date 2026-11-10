@@ -1,0 +1,9 @@
+import { AppError } from '../../errors/AppError.js';
+import { ConflictError } from '../../errors/ConflictError.js';
+import { ERROR_CODES } from '../../errors/errorCodes.js';
+import { toStudent } from './students.mapper.js';
+import { assertCanClaim, assertCanManageStudents, assertCanReadStudent } from './students.policy.js';
+import { studentsRepository } from './students.repository.js';
+function notFound() { return new AppError({ message: 'Student record not found.', code: ERROR_CODES.STUDENT_NOT_FOUND, statusCode: 404 }); }
+export function createStudentsService(repository = studentsRepository) { return { async claim(auth, registrationNumber) { assertCanClaim(auth); const current = await repository.findByUserId(auth.user.id); if (current) { if (current.registrationNumber === registrationNumber) return toStudent(current); throw new ConflictError('This account is already linked to another student record.'); } const student = await repository.findByRegistrationNumber(registrationNumber); if (!student || student.academicStatus !== 'ACTIVE') throw notFound(); try { const claimed = await repository.claim(student.id, auth.user.id); if (!claimed) throw new ConflictError('Student record is already linked to another account.'); return toStudent(claimed); } catch (error) { if (error.code === 'P2002') throw new ConflictError('This account or student record is already linked.'); throw error; } }, async mine(auth) { assertCanClaim(auth); const student = await repository.findByUserId(auth.user.id); if (!student) throw notFound(); return toStudent(student); }, async get(auth, id) { const student = await repository.findById(id); if (!student) throw notFound(); assertCanReadStudent(auth, student); return toStudent(student); }, async list(auth, query) { assertCanManageStudents(auth); const result = await repository.list(query); return { ...result, items: result.items.map(toStudent) }; } }; }
+export const studentsService = createStudentsService();

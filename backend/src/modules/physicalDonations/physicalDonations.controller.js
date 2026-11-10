@@ -1,0 +1,7 @@
+import { physicalCashDepositService } from './physicalCashDeposit.service.js';
+import { physicalDonationInspectionService } from './physicalDonationInspection.service.js';
+import { physicalDonationsService } from './physicalDonations.service.js';
+export function createPhysicalDonationsController({ service = physicalDonationsService, inspection = physicalDonationInspectionService, cash = physicalCashDepositService } = {}) { const handle = (operation) => async (req,res,next) => { try { await operation(req,res); } catch (error) { next(error); } }; return {
+  create: handle(async (req,res) => res.status(201).json({ donation: await service.create(req.auth, req.body) })), submit: handle(async (req,res) => res.json({ donation: await service.submit(req.auth, req.params.donationId) })), get: handle(async (req,res) => res.json({ donation: await service.get(req.auth, req.params.donationId) })), list: handle(async (req,res) => res.json(await service.list(req.auth, req.query))), inspect: handle(async (req,res) => res.json({ donation: await inspection.inspect(req.auth, req.params.donationId, req.body) })), recordCashDeposit: handle(async (req,res) => res.status(201).json({ deposit: await cash.record(req.params.donationId, req.body) })), matchCashDeposit: handle(async (req,res) => res.json({ deposit: await cash.match(req.body.depositReference) }))
+}; }
+export const physicalDonationsController = createPhysicalDonationsController();
