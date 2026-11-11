@@ -1,0 +1,4 @@
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { moneyDonationsApi } from '../../features/moneyDonations/services/moneyDonations.api.js';
+export function ReceiptsPage() { const [items, setItems] = useState([]); useEffect(() => { moneyDonationsApi.listMine().then((response) => setItems((response.items ?? []).filter((item) => item.receipt))).catch(() => setItems([])); }, []); return <main className="portal-page donor-page"><p className="section-kicker">Receipts</p><h1>Contribution evidence.</h1><div className="receipt-list">{items.length ? items.map((item) => <Link to={`/donor/donations/${item.id}`} key={item.id}><strong>{item.receipt.receiptNumber}</strong><span>KES {Number(item.amount).toLocaleString()} · {new Date(item.receipt.issuedAt).toLocaleDateString()}</span></Link>) : <p>Receipts will appear after a donation has been confirmed.</p>}</div></main>; }

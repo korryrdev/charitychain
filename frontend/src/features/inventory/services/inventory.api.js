@@ -1,0 +1,7 @@
+import { httpClient } from '../../../services/httpClient.js';
+const query = (values = {}) => { const text = new URLSearchParams(Object.entries(values).filter(([, value]) => value !== undefined && value !== null && value !== '')).toString(); return text ? `?${text}` : ''; };
+export const inventoryApi = Object.freeze({
+  list: (filters) => httpClient.get(`/inventory${query(filters)}`), get: (batchId) => httpClient.get(`/inventory/${batchId}`), adjust: (batchId, payload) => httpClient.post(`/inventory/${batchId}/adjustments`, payload),
+  physicalDonations: (filters) => httpClient.get(`/physical-donations${query(filters)}`), physicalDonation: (id) => httpClient.get(`/physical-donations/${id}`), recordPhysicalDonation: (payload) => httpClient.post('/physical-donations', payload), submitPhysicalDonation: (id) => httpClient.post(`/physical-donations/${id}/submit`), requestDonorConfirmation: (id) => httpClient.post(`/confirmations/physical-donations/${id}`), inspect: (id, payload) => httpClient.post(`/physical-donations/${id}/inspect`, payload), receiveDonation: (id, payload) => httpClient.post(`/inventory/receive/physical-donations/${id}`, payload), recordCashDeposit: (id, payload) => httpClient.post(`/physical-donations/${id}/cash-deposits`, payload),
+  collections: () => httpClient.get('/goods-collections/mine'), collection: (id) => httpClient.get(`/goods-collections/${id}`), releaseCollection: (id) => httpClient.post(`/goods-collections/${id}/release`)
+});

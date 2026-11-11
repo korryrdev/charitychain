@@ -1,0 +1,1 @@
+export function formatDate(value, { locale = 'en-KE', includeTime = false } = {}) { const date = value instanceof Date ? value : new Date(value); if (Number.isNaN(date.getTime())) return '—'; return new Intl.DateTimeFormat(locale, includeTime ? { dateStyle: 'medium', timeStyle: 'short' } : { dateStyle: 'medium' }).format(date); }

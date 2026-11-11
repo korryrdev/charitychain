@@ -1,0 +1,2 @@
+import { describe, expect, it } from 'vitest'; import { createElement } from 'react'; import { renderToStaticMarkup } from 'react-dom/server'; import { PayoutStatus } from '../components/PayoutStatus.jsx';
+describe('payout status', () => { it('renders a failed payout without changing its approved amount', () => { const html = renderToStaticMarkup(createElement(PayoutStatus, { payout: { status: 'FAILED', type: 'TUITION_B2B', amount: '42000', failureMessage: 'Provider timeout' } })); expect(html).toContain('42,000'); expect(html).toContain('Provider timeout'); }); });

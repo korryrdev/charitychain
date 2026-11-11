@@ -1,0 +1,1 @@
+export function maskValue(value, { visible = 4, replacement = '•' } = {}) { const text = String(value ?? ''); if (!text) return '—'; if (text.length <= visible) return replacement.repeat(text.length); return `${replacement.repeat(text.length - visible)}${text.slice(-visible)}`; }

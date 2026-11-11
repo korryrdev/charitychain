@@ -1,0 +1,1 @@
+export const INVENTORY_EVENTS = Object.freeze({ RECEIVED: 'inventory.received', RESERVED: 'inventory.reserved', RELEASED: 'inventory.released', ISSUED: 'inventory.issued', ADJUSTED: 'inventory.adjusted', COUNTED: 'inventory.counted', EXPIRED: 'inventory.expired' });

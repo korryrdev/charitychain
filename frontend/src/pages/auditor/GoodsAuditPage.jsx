@@ -1,0 +1,2 @@
+import{useEffect,useState}from'react';import{auditApi}from'../../features/auditTrail/services/audit.api.js';import{AuditTimeline}from'../../features/auditTrail/components/AuditTimeline.jsx';
+export function GoodsAuditPage(){const[items,setItems]=useState([]);useEffect(()=>{auditApi.events('?entityType=goodsCollection').then((v)=>setItems(v.items??[])).catch(()=>{});},[]);return <main className="portal-page auditor-page"><p className="section-kicker">Goods audit</p><h1>Physical donation and collection events.</h1><AuditTimeline items={items}/></main>;}

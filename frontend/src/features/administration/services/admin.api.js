@@ -1,0 +1,2 @@
+import { httpClient } from '../../../services/httpClient.js';
+export const adminApi=Object.freeze({users:()=>httpClient.get('/users?pageSize=100'),roles:()=>httpClient.get('/roles'),setUserStatus:(id,payload)=>httpClient.request(`/users/${id}/status`,{method:'PATCH',body:payload}),assignRole:(id,role)=>httpClient.request(`/roles/users/${id}/${role}`,{method:'PUT'}),health:()=>httpClient.get('/health')});

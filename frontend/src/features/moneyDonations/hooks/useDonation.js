@@ -1,0 +1,3 @@
+import { useCallback, useState } from 'react';
+import { moneyDonationsApi } from '../services/moneyDonations.api.js';
+export function useDonation(api = moneyDonationsApi) { const [state, setState] = useState({ pending: false, donation: null, trackingSecret: null, error: null }); const create = useCallback(async (input) => { setState({ pending: true, donation: null, trackingSecret: null, error: null }); try { const response = await api.create(input); setState({ pending: false, donation: response.donation, trackingSecret: response.verificationSecret, error: null }); return response; } catch (error) { setState({ pending: false, donation: null, trackingSecret: null, error: error.message }); throw error; } }, [api]); return { ...state, create }; }

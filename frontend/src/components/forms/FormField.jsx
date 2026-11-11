@@ -1,0 +1,1 @@
+export function FormField({ id, label, error, hint, children }) { return <div className="form-field"><label htmlFor={id}>{label}</label>{children}{hint && <small id={`${id}-hint`}>{hint}</small>}{error && <p id={`${id}-error`} role="alert">{error}</p>}</div>; }

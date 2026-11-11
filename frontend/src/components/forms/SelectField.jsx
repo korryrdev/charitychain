@@ -1,0 +1,2 @@
+import { FormField } from './FormField.jsx';
+export function SelectField({ id, label, options, error, placeholder = 'Select an option', ...props }) { return <FormField id={id} label={label} error={error}><select id={id} name={props.name ?? id} aria-invalid={Boolean(error)} {...props}><option value="">{placeholder}</option>{options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></FormField>; }

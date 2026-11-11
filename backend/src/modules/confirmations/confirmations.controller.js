@@ -1,0 +1,3 @@
+import { confirmationsService } from './confirmations.service.js';
+export function createConfirmationsController(service = confirmationsService) { const handle = (operation) => async (req,res,next) => { try { await operation(req,res); } catch (error) { next(error); } }; return { issuePhysical: handle(async (req,res) => res.status(202).json({ confirmation: await service.issueForPhysicalDonation(req.auth, req.params.donationId) })), get: handle(async (req,res) => res.json({ confirmation: await service.get(req.auth, req.params.confirmationId) })), respond: handle(async (req,res) => res.json(await service.respond({ ...req.body, ipAddress: req.ip, userAgent: req.get('user-agent') }))) }; }
+export const confirmationsController = createConfirmationsController();

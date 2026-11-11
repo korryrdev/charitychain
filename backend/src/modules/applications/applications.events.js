@@ -1,0 +1,1 @@
+export const APPLICATION_EVENTS = Object.freeze({ CREATED: 'application.created', UPDATED: 'application.updated', SUBMITTED: 'application.submitted', STATUS_CHANGED: 'application.status-changed', CANCELLED: 'application.cancelled' });

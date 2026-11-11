@@ -1,0 +1,4 @@
+import { mpesaClient } from './mpesa.client.js';
+import { mpesaConfig } from './mpesa.config.js';
+export function createB2bAdapter({ client = mpesaClient, config = mpesaConfig } = {}) { return { async send({ amount, accountReference, remarks }) { const payload = { OriginatorConversationID: accountReference, Initiator: config.initiatorName, SecurityCredential: config.securityCredential, CommandID: 'BusinessPayBill', SenderIdentifierType: '4', RecieverIdentifierType: '4', Amount: Number(amount), PartyA: config.shortcode, PartyB: config.universityShortcode, AccountReference: `${config.universityAccount}:${accountReference}`, Remarks: remarks, QueueTimeOutURL: config.disbursementTimeoutUrl, ResultURL: config.disbursementResultUrl }; const response = await client.post(config.b2bPath, payload); return { providerRequestId: response.ConversationID ?? response.OriginatorConversationID, response }; } }; }
+export const b2bAdapter = createB2bAdapter();

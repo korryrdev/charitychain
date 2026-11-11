@@ -1,0 +1,6 @@
+import { z } from 'zod';
+export const createApplicationSchema = z.object({ type: z.enum(['TUITION','UPKEEP']), requestedAmount: z.coerce.number().positive().max(1000000), reason: z.string().trim().min(20).max(2000), semesterCode: z.string().trim().min(5).max(30).optional() }).strict();
+export const updateDraftSchema = z.object({ requestedAmount: z.coerce.number().positive().max(1000000), reason: z.string().trim().min(20).max(2000), version: z.coerce.number().int().positive() }).strict();
+export const applicationIdParamsSchema = z.object({ applicationId: z.uuid() }).strict();
+export const applicationListQuerySchema = z.object({ status: z.enum(['DRAFT','SUBMITTED','VETTING','VERIFIED','MANUAL_REVIEW','REJECTED','AWAITING_APPROVALS','APPROVED','DECLINED','DISBURSEMENT_PENDING','FUNDED','CANCELLED']).optional(), type: z.enum(['TUITION','UPKEEP']).optional(), page: z.coerce.number().int().positive().default(1), pageSize: z.coerce.number().int().positive().max(100).default(25) }).strict();
+export const transitionApplicationSchema = z.object({ status: z.enum(['VETTING','VERIFIED','MANUAL_REVIEW','REJECTED','AWAITING_APPROVALS','APPROVED','DECLINED','DISBURSEMENT_PENDING','FUNDED']), reason: z.string().trim().min(5).max(1000), version: z.coerce.number().int().positive() }).strict();

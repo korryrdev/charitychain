@@ -1,0 +1,1 @@
+export function Alert({ tone = 'info', title, children }) { return <section className={`alert alert--${tone}`} role={tone === 'danger' ? 'alert' : 'status'}><strong>{title}</strong>{children && <div>{children}</div>}</section>; }

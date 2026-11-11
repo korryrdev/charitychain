@@ -1,0 +1,3 @@
+import { Link, useLocation } from 'react-router-dom';
+function label(segment) { return segment.replaceAll('-', ' ').replace(/\b\w/g, (character) => character.toUpperCase()); }
+export function Breadcrumbs() { const { pathname } = useLocation(); const parts = pathname.split('/').filter(Boolean); if (!parts.length) return null; return <nav className="breadcrumbs" aria-label="Breadcrumb"><ol><li><Link to="/">Home</Link></li>{parts.map((part, index) => { const to = `/${parts.slice(0, index + 1).join('/')}`; const current = index === parts.length - 1; return <li key={to}>{current ? <span aria-current="page">{label(part)}</span> : <Link to={to}>{label(part)}</Link>}</li>; })}</ol></nav>; }

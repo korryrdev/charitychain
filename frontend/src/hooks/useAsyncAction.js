@@ -1,0 +1,2 @@
+import { useCallback, useState } from 'react';
+export function useAsyncAction(action) { const [state, setState] = useState({ pending: false, error: null, data: null }); const execute = useCallback(async (...args) => { setState({ pending: true, error: null, data: null }); try { const data = await action(...args); setState({ pending: false, error: null, data }); return data; } catch (error) { setState({ pending: false, error, data: null }); throw error; } }, [action]); return { ...state, execute, reset: () => setState({ pending: false, error: null, data: null }) }; }

@@ -1,0 +1,2 @@
+import { randomUUID } from 'node:crypto';
+export const sandboxBankAdapter = Object.freeze({ async initiate() { return { providerRequestId: `BANK-${randomUUID()}`, status: 'PENDING', responseCode: 'ACCEPTED', responseMessage: 'Sandbox checkout accepted' }; }, async reconcile({ providerTransactionId, reference }) { return { provider: 'sandbox', providerTransactionId, providerRequestId: reference, status: 'PENDING' }; } });

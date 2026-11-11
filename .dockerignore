@@ -1,0 +1,12 @@
+node_modules
+.npm-cache
+.git
+.env
+.env.*
+!.env.example
+frontend/dist
+coverage
+artifacts
+cache
+*.log
+*.pid

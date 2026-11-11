@@ -1,0 +1,3 @@
+import { z } from 'zod';
+export const bankWebhookSchema = z.object({ eventId: z.string(), reference: z.string(), transactionId: z.string().optional(), status: z.enum(['PENDING', 'SUCCEEDED', 'FAILED']), amount: z.coerce.number().positive().optional(), currency: z.string().length(3).default('KES'), message: z.string().optional() }).strict();
+export function mapBankWebhook(input) { const event = bankWebhookSchema.parse(input); return { eventId: event.eventId, eventType: 'BANK_CREDIT', providerRequestId: event.reference, providerTransactionId: event.transactionId, status: event.status, amount: event.amount, currency: event.currency, resultMessage: event.message }; }

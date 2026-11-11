@@ -1,0 +1,4 @@
+'use strict';
+
+import { createSmsProvider } from '../../integrations/sms/smsProviderFactory.js';
+export function createNotificationDeliveryService({ repository, smsProviderFactory = createSmsProvider } = {}) { return { async dispatch(notification, recipientAddress) { const started = await repository.beginDelivery(notification.id); if (!started) throw new Error('Notification delivery attempts are exhausted.'); try { let result; if (notification.channel === 'IN_APP') result = { provider: 'in_app', providerMessageId: null }; else { const provider = smsProviderFactory(); const sent = await provider.send({ to: recipientAddress, message: notification.body }); result = { provider: provider.name, providerMessageId: sent.providerMessageId }; } return repository.delivered(notification.id, started.delivery.id, result); } catch (error) { await repository.failed(notification.id, started.delivery.id, error.message); throw error; } } }; }

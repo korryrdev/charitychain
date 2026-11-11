@@ -1,0 +1,5 @@
+import { AppError } from '../../errors/AppError.js';
+import { ERROR_CODES } from '../../errors/errorCodes.js';
+import { mpesaConfig } from './mpesa.config.js';
+export function createMpesaAuth({ config = mpesaConfig, fetchImpl = fetch } = {}) { let cached; return { async token() { if (cached?.expiresAt > Date.now() + 30_000) return cached.value; const basic = Buffer.from(`${config.consumerKey}:${config.consumerSecret}`).toString('base64'); const response = await fetchImpl(`${config.baseUrl}${config.oauthPath}`, { headers: { Authorization: `Basic ${basic}` }, signal: AbortSignal.timeout(10_000) }); if (!response.ok) throw new AppError({ message: 'M-Pesa authentication failed.', code: ERROR_CODES.INTEGRATION_UNAVAILABLE, statusCode: 503, expose: true, retryable: true }); const body = await response.json(); if (!body.access_token) throw new AppError({ message: 'M-Pesa authentication response was invalid.', code: ERROR_CODES.INTEGRATION_RESPONSE_INVALID, statusCode: 502 }); cached = { value: body.access_token, expiresAt: Date.now() + Number(body.expires_in ?? 3599) * 1000 }; return cached.value; } }; }
+export const mpesaAuth = createMpesaAuth();

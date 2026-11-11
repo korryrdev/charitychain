@@ -1,0 +1,3 @@
+import { studentsService } from './students.service.js';
+export function createStudentsController(service = studentsService) { const handle = (operation) => async (req,res,next) => { try { await operation(req,res); } catch (error) { next(error); } }; return { claim: handle(async (req,res) => res.json({ student: await service.claim(req.auth, req.body.registrationNumber) })), mine: handle(async (req,res) => res.json({ student: await service.mine(req.auth) })), get: handle(async (req,res) => res.json({ student: await service.get(req.auth, req.params.studentId) })), list: handle(async (req,res) => res.json(await service.list(req.auth, req.query))) }; }
+export const studentsController = createStudentsController();

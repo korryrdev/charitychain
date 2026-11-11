@@ -1,0 +1,3 @@
+import { universityRecordsService } from './universityRecords.service.js';
+export function createUniversityRecordsController(service = universityRecordsService) { const handle = (operation) => async (req,res,next) => { try { await operation(req,res); } catch (error) { next(error); } }; return { mine: handle(async (req,res) => res.json({ record: await service.mine(req.auth) })), get: handle(async (req,res) => res.json({ record: await service.get(req.auth, req.params.studentId) })), exams: handle(async (req,res) => res.json({ items: await service.exams(req.auth, req.params.studentId, req.query.semesterCode) })) }; }
+export const universityRecordsController = createUniversityRecordsController();

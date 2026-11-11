@@ -1,0 +1,7 @@
+import { Router } from 'express';
+import { idempotency } from '../../middleware/idempotency.js';
+import { validateRequest } from '../../middleware/validateRequest.js';
+import { applicationsController } from './applications.controller.js';
+import { applicationIdParamsSchema, applicationListQuerySchema, createApplicationSchema, transitionApplicationSchema, updateDraftSchema } from './applications.validation.js';
+export function createApplicationsRouter(controller = applicationsController) { const router = Router(); router.post('/', validateRequest({ body: createApplicationSchema }), idempotency, controller.create); router.get('/mine', validateRequest({ query: applicationListQuerySchema }), controller.listMine); router.get('/review', validateRequest({ query: applicationListQuerySchema }), controller.listAll); router.get('/:applicationId', validateRequest({ params: applicationIdParamsSchema }), controller.get); router.put('/:applicationId/draft', validateRequest({ params: applicationIdParamsSchema, body: updateDraftSchema }), controller.updateDraft); router.post('/:applicationId/submit', validateRequest({ params: applicationIdParamsSchema }), controller.submit); router.post('/:applicationId/cancel', validateRequest({ params: applicationIdParamsSchema }), controller.cancel); router.post('/:applicationId/status', validateRequest({ params: applicationIdParamsSchema, body: transitionApplicationSchema }), controller.transition); return router; }
+export const applicationsRouter = createApplicationsRouter();

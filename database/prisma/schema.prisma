@@ -1,0 +1,1921 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                          String                       @id @default(uuid()) @db.Uuid
+  name                        String
+  email                       String                       @unique
+  emailVerified               Boolean                      @default(false)
+  image                       String?
+  status                      UserStatus                   @default(PENDING_VERIFICATION)
+  twoFactorEnabled            Boolean                      @default(false)
+  createdAt                   DateTime                     @default(now())
+  updatedAt                   DateTime                     @updatedAt
+  roles                       UserRole[]
+  sessions                    Session[]
+  accounts                    Account[]
+  twoFactors                  TwoFactor[]
+  auditEvents                 AuditEvent[]                 @relation("AuditActor")
+  donorProfile                DonorProfile?
+  physicalDonationsRecorded   PhysicalDonation[]           @relation("PhysicalDonationClerk")
+  physicalDonationInspections PhysicalDonationInspection[] @relation("PhysicalDonationInspector")
+  studentProfile              Student?
+  committeeMemberships        CommitteeMembership[]         @relation("CommitteeMemberUser")
+  committeeAppointments       CommitteeMembership[]         @relation("CommitteeAppointer")
+  committeeMembershipActions  CommitteeMembershipHistory[]  @relation("CommitteeMembershipActor")
+  conflictsDeclared           CommitteeConflict[]           @relation("ConflictDeclarer")
+  conflictsResolved           CommitteeConflict[]           @relation("ConflictResolver")
+  goodsCollectionsRecorded    GoodsCollection[]              @relation("GoodsCollectionClerk")
+  goodsCollectionsReleased    GoodsCollection[]              @relation("GoodsCollectionReleaser")
+
+  @@map("users")
+}
+
+model Student {
+  id                 String                     @id @default(uuid()) @db.Uuid
+  userId             String?                    @unique @db.Uuid
+  registrationNumber String                     @unique
+  fullName           String
+  programme          String
+  school             String
+  yearOfStudy        Int
+  academicStatus     StudentAcademicStatus      @default(ACTIVE)
+  simulationProfile  StudentSimulationProfile
+  admittedAt         DateTime
+  expectedGraduation DateTime
+  verifiedPhone      String?
+  phoneVerifiedAt    DateTime?
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @updatedAt
+  user               User?                      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  financialRecords   StudentFinancialRecord[]
+  payments           StudentPayment[]
+  aidRecords         StudentAidRecord[]
+  financeBlocks      StudentFinanceBlock[]
+  assistanceHistory  StudentAssistanceHistory[]
+  applications       AssistanceApplication[]
+  goodsCollections   GoodsCollection[]
+
+  @@index([academicStatus, programme])
+  @@index([simulationProfile])
+  @@map("students")
+}
+
+model AcademicSemester {
+  id                String                     @id @default(uuid()) @db.Uuid
+  code              String                     @unique
+  name              String
+  academicYear      String
+  startsAt          DateTime
+  endsAt            DateTime
+  feeDueAt          DateTime
+  active            Boolean                    @default(false)
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
+  financialRecords  StudentFinancialRecord[]
+  payments          StudentPayment[]
+  aidRecords        StudentAidRecord[]
+  financeBlocks     StudentFinanceBlock[]
+  examCalendars     ExamCalendar[]
+  assistanceHistory StudentAssistanceHistory[]
+  applications      AssistanceApplication[]
+  goodsCollections GoodsCollection[]
+
+  @@index([active, startsAt])
+  @@map("academic_semesters")
+}
+
+model AssistanceApplication {
+  id                         String                         @id @default(uuid()) @db.Uuid
+  reference                  String                         @unique
+  studentId                  String                         @db.Uuid
+  semesterId                 String                         @db.Uuid
+  type                       AssistanceApplicationType
+  requestedAmount            Decimal                        @db.Decimal(18, 2)
+  currency                   String                         @default("KES")
+  reason                     String
+  status                     AssistanceApplicationStatus    @default(DRAFT)
+  financialRecordId          String                         @db.Uuid
+  outstandingBalanceSnapshot Decimal                        @db.Decimal(18, 2)
+  financialSnapshotAt        DateTime                       @default(now())
+  version                    Int                            @default(1)
+  submittedAt                DateTime?
+  cancelledAt                DateTime?
+  completedAt                DateTime?
+  createdAt                  DateTime                       @default(now())
+  updatedAt                  DateTime                       @updatedAt
+  student                    Student                        @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  semester                   AcademicSemester               @relation(fields: [semesterId], references: [id], onDelete: Restrict)
+  financialRecord            StudentFinancialRecord         @relation(fields: [financialRecordId], references: [id], onDelete: Restrict)
+  history                    AssistanceApplicationHistory[]
+  vettingRuns                VettingRun[]
+  committeeConflicts         CommitteeConflict[]
+  approvalRounds             ApprovalRound[]
+  disbursement               Disbursement?
+
+  @@unique([studentId, semesterId, type])
+  @@index([studentId, createdAt])
+  @@index([semesterId, status, createdAt])
+  @@map("assistance_applications")
+}
+
+model StudentAppeal {
+  id            String   @id @default(uuid()) @db.Uuid
+  studentId     String   @db.Uuid
+  applicationId String?  @db.Uuid
+  category      String
+  message       String
+  status        String   @default("OPEN")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([studentId, createdAt])
+  @@index([applicationId, createdAt])
+  @@map("student_appeals")
+}
+
+model VettingPolicy {
+  id              String       @id @default(uuid()) @db.Uuid
+  version         String       @unique
+  name            String
+  configuration   Json
+  active          Boolean      @default(false)
+  createdByUserId String?      @db.Uuid
+  createdAt       DateTime     @default(now())
+  vettingRuns     VettingRun[]
+
+  @@index([active, createdAt])
+  @@map("vetting_policies")
+}
+
+model VettingRun {
+  id               String                @id @default(uuid()) @db.Uuid
+  applicationId    String                @db.Uuid
+  policyId         String                @db.Uuid
+  status           VettingOutcome        @default(RUNNING)
+  score            Decimal?              @db.Decimal(5, 2)
+  inputDigest      String
+  explanation      String?
+  flags            Json?
+  executedByUserId String?               @db.Uuid
+  startedAt        DateTime              @default(now())
+  completedAt      DateTime?
+  application      AssistanceApplication @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+  policy           VettingPolicy         @relation(fields: [policyId], references: [id], onDelete: Restrict)
+  factors          VettingFactorResult[]
+
+  @@unique([applicationId, policyId, inputDigest])
+  @@index([applicationId, startedAt])
+  @@index([status, completedAt])
+  @@map("vetting_runs")
+}
+
+model VettingFactorResult {
+  id            String               @id @default(uuid()) @db.Uuid
+  vettingRunId  String               @db.Uuid
+  factor        VettingFactor
+  outcome       VettingFactorOutcome
+  points        Decimal              @db.Decimal(5, 2)
+  maximumPoints Decimal              @db.Decimal(5, 2)
+  rawValue      Json
+  evidence      Json
+  explanation   String
+  createdAt     DateTime             @default(now())
+  vettingRun    VettingRun           @relation(fields: [vettingRunId], references: [id], onDelete: Restrict)
+
+  @@unique([vettingRunId, factor])
+  @@index([factor, outcome])
+  @@map("vetting_factor_results")
+}
+
+model CommitteeMembership {
+  id            String                       @id @default(uuid()) @db.Uuid
+  userId        String                       @db.Uuid
+  seat          CommitteeSeat
+  status        CommitteeMembershipStatus    @default(ACTIVE)
+  appointedById String                       @db.Uuid
+  appointedAt   DateTime                     @default(now())
+  termStartsAt  DateTime
+  termEndsAt    DateTime
+  endedAt       DateTime?
+  endReason     String?
+  version       Int                          @default(1)
+  createdAt     DateTime                     @default(now())
+  updatedAt     DateTime                     @updatedAt
+  user          User                         @relation("CommitteeMemberUser", fields: [userId], references: [id], onDelete: Restrict)
+  appointedBy   User                         @relation("CommitteeAppointer", fields: [appointedById], references: [id], onDelete: Restrict)
+  history       CommitteeMembershipHistory[]
+  conflicts     CommitteeConflict[]
+  approvalDecisions ApprovalDecision[]
+
+  @@index([status, termStartsAt, termEndsAt])
+  @@index([userId, appointedAt])
+  @@index([seat, status])
+  @@map("committee_memberships")
+}
+
+model CommitteeMembershipHistory {
+  id           String                    @id @default(uuid()) @db.Uuid
+  membershipId String                    @db.Uuid
+  fromStatus   CommitteeMembershipStatus?
+  toStatus     CommitteeMembershipStatus
+  actorUserId  String                    @db.Uuid
+  reason       String
+  version      Int
+  createdAt    DateTime                  @default(now())
+  membership   CommitteeMembership       @relation(fields: [membershipId], references: [id], onDelete: Restrict)
+  actor        User                      @relation("CommitteeMembershipActor", fields: [actorUserId], references: [id], onDelete: Restrict)
+
+  @@index([membershipId, createdAt])
+  @@map("committee_membership_history")
+}
+
+model CommitteeConflict {
+  id               String                  @id @default(uuid()) @db.Uuid
+  membershipId     String                  @db.Uuid
+  applicationId    String                  @db.Uuid
+  type             CommitteeConflictType
+  status           CommitteeConflictStatus @default(DECLARED)
+  description      String
+  declaredByUserId String                  @db.Uuid
+  resolvedByUserId String?                 @db.Uuid
+  resolutionNote   String?
+  declaredAt       DateTime                @default(now())
+  resolvedAt       DateTime?
+  membership       CommitteeMembership     @relation(fields: [membershipId], references: [id], onDelete: Restrict)
+  application      AssistanceApplication   @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+  declaredBy       User                    @relation("ConflictDeclarer", fields: [declaredByUserId], references: [id], onDelete: Restrict)
+  resolvedBy       User?                   @relation("ConflictResolver", fields: [resolvedByUserId], references: [id], onDelete: Restrict)
+
+  @@unique([membershipId, applicationId])
+  @@index([applicationId, status])
+  @@map("committee_conflicts")
+}
+
+model ApprovalRound {
+  id                 String              @id @default(uuid()) @db.Uuid
+  applicationId      String              @db.Uuid
+  sequence           Int
+  applicationVersion Int
+  evidenceDigest     String
+  threshold          Int                 @default(2)
+  status             ApprovalRoundStatus @default(OPEN)
+  openedAt           DateTime            @default(now())
+  closedAt           DateTime?
+  invalidationReason String?
+  application        AssistanceApplication @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+  decisions          ApprovalDecision[]
+
+  @@unique([applicationId, sequence])
+  @@index([applicationId, status])
+  @@map("approval_rounds")
+}
+
+model ApprovalDecision {
+  id           String            @id @default(uuid()) @db.Uuid
+  roundId      String            @db.Uuid
+  membershipId String            @db.Uuid
+  decision     ApprovalDecisionType
+  digest       String
+  rationale    String
+  signedAt     DateTime          @default(now())
+  round        ApprovalRound     @relation(fields: [roundId], references: [id], onDelete: Restrict)
+  membership   CommitteeMembership @relation(fields: [membershipId], references: [id], onDelete: Restrict)
+
+  @@unique([roundId, membershipId])
+  @@index([roundId, decision])
+  @@map("approval_decisions")
+}
+
+model Disbursement {
+  id                    String                 @id @default(uuid()) @db.Uuid
+  applicationId         String                 @unique @db.Uuid
+  type                  DisbursementType
+  status                DisbursementStatus     @default(CREATED)
+  amount                Decimal                @db.Decimal(18, 2)
+  currency              String                 @default("KES")
+  destination           String
+  destinationReference  String
+  provider              String                 @default("MPESA")
+  idempotencyKey        String                 @unique
+  providerRequestId     String?                @unique
+  providerTransactionId String?                @unique
+  attemptCount          Int                    @default(0)
+  maximumAttempts       Int                    @default(3)
+  failureCode           String?
+  failureMessage        String?
+  receiptData           Json?
+  receiptHash           String?
+  reconciledAt          DateTime?
+  initiatedAt           DateTime?
+  completedAt           DateTime?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  application           AssistanceApplication  @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+  attempts              DisbursementAttempt[]
+  providerEvents        DisbursementProviderEvent[]
+
+  @@index([status, createdAt])
+  @@map("disbursements")
+}
+
+model DisbursementAttempt {
+  id                String                    @id @default(uuid()) @db.Uuid
+  disbursementId    String                    @db.Uuid
+  sequence          Int
+  status            DisbursementAttemptStatus @default(REQUESTED)
+  requestPayload    Json
+  responsePayload   Json?
+  providerRequestId String?                   @unique
+  failureCode       String?
+  failureMessage    String?
+  requestedAt       DateTime                  @default(now())
+  completedAt       DateTime?
+  disbursement      Disbursement              @relation(fields: [disbursementId], references: [id], onDelete: Restrict)
+
+  @@unique([disbursementId, sequence])
+  @@index([status, requestedAt])
+  @@map("disbursement_attempts")
+}
+
+model DisbursementProviderEvent {
+  id                 String                   @id @default(uuid()) @db.Uuid
+  disbursementId     String                   @db.Uuid
+  providerEventId    String                   @unique
+  payloadHash        String
+  rawPayload         Json
+  processingStatus   ProviderEventStatus      @default(RECEIVED)
+  resultCode         String?
+  resultMessage      String?
+  receivedAt         DateTime                 @default(now())
+  processedAt        DateTime?
+  disbursement       Disbursement             @relation(fields: [disbursementId], references: [id], onDelete: Restrict)
+
+  @@index([disbursementId, receivedAt])
+  @@map("disbursement_provider_events")
+}
+
+model AssistanceApplicationHistory {
+  id            String                       @id @default(uuid()) @db.Uuid
+  applicationId String                       @db.Uuid
+  fromStatus    AssistanceApplicationStatus?
+  toStatus      AssistanceApplicationStatus
+  actorUserId   String?                      @db.Uuid
+  reason        String?
+  version       Int
+  createdAt     DateTime                     @default(now())
+  application   AssistanceApplication        @relation(fields: [applicationId], references: [id], onDelete: Restrict)
+
+  @@index([applicationId, createdAt])
+  @@index([toStatus, createdAt])
+  @@map("assistance_application_history")
+}
+
+model StudentFinancialRecord {
+  id                 String                  @id @default(uuid()) @db.Uuid
+  studentId          String                  @db.Uuid
+  semesterId         String                  @db.Uuid
+  invoicedAmount     Decimal                 @db.Decimal(18, 2)
+  paidAmount         Decimal                 @db.Decimal(18, 2)
+  aidAmount          Decimal                 @default(0) @db.Decimal(18, 2)
+  outstandingBalance Decimal                 @db.Decimal(18, 2)
+  currency           String                  @default("KES")
+  status             StudentFinancialStatus
+  snapshotAt         DateTime                @default(now())
+  student            Student                 @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  semester           AcademicSemester        @relation(fields: [semesterId], references: [id], onDelete: Restrict)
+  applications       AssistanceApplication[]
+
+  @@unique([studentId, semesterId])
+  @@index([semesterId, status])
+  @@map("student_financial_records")
+}
+
+model StudentPayment {
+  id          String               @id @default(uuid()) @db.Uuid
+  studentId   String               @db.Uuid
+  semesterId  String               @db.Uuid
+  reference   String               @unique
+  amount      Decimal              @db.Decimal(18, 2)
+  source      StudentPaymentSource
+  paidAt      DateTime
+  description String?
+  student     Student              @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  semester    AcademicSemester     @relation(fields: [semesterId], references: [id], onDelete: Restrict)
+
+  @@index([studentId, paidAt])
+  @@index([semesterId, source])
+  @@map("student_payments")
+}
+
+model ExamCalendar {
+  id                String           @id @default(uuid()) @db.Uuid
+  semesterId        String           @db.Uuid
+  programme         String?
+  examType          String
+  startsAt          DateTime
+  endsAt            DateTime
+  clearanceDeadline DateTime
+  semester          AcademicSemester @relation(fields: [semesterId], references: [id], onDelete: Cascade)
+
+  @@unique([semesterId, programme, examType])
+  @@index([startsAt, endsAt])
+  @@map("exam_calendars")
+}
+
+model StudentAidRecord {
+  id              String           @id @default(uuid()) @db.Uuid
+  studentId       String           @db.Uuid
+  semesterId      String           @db.Uuid
+  aidType         StudentAidType
+  providerName    String
+  awardedAmount   Decimal          @db.Decimal(18, 2)
+  disbursedAmount Decimal          @db.Decimal(18, 2)
+  status          StudentAidStatus
+  reference       String           @unique
+  disbursedAt     DateTime?
+  student         Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  semester        AcademicSemester @relation(fields: [semesterId], references: [id], onDelete: Restrict)
+
+  @@index([studentId, semesterId])
+  @@index([aidType, status])
+  @@map("student_aid_records")
+}
+
+model StudentFinanceBlock {
+  id         String                  @id @default(uuid()) @db.Uuid
+  studentId  String                  @db.Uuid
+  semesterId String                  @db.Uuid
+  blockType  StudentFinanceBlockType
+  reason     String
+  blockedAt  DateTime
+  resolvedAt DateTime?
+  student    Student                 @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  semester   AcademicSemester        @relation(fields: [semesterId], references: [id], onDelete: Restrict)
+
+  @@index([studentId, blockedAt])
+  @@index([semesterId, blockType])
+  @@map("student_finance_blocks")
+}
+
+model StudentAssistanceHistory {
+  id             String                @id @default(uuid()) @db.Uuid
+  studentId      String                @db.Uuid
+  semesterId     String                @db.Uuid
+  assistanceType StudentAssistanceType
+  providerName   String
+  amount         Decimal               @db.Decimal(18, 2)
+  reference      String                @unique
+  providedAt     DateTime
+  student        Student               @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  semester       AcademicSemester      @relation(fields: [semesterId], references: [id], onDelete: Restrict)
+
+  @@index([studentId, providedAt])
+  @@map("student_assistance_history")
+}
+
+model DonorProfile {
+  id                      String                   @id @default(uuid()) @db.Uuid
+  userId                  String                   @unique @db.Uuid
+  publicAlias             String                   @unique
+  normalizedAlias         String                   @unique
+  pendingAlias            String?
+  pendingNormalizedAlias  String?                  @unique
+  aliasReviewStatus       AliasReviewStatus        @default(APPROVED)
+  displayNameMode         PublicNameMode           @default(ALIAS)
+  publicListed            Boolean                  @default(true)
+  showContributionTotal   Boolean                  @default(false)
+  showRecognitionTier     Boolean                  @default(true)
+  moneyContribution       Decimal                  @default(0) @db.Decimal(18, 2)
+  goodsContribution       Decimal                  @default(0) @db.Decimal(18, 2)
+  totalContribution       Decimal                  @default(0) @db.Decimal(18, 2)
+  recognitionTier         RecognitionTierCode      @default(UNRANKED)
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  user                    User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recognitionHistory      RecognitionHistory[]
+  recognizedContributions RecognizedContribution[]
+  moneyDonations          MoneyDonation[]
+  physicalDonations       PhysicalDonation[]
+
+  @@index([publicListed, recognitionTier])
+  @@map("donor_profiles")
+}
+
+model MoneyDonation {
+  id                 String               @id @default(uuid()) @db.Uuid
+  donorProfileId     String               @db.Uuid
+  amount             Decimal              @db.Decimal(18, 2)
+  currency           String               @default("KES")
+  channel            MoneyDonationChannel
+  purpose            DonationPurpose      @default(UNRESTRICTED)
+  purposeReference   String?
+  status             MoneyDonationStatus  @default(CREATED)
+  trackingId         String               @unique
+  trackingSecretHash String
+  idempotencyKey     String
+  providerReference  String?              @unique
+  providerReceipt    String?              @unique
+  failureCode        String?
+  failureReason      String?
+  confirmedAt        DateTime?
+  reconciledAt       DateTime?
+  reversedAt         DateTime?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  donorProfile       DonorProfile         @relation(fields: [donorProfileId], references: [id], onDelete: Restrict)
+  allocations        DonationAllocation[]
+  receipt            DonationReceipt?
+  paymentAttempts    PaymentAttempt[]
+
+  @@unique([donorProfileId, idempotencyKey])
+  @@index([donorProfileId, createdAt])
+  @@index([status, createdAt])
+  @@map("money_donations")
+}
+
+model PhysicalDonation {
+  id                   String                       @id @default(uuid()) @db.Uuid
+  clerkUserId          String                       @db.Uuid
+  donorProfileId       String?                      @db.Uuid
+  donorName            String
+  donorPhoneEncrypted  String
+  donorPhoneHash       String
+  donorPhoneLast4      String
+  kind                 PhysicalDonationKind
+  status               PhysicalDonationStatus       @default(DRAFT)
+  submissionVersion    Int                          @default(1)
+  submittedAt          DateTime?
+  confirmedAt          DateTime?
+  rejectedAt           DateTime?
+  inspectedAt          DateTime?
+  finalizedAt          DateTime?
+  createdAt            DateTime                     @default(now())
+  updatedAt            DateTime                     @updatedAt
+  clerk                User                         @relation("PhysicalDonationClerk", fields: [clerkUserId], references: [id], onDelete: Restrict)
+  donorProfile         DonorProfile?                @relation(fields: [donorProfileId], references: [id], onDelete: SetNull)
+  lines                PhysicalDonationLine[]
+  inspections          PhysicalDonationInspection[]
+  cashDeposits         PhysicalCashDeposit[]
+  confirmationRequests ConfirmationRequest[]
+
+  @@index([clerkUserId, createdAt])
+  @@index([donorPhoneHash, createdAt])
+  @@index([status, createdAt])
+  @@map("physical_donations")
+}
+
+model ConfirmationRequest {
+  id                 String                 @id @default(uuid()) @db.Uuid
+  targetType         ConfirmationTargetType
+  targetId           String                 @db.Uuid
+  physicalDonationId String?                @db.Uuid
+  tokenHash          String                 @unique
+  tokenPrefix        String
+  status             ConfirmationStatus     @default(PENDING)
+  expiresAt          DateTime
+  sentAt             DateTime?
+  claimedAt          DateTime?
+  completedAt        DateTime?
+  createdByUserId    String?                @db.Uuid
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  physicalDonation   PhysicalDonation?      @relation(fields: [physicalDonationId], references: [id], onDelete: Restrict)
+  response           ConfirmationResponse?
+  deliveries         ConfirmationDelivery[]
+
+  @@index([targetType, targetId, createdAt])
+  @@index([status, expiresAt])
+  @@map("confirmation_requests")
+}
+
+model ConfirmationResponse {
+  id                    String               @id @default(uuid()) @db.Uuid
+  confirmationRequestId String               @unique @db.Uuid
+  decision              ConfirmationDecision
+  sourceIpHash          String?
+  userAgentHash         String?
+  respondedAt           DateTime             @default(now())
+  request               ConfirmationRequest  @relation(fields: [confirmationRequestId], references: [id], onDelete: Restrict)
+
+  @@map("confirmation_responses")
+}
+
+model ConfirmationDelivery {
+  id                    String                     @id @default(uuid()) @db.Uuid
+  confirmationRequestId String                     @db.Uuid
+  provider              String
+  providerMessageId     String?                    @unique
+  recipientHash         String
+  status                ConfirmationDeliveryStatus @default(QUEUED)
+  failureReason         String?
+  sentAt                DateTime?
+  deliveredAt           DateTime?
+  createdAt             DateTime                   @default(now())
+  updatedAt             DateTime                   @updatedAt
+  request               ConfirmationRequest        @relation(fields: [confirmationRequestId], references: [id], onDelete: Restrict)
+
+  @@index([confirmationRequestId, createdAt])
+  @@index([status, createdAt])
+  @@map("confirmation_deliveries")
+}
+
+model PhysicalDonationLine {
+  id                 String                       @id @default(uuid()) @db.Uuid
+  physicalDonationId String                       @db.Uuid
+  lineType           PhysicalDonationLineType
+  itemName           String
+  category           String?
+  quantity           Int
+  unit               String
+  declaredValue      Decimal?                     @db.Decimal(18, 2)
+  acceptedQuantity   Int?
+  approvedUnitValue  Decimal?                     @db.Decimal(18, 2)
+  inspectionStatus   PhysicalLineInspectionStatus @default(PENDING)
+  rejectionReason    String?
+  createdAt          DateTime                     @default(now())
+  donation           PhysicalDonation             @relation(fields: [physicalDonationId], references: [id], onDelete: Cascade)
+  inventoryBatch     InventoryBatch?
+
+  @@index([physicalDonationId])
+  @@map("physical_donation_lines")
+}
+
+model InventoryCategory {
+  id          String          @id @default(uuid()) @db.Uuid
+  code        String          @unique
+  name        String
+  description String?
+  active      Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  items       InventoryItem[]
+
+  @@map("inventory_categories")
+}
+
+model InventoryItem {
+  id             String            @id @default(uuid()) @db.Uuid
+  categoryId     String            @db.Uuid
+  sku            String            @unique
+  name           String
+  normalizedName String
+  unit           String
+  active         Boolean           @default(true)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  category       InventoryCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  batches        InventoryBatch[]
+
+  @@unique([categoryId, normalizedName, unit])
+  @@index([categoryId, active])
+  @@map("inventory_items")
+}
+
+model InventoryLocation {
+  id        String           @id @default(uuid()) @db.Uuid
+  code      String           @unique
+  name      String
+  active    Boolean          @default(true)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  batches   InventoryBatch[]
+
+  @@map("inventory_locations")
+}
+
+model InventoryBatch {
+  id                           String                 @id @default(uuid()) @db.Uuid
+  itemId                       String                 @db.Uuid
+  locationId                   String                 @db.Uuid
+  sourcePhysicalDonationLineId String                 @unique @db.Uuid
+  batchNumber                  String                 @unique
+  receivedQuantity             Int
+  availableQuantity            Int
+  reservedQuantity             Int                    @default(0)
+  issuedQuantity               Int                    @default(0)
+  damagedQuantity              Int                    @default(0)
+  expiresAt                    DateTime?
+  status                       InventoryBatchStatus   @default(AVAILABLE)
+  receivedAt                   DateTime               @default(now())
+  createdAt                    DateTime               @default(now())
+  updatedAt                    DateTime               @updatedAt
+  item                         InventoryItem          @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  location                     InventoryLocation      @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  sourcePhysicalDonationLine   PhysicalDonationLine   @relation(fields: [sourcePhysicalDonationLineId], references: [id], onDelete: Restrict)
+  movements                    StockMovement[]
+  reservations                 InventoryReservation[]
+  countLines                   StockCountLine[]
+  collectionLines              GoodsCollectionLine[]
+
+  @@index([itemId, status, expiresAt])
+  @@index([locationId, status])
+  @@map("inventory_batches")
+}
+
+model StockMovement {
+  id             String            @id @default(uuid()) @db.Uuid
+  batchId        String            @db.Uuid
+  type           StockMovementType
+  quantity       Int
+  availableAfter Int
+  reservedAfter  Int
+  referenceType  String
+  referenceId    String
+  reason         String?
+  actorUserId    String?           @db.Uuid
+  createdAt      DateTime          @default(now())
+  batch          InventoryBatch    @relation(fields: [batchId], references: [id], onDelete: Restrict)
+
+  @@unique([batchId, type, referenceType, referenceId])
+  @@index([batchId, createdAt])
+  @@index([referenceType, referenceId])
+  @@map("stock_movements")
+}
+
+model InventoryReservation {
+  id              String                     @id @default(uuid()) @db.Uuid
+  batchId         String                     @db.Uuid
+  targetType      String
+  targetId        String
+  quantity        Int
+  status          InventoryReservationStatus @default(ACTIVE)
+  expiresAt       DateTime
+  createdByUserId String?                    @db.Uuid
+  createdAt       DateTime                   @default(now())
+  updatedAt       DateTime                   @updatedAt
+  batch           InventoryBatch             @relation(fields: [batchId], references: [id], onDelete: Restrict)
+  collectionLine  GoodsCollectionLine?
+
+  @@unique([batchId, targetType, targetId])
+  @@index([status, expiresAt])
+  @@map("inventory_reservations")
+}
+
+model StockCount {
+  id             String           @id @default(uuid()) @db.Uuid
+  locationId     String           @db.Uuid
+  status         StockCountStatus @default(OPEN)
+  openedByUserId String           @db.Uuid
+  closedByUserId String?          @db.Uuid
+  openedAt       DateTime         @default(now())
+  closedAt       DateTime?
+  notes          String?
+  lines          StockCountLine[]
+
+  @@index([locationId, status])
+  @@map("stock_counts")
+}
+
+model StockCountLine {
+  id               String         @id @default(uuid()) @db.Uuid
+  stockCountId     String         @db.Uuid
+  batchId          String         @db.Uuid
+  expectedQuantity Int
+  countedQuantity  Int
+  variance         Int
+  reason           String?
+  stockCount       StockCount     @relation(fields: [stockCountId], references: [id], onDelete: Cascade)
+  batch            InventoryBatch @relation(fields: [batchId], references: [id], onDelete: Restrict)
+
+  @@unique([stockCountId, batchId])
+  @@map("stock_count_lines")
+}
+
+model GoodsCollectionPolicy {
+  id            String   @id @default(uuid()) @db.Uuid
+  version       String   @unique
+  configuration Json
+  active        Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  @@index([active, createdAt])
+  @@map("goods_collection_policies")
+}
+
+model GoodsCollection {
+  id                    String                @id @default(uuid()) @db.Uuid
+  reference             String                @unique
+  studentId             String                @db.Uuid
+  semesterId            String                @db.Uuid
+  clerkUserId           String                @db.Uuid
+  releasedByUserId      String?               @db.Uuid
+  status                GoodsCollectionStatus @default(PENDING_CONFIRMATION)
+  eligibilitySnapshot   Json
+  policyVersion         String
+  confirmationRequestId String?               @unique @db.Uuid
+  reservedAt            DateTime               @default(now())
+  confirmedAt           DateTime?
+  rejectedAt            DateTime?
+  releasedAt            DateTime?
+  cancelledAt           DateTime?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  student               Student                @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  semester              AcademicSemester       @relation(fields: [semesterId], references: [id], onDelete: Restrict)
+  clerk                 User                    @relation("GoodsCollectionClerk", fields: [clerkUserId], references: [id], onDelete: Restrict)
+  releasedBy            User?                   @relation("GoodsCollectionReleaser", fields: [releasedByUserId], references: [id], onDelete: Restrict)
+  lines                 GoodsCollectionLine[]
+
+  @@index([studentId, createdAt])
+  @@index([status, reservedAt])
+  @@map("goods_collections")
+}
+
+model GoodsCollectionLine {
+  id             String               @id @default(uuid()) @db.Uuid
+  collectionId   String               @db.Uuid
+  batchId        String               @db.Uuid
+  reservationId  String               @unique @db.Uuid
+  categoryCode   String
+  itemName       String
+  unit           String
+  quantity       Int
+  createdAt      DateTime             @default(now())
+  collection     GoodsCollection      @relation(fields: [collectionId], references: [id], onDelete: Restrict)
+  batch          InventoryBatch       @relation(fields: [batchId], references: [id], onDelete: Restrict)
+  reservation    InventoryReservation @relation(fields: [reservationId], references: [id], onDelete: Restrict)
+
+  @@unique([collectionId, batchId])
+  @@index([categoryCode])
+  @@map("goods_collection_lines")
+}
+
+model LedgerAccount {
+  id        String            @id @default(uuid()) @db.Uuid
+  code      String            @unique
+  name      String
+  type      LedgerAccountType
+  currency  String            @default("KES")
+  active    Boolean           @default(true)
+  createdAt DateTime          @default(now())
+  entries   LedgerEntry[]
+
+  @@map("ledger_accounts")
+}
+
+model LedgerJournal {
+  id            String              @id @default(uuid()) @db.Uuid
+  reference     String              @unique
+  sourceType    LedgerSourceType
+  sourceId      String              @db.Uuid
+  status        LedgerJournalStatus @default(POSTED)
+  description   String
+  currency      String              @default("KES")
+  totalDebit    Decimal             @db.Decimal(18, 2)
+  totalCredit   Decimal             @db.Decimal(18, 2)
+  postedAt      DateTime            @default(now())
+  reversedAt    DateTime?
+  entries       LedgerEntry[]
+  reconciliationItems ReconciliationItem[]
+
+  @@unique([sourceType, sourceId])
+  @@index([status, postedAt])
+  @@map("ledger_journals")
+}
+
+model LedgerEntry {
+  id        String        @id @default(uuid()) @db.Uuid
+  journalId String        @db.Uuid
+  accountId String        @db.Uuid
+  debit     Decimal       @default(0) @db.Decimal(18, 2)
+  credit    Decimal       @default(0) @db.Decimal(18, 2)
+  memo      String?
+  createdAt DateTime      @default(now())
+  journal   LedgerJournal @relation(fields: [journalId], references: [id], onDelete: Restrict)
+  account   LedgerAccount @relation(fields: [accountId], references: [id], onDelete: Restrict)
+
+  @@index([accountId, createdAt])
+  @@index([journalId])
+  @@map("ledger_entries")
+}
+
+model ReconciliationRun {
+  id                 String               @id @default(uuid()) @db.Uuid
+  reference          String               @unique
+  scope              ReconciliationScope
+  status             ReconciliationRunStatus @default(RUNNING)
+  periodStart        DateTime
+  periodEnd          DateTime
+  startedByUserId    String               @db.Uuid
+  matchedCount       Int                  @default(0)
+  exceptionCount     Int                  @default(0)
+  matchedAmount      Decimal              @default(0) @db.Decimal(18, 2)
+  startedAt          DateTime             @default(now())
+  completedAt        DateTime?
+  failureMessage     String?
+  items              ReconciliationItem[]
+
+  @@index([status, startedAt])
+  @@map("reconciliation_runs")
+}
+
+model ReconciliationItem {
+  id              String                @id @default(uuid()) @db.Uuid
+  runId           String                @db.Uuid
+  sourceType      LedgerSourceType
+  sourceId        String                @db.Uuid
+  provider        String
+  providerReference String?
+  internalAmount  Decimal               @db.Decimal(18, 2)
+  providerAmount  Decimal?
+  outcome         ReconciliationOutcome
+  details         Json
+  ledgerJournalId String?               @db.Uuid
+  createdAt       DateTime              @default(now())
+  run             ReconciliationRun     @relation(fields: [runId], references: [id], onDelete: Restrict)
+  ledgerJournal   LedgerJournal?        @relation(fields: [ledgerJournalId], references: [id], onDelete: Restrict)
+
+  @@unique([runId, sourceType, sourceId])
+  @@index([outcome, createdAt])
+  @@map("reconciliation_items")
+}
+
+model EvidenceRecord {
+  id                String              @id @default(uuid()) @db.Uuid
+  reference         String              @unique
+  subjectType       EvidenceSubjectType
+  subjectId         String              @db.Uuid
+  evidenceType      EvidenceType
+  sensitivity       EvidenceSensitivity @default(RESTRICTED)
+  status            EvidenceStatus      @default(ACTIVE)
+  version           Int                 @default(1)
+  canonicalDigest   String
+  encryptedContent  String
+  encryptionIv      String
+  encryptionAuthTag String
+  encryptionVersion String              @default("v1")
+  ipfsCid           String?
+  ipfsPinnedAt      DateTime?
+  retainedUntil     DateTime
+  createdByUserId   String              @db.Uuid
+  lastVerifiedAt    DateTime?
+  expiredAt         DateTime?
+  destroyedAt       DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  blockchainAnchor  BlockchainAnchor?
+
+  @@unique([subjectType, subjectId, evidenceType, version])
+  @@index([subjectType, subjectId, status])
+  @@index([status, retainedUntil])
+  @@index([canonicalDigest])
+  @@map("evidence_records")
+}
+
+model BlockchainAnchor {
+  id                 String                 @id @default(uuid()) @db.Uuid
+  reference          String                 @unique
+  evidenceId         String                 @unique @db.Uuid
+  commitment         String                 @unique
+  subjectKey         String
+  previousCommitment String?
+  status             BlockchainAnchorStatus @default(QUEUED)
+  network            String
+  contractAddress    String?
+  transactionHash    String?                @unique
+  blockNumber        BigInt?
+  confirmations      Int                    @default(0)
+  requiredConfirmations Int                 @default(2)
+  attemptCount       Int                    @default(0)
+  lastError          String?
+  queuedByUserId     String                 @db.Uuid
+  submittedAt        DateTime?
+  confirmedAt        DateTime?
+  failedAt           DateTime?
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  evidence           EvidenceRecord         @relation(fields: [evidenceId], references: [id], onDelete: Restrict)
+  attempts           BlockchainAnchorAttempt[]
+
+  @@index([status, createdAt])
+  @@index([subjectKey, createdAt])
+  @@map("blockchain_anchors")
+}
+
+model BlockchainAnchorAttempt {
+  id              String                 @id @default(uuid()) @db.Uuid
+  anchorId        String                 @db.Uuid
+  sequence        Int
+  status          BlockchainAnchorStatus
+  transactionHash String?
+  errorMessage    String?
+  startedAt       DateTime               @default(now())
+  completedAt     DateTime?
+  anchor          BlockchainAnchor       @relation(fields: [anchorId], references: [id], onDelete: Restrict)
+
+  @@unique([anchorId, sequence])
+  @@index([status, startedAt])
+  @@map("blockchain_anchor_attempts")
+}
+
+model ForensicAnomaly {
+  id              String                @id @default(uuid()) @db.Uuid
+  fingerprint     String                @unique
+  ruleCode        ForensicRuleCode
+  severity        ForensicSeverity
+  status          ForensicAnomalyStatus @default(DETECTED)
+  sourceType      String?
+  sourceId        String?
+  title           String
+  summary         String
+  evidence        Json
+  occurrenceCount Int                   @default(1)
+  detectedAt      DateTime              @default(now())
+  lastSeenAt      DateTime              @default(now())
+  triagedAt       DateTime?
+  resolvedAt      DateTime?
+  investigation   ForensicInvestigation?
+
+  @@index([status, severity, detectedAt])
+  @@index([ruleCode, lastSeenAt])
+  @@index([sourceType, sourceId])
+  @@map("forensic_anomalies")
+}
+
+model ForensicInvestigation {
+  id              String                    @id @default(uuid()) @db.Uuid
+  anomalyId       String                    @unique @db.Uuid
+  status          ForensicInvestigationStatus @default(OPEN)
+  assignedToUserId String?                  @db.Uuid
+  openedByUserId  String                    @db.Uuid
+  findings        Json                      @default("[]")
+  conclusion      String?
+  openedAt        DateTime                  @default(now())
+  closedAt        DateTime?
+  anomaly         ForensicAnomaly           @relation(fields: [anomalyId], references: [id], onDelete: Restrict)
+
+  @@index([status, openedAt])
+  @@map("forensic_investigations")
+}
+
+model Notification {
+  id                   String             @id @default(uuid()) @db.Uuid
+  recipientUserId      String?            @db.Uuid
+  recipientAddressHash String
+  recipientAddressLast4 String?
+  channel              NotificationChannel
+  templateCode         NotificationTemplateCode
+  title                String
+  body                 String
+  status               NotificationStatus @default(QUEUED)
+  idempotencyKey       String
+  maximumAttempts      Int                @default(3)
+  attemptCount         Int                @default(0)
+  lastError            String?
+  sentAt               DateTime?
+  deliveredAt          DateTime?
+  failedAt             DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  deliveries           NotificationDelivery[]
+
+  @@unique([recipientAddressHash, idempotencyKey])
+  @@index([recipientUserId, createdAt])
+  @@index([status, createdAt])
+  @@map("notifications")
+}
+
+model NotificationDelivery {
+  id                String             @id @default(uuid()) @db.Uuid
+  notificationId    String             @db.Uuid
+  sequence          Int
+  status            NotificationStatus
+  provider          String?
+  providerMessageId String?            @unique
+  errorMessage      String?
+  attemptedAt       DateTime           @default(now())
+  completedAt       DateTime?
+  notification      Notification       @relation(fields: [notificationId], references: [id], onDelete: Restrict)
+
+  @@unique([notificationId, sequence])
+  @@index([status, attemptedAt])
+  @@map("notification_deliveries")
+}
+
+model OutboxEvent {
+  id              String       @id @default(uuid()) @db.Uuid
+  eventName       String
+  aggregateType   String
+  aggregateId     String?
+  payload         Json
+  idempotencyKey  String       @unique
+  status          OutboxStatus @default(PENDING)
+  maximumAttempts Int          @default(8)
+  attemptCount    Int          @default(0)
+  availableAt     DateTime     @default(now())
+  leaseToken      String?
+  leasedUntil     DateTime?
+  lastError       String?
+  publishedAt     DateTime?
+  failedAt        DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([status, availableAt, createdAt])
+  @@index([leasedUntil])
+  @@map("outbox_events")
+}
+
+model PhysicalDonationInspection {
+  id                 String             @id @default(uuid()) @db.Uuid
+  physicalDonationId String             @db.Uuid
+  inspectorUserId    String             @db.Uuid
+  decision           InspectionDecision
+  notes              String?
+  createdAt          DateTime           @default(now())
+  donation           PhysicalDonation   @relation(fields: [physicalDonationId], references: [id], onDelete: Restrict)
+  inspector          User               @relation("PhysicalDonationInspector", fields: [inspectorUserId], references: [id], onDelete: Restrict)
+
+  @@index([physicalDonationId, createdAt])
+  @@index([inspectorUserId, createdAt])
+  @@map("physical_donation_inspections")
+}
+
+model PhysicalCashDeposit {
+  id                 String                    @id @default(uuid()) @db.Uuid
+  physicalDonationId String                    @db.Uuid
+  amount             Decimal                   @db.Decimal(18, 2)
+  depositReference   String                    @unique
+  status             PhysicalCashDepositStatus @default(PENDING)
+  recordedAt         DateTime                  @default(now())
+  matchedAt          DateTime?
+  donation           PhysicalDonation          @relation(fields: [physicalDonationId], references: [id], onDelete: Restrict)
+
+  @@unique([physicalDonationId])
+  @@index([physicalDonationId, status])
+  @@map("physical_cash_deposits")
+}
+
+model PaymentAttempt {
+  id                     String                 @id @default(uuid()) @db.Uuid
+  donationId             String                 @db.Uuid
+  provider               PaymentProvider
+  flow                   PaymentFlow
+  status                 PaymentAttemptStatus   @default(INITIATED)
+  amount                 Decimal                @db.Decimal(18, 2)
+  currency               String                 @default("KES")
+  idempotencyKey         String
+  destinationFingerprint String?
+  requestPayloadDigest   String
+  providerRequestId      String?                @unique
+  providerTransactionId  String?                @unique
+  responseCode           String?
+  responseMessage        String?
+  submittedAt            DateTime?
+  completedAt            DateTime?
+  failedAt               DateTime?
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
+  donation               MoneyDonation          @relation(fields: [donationId], references: [id], onDelete: Restrict)
+  providerEvents         PaymentProviderEvent[]
+
+  @@unique([donationId, idempotencyKey])
+  @@index([donationId, createdAt])
+  @@index([provider, status, createdAt])
+  @@map("payment_attempts")
+}
+
+model PaymentProviderEvent {
+  id               String              @id @default(uuid()) @db.Uuid
+  paymentAttemptId String?             @db.Uuid
+  provider         PaymentProvider
+  providerEventId  String
+  eventType        String
+  payloadDigest    String
+  signatureDigest  String?
+  processingStatus ProviderEventStatus @default(RECEIVED)
+  resultCode       String?
+  resultMessage    String?
+  receivedAt       DateTime            @default(now())
+  processedAt      DateTime?
+  paymentAttempt   PaymentAttempt?     @relation(fields: [paymentAttemptId], references: [id], onDelete: SetNull)
+
+  @@unique([provider, providerEventId])
+  @@index([paymentAttemptId, receivedAt])
+  @@index([processingStatus, receivedAt])
+  @@map("payment_provider_events")
+}
+
+model DonationAllocation {
+  id              String                   @id @default(uuid()) @db.Uuid
+  donationId      String                   @db.Uuid
+  allocationType  DonationAllocationType
+  targetReference String?
+  amount          Decimal                  @db.Decimal(18, 2)
+  status          DonationAllocationStatus @default(ALLOCATED)
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+  donation        MoneyDonation            @relation(fields: [donationId], references: [id], onDelete: Restrict)
+
+  @@unique([donationId, allocationType, targetReference])
+  @@index([donationId, createdAt])
+  @@map("donation_allocations")
+}
+
+model DonationReceipt {
+  id             String        @id @default(uuid()) @db.Uuid
+  donationId     String        @unique @db.Uuid
+  receiptNumber  String        @unique
+  evidenceDigest String
+  ipfsCid        String?
+  issuedAt       DateTime      @default(now())
+  voidedAt       DateTime?
+  donation       MoneyDonation @relation(fields: [donationId], references: [id], onDelete: Restrict)
+
+  @@map("donation_receipts")
+}
+
+model RecognitionTier {
+  id           String              @id @default(uuid()) @db.Uuid
+  code         RecognitionTierCode @unique
+  name         String
+  rank         Int                 @unique
+  minimumValue Decimal             @db.Decimal(18, 2)
+  active       Boolean             @default(true)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  @@map("recognition_tiers")
+}
+
+model RecognitionHistory {
+  id             String              @id @default(uuid()) @db.Uuid
+  donorProfileId String              @db.Uuid
+  fromTier       RecognitionTierCode
+  toTier         RecognitionTierCode
+  totalValue     Decimal             @db.Decimal(18, 2)
+  reason         String
+  createdAt      DateTime            @default(now())
+  donorProfile   DonorProfile        @relation(fields: [donorProfileId], references: [id], onDelete: Cascade)
+
+  @@index([donorProfileId, createdAt])
+  @@map("recognition_history")
+}
+
+model RecognizedContribution {
+  id             String           @id @default(uuid()) @db.Uuid
+  donorProfileId String           @db.Uuid
+  sourceType     ContributionType
+  sourceId       String
+  value          Decimal          @db.Decimal(18, 2)
+  createdAt      DateTime         @default(now())
+  donorProfile   DonorProfile     @relation(fields: [donorProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceType, sourceId])
+  @@index([donorProfileId, createdAt])
+  @@map("recognized_contributions")
+}
+
+model Role {
+  id          String           @id @default(uuid()) @db.Uuid
+  code        String           @unique
+  name        String
+  description String?
+  users       UserRole[]
+  permissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String           @id @default(uuid()) @db.Uuid
+  code        String           @unique
+  description String?
+  roles       RolePermission[]
+
+  @@map("permissions")
+}
+
+model UserRole {
+  userId     String   @db.Uuid
+  roleId     String   @db.Uuid
+  assignedAt DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role       Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+model RolePermission {
+  roleId       String     @db.Uuid
+  permissionId String     @db.Uuid
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model Session {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+model Account {
+  id                    String    @id @default(uuid()) @db.Uuid
+  userId                String    @db.Uuid
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  idToken               String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Verification {
+  id         String   @id @default(uuid()) @db.Uuid
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@index([expiresAt])
+  @@map("verifications")
+}
+
+model TwoFactor {
+  id                      String    @id @default(uuid()) @db.Uuid
+  secret                  String
+  backupCodes             String
+  userId                  String    @db.Uuid
+  verified                Boolean   @default(true)
+  failedVerificationCount Int       @default(0)
+  lockedUntil             DateTime?
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([secret])
+  @@index([userId])
+  @@map("two_factors")
+}
+
+model AuditEvent {
+  id                String       @id @default(uuid()) @db.Uuid
+  sequence          BigInt       @unique @default(autoincrement())
+  actorId           String?      @db.Uuid
+  action            String
+  outcome           AuditOutcome @default(SUCCESS)
+  entityType        String
+  entityId          String?
+  requestId         String?
+  requestMethod     String?
+  requestPath       String?
+  ipAddressHash     String?
+  userAgent         String?
+  reason            String?
+  beforeCommitment  String?
+  afterCommitment   String?
+  previousHash      String?
+  eventHash         String       @unique
+  metadata          Json?
+  createdAt         DateTime     @default(now())
+  actor             User?        @relation("AuditActor", fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([actorId, createdAt])
+  @@index([entityType, entityId])
+  @@index([action, createdAt])
+  @@index([requestId])
+  @@map("audit_events")
+}
+
+enum UserStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  SUSPENDED
+  LOCKED
+  DISABLED
+}
+
+enum PublicNameMode {
+  ALIAS
+  REAL_NAME
+}
+
+enum AliasReviewStatus {
+  APPROVED
+  PENDING_REVIEW
+  REJECTED
+}
+
+enum RecognitionTierCode {
+  UNRANKED
+  SILVER
+  GOLD
+  DIAMOND
+  PLATINUM
+}
+
+enum ContributionType {
+  MONEY
+  GOODS
+}
+
+enum MoneyDonationChannel {
+  MPESA_STK
+  MPESA_PAYBILL
+  BANK
+}
+
+enum DonationPurpose {
+  UNRESTRICTED
+  TUITION
+  UPKEEP
+}
+
+enum MoneyDonationStatus {
+  CREATED
+  PAYMENT_REQUESTED
+  PROVIDER_PENDING
+  CONFIRMED
+  RECONCILED
+  FAILED
+  REVERSED
+}
+
+enum DonationAllocationType {
+  CENTRAL_POOL
+  STUDENT_APPLICATION
+  DISBURSEMENT
+}
+
+enum DonationAllocationStatus {
+  ALLOCATED
+  APPLIED
+  REVERSED
+}
+
+enum PaymentProvider {
+  MPESA
+  BANK
+}
+
+enum PaymentFlow {
+  STK_PUSH
+  C2B
+  BANK_CHECKOUT
+  BANK_TRANSFER
+}
+
+enum PaymentAttemptStatus {
+  INITIATED
+  SUBMITTED
+  PENDING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+enum ProviderEventStatus {
+  RECEIVED
+  PROCESSED
+  REJECTED
+}
+
+enum PhysicalDonationKind {
+  GOODS
+  CASH
+  MIXED
+}
+
+enum PhysicalDonationStatus {
+  DRAFT
+  AWAITING_DONOR_CONFIRMATION
+  CONFIRMED
+  REJECTED
+  INSPECTION
+  ACCEPTED
+  DECLINED
+  DEPOSIT_PENDING
+  DEPOSIT_MATCHED
+  RECONCILED
+}
+
+enum PhysicalDonationLineType {
+  GOODS
+  CASH
+}
+
+enum PhysicalLineInspectionStatus {
+  PENDING
+  ACCEPTED
+  PARTIALLY_ACCEPTED
+  REJECTED
+}
+
+enum InspectionDecision {
+  ACCEPTED
+  PARTIALLY_ACCEPTED
+  DECLINED
+}
+
+enum PhysicalCashDepositStatus {
+  PENDING
+  MATCHED
+  REJECTED
+}
+
+enum ConfirmationTargetType {
+  PHYSICAL_DONATION
+  GOODS_COLLECTION
+}
+
+enum ConfirmationStatus {
+  PENDING
+  PROCESSING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+  SUPERSEDED
+  DELIVERY_FAILED
+}
+
+enum ConfirmationDecision {
+  YES
+  NO
+}
+
+enum ConfirmationDeliveryStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  FAILED
+}
+
+enum InventoryBatchStatus {
+  AVAILABLE
+  RESERVED
+  DEPLETED
+  EXPIRED
+  QUARANTINED
+  DISPOSED
+}
+
+enum StockMovementType {
+  RECEIPT
+  RESERVE
+  RELEASE
+  ISSUE
+  ADJUST_IN
+  ADJUST_OUT
+  COUNT_CORRECTION
+  DAMAGE
+  EXPIRY
+  DISPOSAL
+}
+
+enum InventoryReservationStatus {
+  ACTIVE
+  RELEASED
+  FULFILLED
+  EXPIRED
+  CANCELLED
+}
+
+enum StockCountStatus {
+  OPEN
+  CLOSED
+  CANCELLED
+}
+
+enum StudentAcademicStatus {
+  ACTIVE
+  DEFERRED
+  SUSPENDED
+  COMPLETED
+}
+
+enum StudentSimulationProfile {
+  MICRO_PAYMENT_HARDSHIP
+  EXAM_PERIOD_DISTRESS
+  AID_GAP_RELIANCE
+  CHRONIC_HIGH_BALANCE
+  STABLE_LUMP_SUM_CONTROL
+  MIXED_CONTROL
+}
+
+enum StudentFinancialStatus {
+  CLEARED
+  PARTIALLY_PAID
+  OVERDUE
+  BLOCKED
+}
+
+enum StudentPaymentSource {
+  FAMILY
+  SELF
+  HELB
+  SCHOLARSHIP
+  NGO
+  UNIVERSITY_WAIVER
+}
+
+enum StudentAidType {
+  HELB
+  GOVERNMENT_SCHOLARSHIP
+  PRIVATE_SCHOLARSHIP
+  NGO_SPONSORSHIP
+  UNIVERSITY_WAIVER
+}
+
+enum StudentAidStatus {
+  EXPECTED
+  PARTIALLY_DISBURSED
+  DISBURSED
+  CANCELLED
+}
+
+enum StudentFinanceBlockType {
+  EXAM_CLEARANCE
+  REGISTRATION
+  RESULTS_WITHHELD
+  PORTAL_RESTRICTION
+}
+
+enum StudentAssistanceType {
+  TUITION
+  UPKEEP
+  GOODS
+}
+
+enum AssistanceApplicationType {
+  TUITION
+  UPKEEP
+}
+
+enum AssistanceApplicationStatus {
+  DRAFT
+  SUBMITTED
+  VETTING
+  VERIFIED
+  MANUAL_REVIEW
+  REJECTED
+  AWAITING_APPROVALS
+  APPROVED
+  DECLINED
+  DISBURSEMENT_PENDING
+  FUNDED
+  CANCELLED
+}
+
+enum VettingOutcome {
+  RUNNING
+  VERIFIED
+  MANUAL_REVIEW
+  INELIGIBLE
+  FAILED
+}
+
+enum VettingFactor {
+  MICRO_PAYMENT
+  EXAM_PERIOD_PAYMENT
+  FINANCE_BLOCK
+  AID_RELIANCE
+  UNMET_BALANCE
+  PREVIOUS_ASSISTANCE
+  DUPLICATE_APPLICATION
+}
+
+enum VettingFactorOutcome {
+  PASS
+  PARTIAL
+  FAIL
+  WARNING
+}
+
+enum CommitteeSeat {
+  CHAIRPERSON
+  TREASURER
+  SECRETARY
+}
+
+enum CommitteeMembershipStatus {
+  ACTIVE
+  SUSPENDED
+  ENDED
+}
+
+enum CommitteeConflictType {
+  FAMILY_RELATIONSHIP
+  FINANCIAL_INTEREST
+  ORGANIZATIONAL_RELATIONSHIP
+  PERSONAL_RELATIONSHIP
+  OTHER
+}
+
+enum CommitteeConflictStatus {
+  DECLARED
+  CONFIRMED
+  DISMISSED
+}
+
+enum ApprovalRoundStatus {
+  OPEN
+  APPROVED
+  DECLINED
+  INVALIDATED
+}
+
+enum ApprovalDecisionType {
+  APPROVE
+  DECLINE
+}
+
+enum DisbursementType {
+  TUITION_B2B
+  UPKEEP_B2C
+}
+
+enum DisbursementStatus {
+  CREATED
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  REVERSED
+}
+
+enum DisbursementAttemptStatus {
+  REQUESTED
+  ACCEPTED
+  SUCCEEDED
+  FAILED
+}
+
+enum GoodsCollectionStatus {
+  PENDING_CONFIRMATION
+  CONFIRMED
+  REJECTED
+  RELEASED
+  CANCELLED
+  EXPIRED
+}
+
+enum LedgerAccountType {
+  ASSET
+  LIABILITY
+  INCOME
+  EXPENSE
+  EQUITY
+}
+
+enum LedgerSourceType {
+  DONATION
+  DISBURSEMENT
+}
+
+enum LedgerJournalStatus {
+  POSTED
+  REVERSED
+}
+
+enum ReconciliationScope {
+  DONATIONS
+  DISBURSEMENTS
+  ALL
+}
+
+enum ReconciliationRunStatus {
+  RUNNING
+  COMPLETED
+  COMPLETED_WITH_EXCEPTIONS
+  FAILED
+}
+
+enum ReconciliationOutcome {
+  MATCHED
+  MISSING_PROVIDER_EVENT
+  AMOUNT_MISMATCH
+  MISSING_TRANSACTION_REFERENCE
+  DUPLICATE_REFERENCE
+}
+
+enum EvidenceSubjectType {
+  DONATION
+  DISBURSEMENT
+  GOODS_COLLECTION
+  APPLICATION
+  VETTING
+  RECONCILIATION
+}
+
+enum EvidenceType {
+  DONATION_RECEIPT
+  DISBURSEMENT_RECEIPT
+  GOODS_HANDOVER
+  APPLICATION_DECISION
+  VETTING_DECISION
+  RECONCILIATION_REPORT
+}
+
+enum EvidenceSensitivity {
+  INTERNAL
+  RESTRICTED
+}
+
+enum EvidenceStatus {
+  ACTIVE
+  EXPIRED
+  DESTROYED
+  INTEGRITY_FAILED
+}
+
+enum BlockchainAnchorStatus {
+  QUEUED
+  SUBMITTED
+  CONFIRMED
+  FAILED
+}
+
+enum AuditOutcome {
+  SUCCESS
+  FAILURE
+  DENIED
+}
+
+enum ForensicRuleCode {
+  UNRECONCILED_MONEY
+  DUPLICATE_CALLBACK
+  REPEATED_CONFIRMATION_FAILURE
+  INVENTORY_VARIANCE
+  DISBURSEMENT_SPIKE
+  APPROVAL_CONFLICT
+  UNUSUAL_CLERK_ACTIVITY
+}
+
+enum ForensicSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ForensicAnomalyStatus {
+  DETECTED
+  TRIAGED
+  INVESTIGATING
+  CONFIRMED
+  DISMISSED
+  RESOLVED
+}
+
+enum ForensicInvestigationStatus {
+  OPEN
+  CLOSED
+}
+
+enum NotificationChannel {
+  IN_APP
+  SMS
+}
+
+enum NotificationTemplateCode {
+  DONATION_STATUS
+  APPLICATION_STATUS
+  APPROVAL_STATUS
+  DISBURSEMENT_STATUS
+  GOODS_COLLECTION_STATUS
+  SECURITY_ALERT
+}
+
+enum NotificationStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  FAILED
+}
+
+enum OutboxStatus {
+  PENDING
+  PROCESSING
+  PUBLISHED
+  FAILED
+}
