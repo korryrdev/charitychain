@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+import { prisma } from '@charitychain/database';
 import { STATUSES } from '../../constants/statuses.js';
 import { donorsService } from '../donors/donors.service.js';
 import { assertUserCanSignIn } from './auth.policy.js';
@@ -24,11 +26,31 @@ export function createAuthService({
         })
       );
       try {
-        await repository.assignDefaultRole(result.user.id);
+        await repository.assignDefaultRole(result.user.id, 'DONOR');
         await donorProvisioning.provision(result.user.id);
-        const token = await verificationService.issue(input.email);
-        await sendVerification({ email: input.email, token, user: result.user });
-        return result;
+        await prisma.user.update({
+          where: { id: result.user.id },
+          data: { status: STATUSES.USER.ACTIVE, emailVerified: true }
+        });
+
+        const sessionToken = `malkia-token-${randomUUID()}`;
+        const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+        await prisma.session.create({
+          data: {
+            token: sessionToken,
+            userId: result.user.id,
+            expiresAt,
+            ipAddress: '127.0.0.1',
+            userAgent: 'CharityChain-DonorWeb'
+          }
+        });
+
+        return {
+          user: { ...result.user, status: STATUSES.USER.ACTIVE, emailVerified: true },
+          token: sessionToken,
+          expiresAt,
+          role: 'DONOR'
+        };
       } catch (error) {
         await repository.deleteUser(result.user.id).catch(() => {});
         throw error;
@@ -37,11 +59,53 @@ export function createAuthService({
     async login(input, headers) {
       const user = await repository.findUserByEmail(input.email);
       assertUserCanSignIn(user);
-      return engine.api.signInEmail({
+      const res = await engine.api.signInEmail({
         body: { email: input.email, password: input.password },
         headers,
         returnHeaders: true
       });
+
+      const unwrapRes = unwrap(res);
+      let token = unwrapRes?.token;
+      if (!token) {
+        const activeSession = await prisma.session.findFirst({
+          where: { userId: user.id, expiresAt: { gt: new Date() } },
+          orderBy: { createdAt: 'desc' }
+        });
+        if (activeSession) {
+          token = activeSession.token;
+        } else {
+          token = `malkia-token-${randomUUID()}`;
+          await prisma.session.create({
+            data: {
+              token,
+              userId: user.id,
+              expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+            }
+          });
+        }
+      }
+
+      const userRoles = await prisma.userRole.findMany({
+        where: { userId: user.id },
+        include: { role: true }
+      });
+      const roles = userRoles.map((ur) => ur.role.code);
+      const primaryRole = roles.includes('DONOR') && roles.length === 1 ? 'DONOR' : roles[0] || 'DONOR';
+
+      return {
+        headers: res.headers,
+        response: {
+          token,
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            status: user.status
+          },
+          role: primaryRole
+        }
+      };
     },
     logout(headers) {
       return engine.api.signOut({ headers, returnHeaders: true });

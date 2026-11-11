@@ -32,7 +32,20 @@ export function createAuthController({
     register: async (request, response, next) => {
       try {
         const result = await service.register(request.body);
-        response.status(201).json({ user: result.user, requiresVerification: true });
+        if (result.token) {
+          response.cookie('charitychain_session', result.token, {
+            httpOnly: true,
+            sameSite: 'lax',
+            path: '/',
+            maxAge: 30 * 24 * 60 * 60 * 1000,
+          });
+        }
+        response.status(201).json({
+          user: result.user,
+          token: result.token,
+          role: result.role || 'DONOR',
+          requiresVerification: false
+        });
       } catch (error) {
         next(error);
       }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '@/app/auth/AuthContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -14,20 +14,28 @@ import {
   PackageCheck,
   Coins,
   FileCheck2,
+  HeartHandshake,
+  AlertCircle,
+  Eye,
+  EyeOff,
+  Sparkles,
 } from 'lucide-react';
 import type { UserRole } from '@/types';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as any)?.from?.pathname || '/app';
-  const { login } = useAuth();
+  const from = (location.state as any)?.from?.pathname;
+  const { login, loginWithPassword } = useAuth();
 
-  const [email, setEmail] = useState('chair@malkia.charity');
-  const [password, setPassword] = useState('••••••••••••');
-  const [totpCode, setTotpCode] = useState('');
-  const [step, setStep] = useState<'CREDENTIALS' | 'TOTP'>('CREDENTIALS');
-  const [selectedRole, setSelectedRole] = useState<UserRole>('COMMITTEE');
+  const [activeTab, setActiveTab] = useState<'DONOR' | 'STAFF'>('DONOR');
+
+  // Donor form
+  const [donorEmail, setDonorEmail] = useState('');
+  const [donorPassword, setDonorPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const demoAccounts = [
     {
@@ -35,7 +43,7 @@ export const LoginPage: React.FC = () => {
       title: 'Pharmacy Custodian',
       name: 'Jane Atieno',
       email: 'pharmacy@malkia.charity',
-      desc: 'Logs and issues pharmacy items',
+      desc: 'Logs in-kind intake and issues medicines',
       icon: PackageCheck,
       color: 'bg-amber-500',
     },
@@ -44,7 +52,7 @@ export const LoginPage: React.FC = () => {
       title: 'Committee Member',
       name: 'David Kimani',
       email: 'committee@malkia.charity',
-      desc: 'Reviews and approves cases',
+      desc: 'Reviews vetting and approves student cases',
       icon: FileCheck2,
       color: 'bg-emerald-600',
     },
@@ -53,7 +61,7 @@ export const LoginPage: React.FC = () => {
       title: 'Executive Signatory',
       name: 'Wanjiku Mwangi',
       email: 'signatory1@malkia.charity',
-      desc: 'Signs fund releases',
+      desc: 'EIP-712 wallet multi-sig fund authorization',
       icon: KeyRound,
       color: 'bg-purple-600',
     },
@@ -62,160 +70,221 @@ export const LoginPage: React.FC = () => {
       title: 'Treasurer',
       name: 'Kevin Otieno',
       email: 'treasurer@malkia.charity',
-      desc: 'Enters and verifies bank deposits',
+      desc: 'Verifies bank deposits & reconciles statements',
       icon: Coins,
       color: 'bg-blue-600',
     },
   ];
 
-  const handleCredentialsSubmit = (e: React.FormEvent) => {
+  const handleDonorLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return;
-    setStep('TOTP');
-  };
+    setErrorMsg(null);
+    if (!donorEmail || !donorPassword) {
+      setErrorMsg('Please enter both email and password.');
+      return;
+    }
 
-  const handleTotpSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    login(email, selectedRole);
-    navigate(from, { replace: true });
+    setIsLoading(true);
+    try {
+      await loginWithPassword(donorEmail.trim(), donorPassword);
+      const dest = from || '/donor';
+      navigate(dest, { replace: true });
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Invalid email or password. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleQuickDemoLogin = (account: (typeof demoAccounts)[0]) => {
     login(account.email, account.role);
-    const dest = from !== '/app' ? from : account.role === 'CUSTODIAN' ? '/app/pharmacy' : '/app';
+    const dest = from || (account.role === 'CUSTODIAN' ? '/app/pharmacy' : '/app');
     navigate(dest, { replace: true });
   };
 
   return (
-    <div className="min-h-[80vh] flex flex-col justify-center items-center py-8 px-4 sm:px-6">
+    <div className="min-h-[80vh] flex flex-col justify-center items-center py-10 px-4 sm:px-6">
       <div className="max-w-md w-full space-y-6">
+        {/* Header */}
         <div className="text-center space-y-2">
-          <div className="w-12 h-12 rounded-xl bg-emerald-600 text-white font-extrabold text-xl flex items-center justify-center mx-auto shadow-sm">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white font-extrabold text-2xl flex items-center justify-center mx-auto shadow-md">
             M
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-            Staff sign in
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
+            Sign in to CharityChain
           </h1>
+          <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400">
+            Choose your account type to access the system
+          </p>
         </div>
 
-        {/* Credentials / 2FA Form Card */}
-        <Card className="shadow-lg border-zinc-200 dark:border-zinc-800">
-          {step === 'CREDENTIALS' ? (
-            <form onSubmit={handleCredentialsSubmit}>
-              <CardHeader className="pb-4">
-                <CardTitle className="text-base font-bold flex items-center gap-2">
-                  <Lock className="w-4 h-4 text-emerald-600" />
-                  Sign in
-                </CardTitle>
-              </CardHeader>
+        {/* Tab Switcher: Donor vs Staff Demo */}
+        <div className="flex rounded-xl bg-zinc-100 dark:bg-zinc-800 p-1 border border-zinc-200 dark:border-zinc-700">
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab('DONOR');
+              setErrorMsg(null);
+            }}
+            className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+              activeTab === 'DONOR'
+                ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 shadow-xs'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+            }`}
+          >
+            <HeartHandshake className="w-4 h-4 text-emerald-600" />
+            <span>Donor Account</span>
+          </button>
 
-              <CardContent className="space-y-4">
-                <div>
-                  <Input
-                    label="Email Address"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <div>
-                  <Input
-                    label="Password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                </div>
-              </CardContent>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab('STAFF');
+              setErrorMsg(null);
+            }}
+            className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+              activeTab === 'STAFF'
+                ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 shadow-xs'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+            }`}
+          >
+            <ShieldCheck className="w-4 h-4 text-purple-600" />
+            <span>Staff Demo Access</span>
+          </button>
+        </div>
 
-              <CardFooter className="pt-2">
-                <Button type="submit" variant="emerald" className="w-full gap-2">
-                  <span>Continue to 2FA Step</span>
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              </CardFooter>
-            </form>
-          ) : (
-            <form onSubmit={handleTotpSubmit}>
-              <CardHeader className="pb-4">
-                <CardTitle className="text-base font-bold flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                  Verification code
-                </CardTitle>
-                <CardDescription>
-                  Enter the 6-digit code from your authenticator app.
+        {/* Tab 1: Donor Sign In */}
+        {activeTab === 'DONOR' && (
+          <Card className="border-zinc-200 dark:border-zinc-800 shadow-md">
+            <form onSubmit={handleDonorLogin}>
+              <CardHeader className="pb-3 border-b border-zinc-100 dark:border-zinc-800">
+                <CardTitle className="text-base font-semibold">Donor Sign In</CardTitle>
+                <CardDescription className="text-xs">
+                  Access your contributions, badge status, and privacy preferences.
                 </CardDescription>
               </CardHeader>
 
-              <CardContent className="space-y-4">
-                <Input
-                  label="6-digit code"
-                  type="text"
-                  maxLength={6}
-                  placeholder="e.g. 592810"
-                  value={totpCode}
-                  onChange={(e) => setTotpCode(e.target.value)}
-                  className="text-center font-mono text-lg tracking-widest"
-                  autoFocus
-                />
+              <CardContent className="p-5 space-y-4">
+                {errorMsg && (
+                  <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-xs flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>{errorMsg}</span>
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">Email Address</label>
+                  <div className="relative">
+                    <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+                    <Input
+                      type="email"
+                      required
+                      placeholder="your.email@example.com"
+                      value={donorEmail}
+                      onChange={(e) => setDonorEmail(e.target.value)}
+                      className="pl-9 text-xs h-10"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">Password</label>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+                    <Input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      placeholder="Your password"
+                      value={donorPassword}
+                      onChange={(e) => setDonorPassword(e.target.value)}
+                      className="pl-9 pr-9 text-xs h-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <Button
+                  type="submit"
+                  variant="emerald"
+                  disabled={isLoading}
+                  className="w-full text-xs h-10 gap-2 font-semibold shadow-xs"
+                >
+                  {isLoading ? (
+                    <span>Signing in...</span>
+                  ) : (
+                    <>
+                      <span>Sign In to Donor Portal</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </Button>
               </CardContent>
 
-              <CardFooter className="flex flex-col gap-2 pt-2">
-                <Button type="submit" variant="emerald" className="w-full">
-                  Verify & Enter Portal
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setStep('CREDENTIALS')}
-                  className="w-full text-xs"
-                >
-                  Back to email
-                </Button>
+              <CardFooter className="p-4 bg-zinc-50/50 dark:bg-zinc-900/50 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between text-xs text-zinc-500">
+                <span>New to CharityChain?</span>
+                <Link to="/register" className="font-semibold text-emerald-600 dark:text-emerald-400 hover:underline">
+                  Create a Donor Account
+                </Link>
               </CardFooter>
             </form>
-          )}
-        </Card>
+          </Card>
+        )}
 
-        {/* 1-Click Fast Demo Personas */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 text-xs font-bold text-zinc-400 uppercase tracking-wider">
-            <UserCheck className="w-3.5 h-3.5" />
-            Quick demo sign-in
-          </div>
+        {/* Tab 2: Staff Demo Access */}
+        {activeTab === 'STAFF' && (
+          <Card className="border-zinc-200 dark:border-zinc-800 shadow-md">
+            <CardHeader className="pb-3 border-b border-zinc-100 dark:border-zinc-800">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                <CardTitle className="text-base font-semibold">Governance & Staff Demo</CardTitle>
+              </div>
+              <CardDescription className="text-xs">
+                Select a role to test case approvals, multi-sig signing, bank verification, and inventory intake.
+              </CardDescription>
+            </CardHeader>
 
-          <div className="grid grid-cols-1 gap-2">
-            {demoAccounts.map((account) => {
-              const Icon = account.icon;
-              return (
-                <button
-                  key={account.role}
-                  type="button"
-                  onClick={() => handleQuickDemoLogin(account)}
-                  className="p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-emerald-500 hover:shadow-xs transition-all text-left flex items-start gap-3 group"
-                >
-                  <div className={`p-2 rounded-lg ${account.color} text-white shrink-0 mt-0.5`}>
-                    <Icon className="w-4 h-4" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 group-hover:text-emerald-600 transition-colors">
-                        {account.title} ({account.name})
-                      </span>
-                      <ArrowRight className="w-3.5 h-3.5 text-zinc-400 group-hover:translate-x-0.5 group-hover:text-emerald-600 transition-all" />
+            <CardContent className="p-4 space-y-2.5">
+              {demoAccounts.map((account) => {
+                const Icon = account.icon;
+                return (
+                  <button
+                    key={account.role}
+                    type="button"
+                    onClick={() => handleQuickDemoLogin(account)}
+                    className="w-full flex items-center justify-between p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 hover:bg-zinc-50 dark:hover:bg-zinc-800/80 hover:border-emerald-500/50 transition-all text-left group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2.5 rounded-lg ${account.color} text-white shadow-xs`}>
+                        <Icon className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="font-semibold text-xs text-zinc-900 dark:text-zinc-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                          {account.title}
+                        </div>
+                        <div className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                          {account.desc}
+                        </div>
+                      </div>
                     </div>
-                    <p className="text-[11px] text-zinc-500 truncate mt-0.5">{account.desc}</p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+                    <ArrowRight className="w-4 h-4 text-zinc-400 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all" />
+                  </button>
+                );
+              })}
+            </CardContent>
+
+            <CardFooter className="p-3 bg-zinc-50/50 dark:bg-zinc-900/50 border-t border-zinc-100 dark:border-zinc-800 text-[11px] text-zinc-500 text-center block">
+              Staff roles run with pre-authorized persistent sessions for paired demonstration.
+            </CardFooter>
+          </Card>
+        )}
       </div>
     </div>
   );
 };
-
+export default LoginPage;

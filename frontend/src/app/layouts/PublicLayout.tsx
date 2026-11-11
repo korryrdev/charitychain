@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Search, BarChart3, FileText, ArrowRight, Lock, Award, ShieldAlert, Boxes } from 'lucide-react';
+import { Search, BarChart3, FileText, ArrowRight, Lock, Award, ShieldAlert, Boxes, HeartHandshake } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/Button';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -12,12 +12,15 @@ import { useAuth } from '@/app/auth/AuthContext';
 export const PublicLayout: React.FC = () => {
   const location = useLocation();
   const { t } = useTranslation();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   const navLinks = [
     { label: t('navTrace'), path: '/trace', icon: Search },
     { label: t('navDashboard'), path: '/dashboard', icon: BarChart3 },
     { label: t('navWall'), path: '/wall', icon: Award },
+    ...(user?.role === 'DONOR'
+      ? [{ label: 'My Impact', path: '/donor', icon: HeartHandshake }]
+      : []),
     { label: t('navReports'), path: '/reports', icon: FileText },
     { label: 'Relief Catalogue', path: '/goods-catalogue', icon: Boxes },
   ];
@@ -61,27 +64,46 @@ export const PublicLayout: React.FC = () => {
             })}
           </nav>
 
-          {/* Controls: Language Toggle, Theme Toggle, Staff Portal */}
+          {/* Controls: Language Toggle, Theme Toggle, Staff/Donor Portal */}
           <div className="flex items-center gap-2 sm:gap-2.5">
             <LanguageToggle />
             <ThemeToggle />
             {user ? (
-              <Link to="/app">
-                <Button variant="emerald" size="sm" className="gap-2">
-                  <span className="hidden sm:inline">Portal</span>
-                  <span className="sm:hidden">Portal</span>
-                  <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+              <div className="flex items-center gap-2">
+                <Link to={user.role === 'DONOR' ? '/donor' : '/app'}>
+                  <Button variant="emerald" size="sm" className="gap-2">
+                    <span className="hidden sm:inline">
+                      {user.role === 'DONOR' ? 'My Donor Portal' : 'Staff Portal'}
+                    </span>
+                    <span className="sm:hidden">Portal</span>
+                    <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+                  </Button>
+                </Link>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={logout}
+                  className="text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                >
+                  Sign Out
                 </Button>
-              </Link>
+              </div>
             ) : (
-              <Link to="/login">
-                <Button variant="outline" size="sm" className="gap-2">
-                  <Lock className="w-3.5 h-3.5 text-zinc-500" aria-hidden="true" />
-                  <span className="hidden sm:inline">Staff sign in</span>
-                  <span className="sm:hidden">Login</span>
-                  <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
-                </Button>
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link to="/login">
+                  <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+                    <Lock className="w-3.5 h-3.5 text-zinc-500" aria-hidden="true" />
+                    <span>Sign In</span>
+                  </Button>
+                </Link>
+                <Link to="/register">
+                  <Button variant="emerald" size="sm" className="gap-1.5 text-xs shadow-xs">
+                    <HeartHandshake className="w-3.5 h-3.5" aria-hidden="true" />
+                    <span className="hidden sm:inline">Register Donor</span>
+                    <span className="sm:hidden">Join</span>
+                  </Button>
+                </Link>
+              </div>
             )}
           </div>
         </div>

@@ -7,6 +7,8 @@ import { TracePage } from '@/features/trace/TracePage';
 import { DashboardPage } from '@/features/dashboard/DashboardPage';
 import { ReportsPage } from '@/features/reports/ReportsPage';
 import { LoginPage } from '@/features/auth/LoginPage';
+import { RegisterPage } from '@/features/auth/RegisterPage';
+import { DonorPortalPage } from '@/features/donor/DonorPortalPage';
 import { RecognitionWallPage } from '@/features/recognition/RecognitionWallPage';
 import { ClaimPreferencesPage } from '@/features/donor/ClaimPreferencesPage';
 import { CasesPage } from '@/features/cases/CasesPage';
@@ -29,11 +31,13 @@ export const router = createBrowserRouter([
       { path: 'trace', element: <TracePage /> },
       { path: 'dashboard', element: <DashboardPage /> },
       { path: 'wall', element: <RecognitionWallPage /> },
+      { path: 'donor', element: <RequireAuth><DonorPortalPage /></RequireAuth> },
       { path: 'donor/claim', element: <ClaimPreferencesPage /> },
       { path: 'reports', element: <ReportsPage /> },
       { path: 'report-fraud', element: <FraudReportPage /> },
       { path: 'goods-catalogue', element: <GoodsCataloguePage /> },
       { path: 'login', element: <LoginPage /> },
+      { path: 'register', element: <RegisterPage /> },
     ],
   },
 

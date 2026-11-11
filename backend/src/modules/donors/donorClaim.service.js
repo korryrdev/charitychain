@@ -73,7 +73,7 @@ export function createDonorClaimService({
               case: {
                 select: {
                   caseNumber: true,
-                  status: true
+                  state: true
                 }
               }
             }
@@ -107,8 +107,9 @@ export function createDonorClaimService({
           createdAt: l.createdAt,
           allocations: l.allocations.map((a) => ({
             caseNumber: a.case?.caseNumber ?? 'Unknown',
+            caseState: a.case?.state ?? 'DISBURSED',
             amountMinor: a.amountMinor.toString(),
-            allocatedAt: a.createdAt
+            allocatedAt: a.allocatedAt || a.createdAt
           }))
         })),
         preference: latestPreference

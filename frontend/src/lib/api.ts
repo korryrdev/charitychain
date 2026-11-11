@@ -584,6 +584,115 @@ export const api = {
     }
   },
 
+  // Donor Registration & Auth
+  register: async (data: { name: string; email: string; password: string }): Promise<{ user: any; token: string; role?: string }> => {
+    return fetchApi('/api/v1/public/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  login: async (data: { email: string; password: string }): Promise<{ user: any; token: string; role?: string }> => {
+    return fetchApi('/api/v1/public/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Donor Portal Dashboard
+  getDonorPortalDashboard: async (): Promise<{
+    donorRef: string;
+    user: { id: string; name: string; email: string };
+    profile: {
+      id: string;
+      publicAlias: string;
+      displayNameMode: string;
+      publicListed: boolean;
+      showContributionTotal: boolean;
+      showRecognitionTier: boolean;
+      recognitionTier: string;
+    };
+    summary: {
+      totalDonatedMinor: string;
+      totalAllocatedMinor: string;
+      totalRemainingMinor: string;
+      lotsCount: number;
+      casesSupportedCount: number;
+    };
+    lots: Array<{
+      id: string;
+      receiptCode: string;
+      channel: string;
+      currency: string;
+      totalAmountMinor: string;
+      remainingAmountMinor: string;
+      isExhausted: boolean;
+      earmark?: string;
+      createdAt: string;
+      allocations: Array<{
+        id: string;
+        amountMinor: string;
+        allocatedAt: string;
+        caseNumber: string;
+        needCategory: string;
+        state: string;
+        justification: string;
+      }>;
+    }>;
+    badges: Array<{
+      id: string;
+      tier: string;
+      academicYear: string;
+      awardedAt: string;
+    }>;
+    nextTier: {
+      tier: string;
+      targetMinor: number;
+      remainingMinor: number;
+      progressPercent: number;
+    } | null;
+    settings: {
+      displayMode: string;
+      publicAlias: string;
+      confirmedName: string;
+      publicListed: boolean;
+      showContributionTotal: boolean;
+      showRecognitionTier: boolean;
+    };
+  }> => {
+    return fetchApi('/api/v1/donor/dashboard');
+  },
+
+  claimReceiptToAccount: async (receiptCode: string): Promise<{
+    success: boolean;
+    message: string;
+    receiptCode: string;
+    lotAmountMinor: string;
+    currency: string;
+  }> => {
+    return fetchApi('/api/v1/donor/claim', {
+      method: 'POST',
+      body: JSON.stringify({ receiptCode }),
+    });
+  },
+
+  updateDonorPortalSettings: async (settings: {
+    displayMode?: string;
+    publicAlias?: string;
+    publicListed?: boolean;
+    showContributionTotal?: boolean;
+    showRecognitionTier?: boolean;
+  }): Promise<{
+    success: boolean;
+    profile: any;
+    settings: any;
+  }> => {
+    return fetchApi('/api/v1/donor/settings', {
+      method: 'PATCH',
+      body: JSON.stringify(settings),
+    });
+  },
+
   // Thank-You Certificate
   getCertificate: async (receiptCode: string): Promise<any> => {
     return fetchApi(`/api/v1/public/certificate/${encodeURIComponent(receiptCode)}`);

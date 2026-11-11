@@ -44,6 +44,7 @@ import { itemsRouter } from '../modules/items/items.routes.js';
 import { reportsRouter } from '../modules/reports/reports.routes.js';
 import { alertsRouter } from '../modules/alerts/alerts.routes.js';
 import { publicEndpointsRouter } from '../modules/public/public.routes.js';
+import { donorPortalRouter } from '../modules/donors/donorPortal.routes.js';
 import { cryptoRouter } from '../modules/crypto/crypto.routes.js';
 import { createAuthenticatedRouter } from './authenticated.routes.js';
 import { healthRouter } from './health.routes.js';
@@ -73,6 +74,7 @@ const defaultAuthenticatedRoutes = Object.freeze([
   { path: '/inventory/issue', router: itemsRouter },
   { path: '/reports', router: reportsRouter },
   { path: '/alerts', router: alertsRouter },
+  { path: '/donor', router: donorPortalRouter },
   { path: '/audit', router: auditLogsRouter },
   { path: '/donors', router: donorsRouter },
   { path: '/donations', router: moneyDonationsRouter },

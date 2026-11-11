@@ -7,6 +7,8 @@ interface AuthContextType {
   role: UserRole;
   setRole: (role: UserRole) => void;
   login: (email: string, role: UserRole) => void;
+  registerDonor: (name: string, email: string, password: string) => Promise<void>;
+  loginWithPassword: (email: string, password: string) => Promise<void>;
   logout: () => void;
   signatoryWallet: string;
 }
@@ -100,6 +102,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     api.demoLogin({ email, role: targetRole }).catch(() => {});
   };
 
+  const registerDonor = async (name: string, email: string, password: string) => {
+    const res = await api.register({ name, email, password });
+    const session: UserSession = {
+      id: res.user?.id || `usr-${Date.now()}`,
+      email: res.user?.email || email,
+      name: res.user?.name || name,
+      role: 'DONOR',
+      token: res.token,
+      walletAddress: '0x0000000000000000000000000000000000000000',
+    };
+    setUser(session);
+    setRoleState('DONOR');
+  };
+
+  const loginWithPassword = async (email: string, password: string) => {
+    const res = await api.login({ email, password });
+    const roleCode = (res.role === 'DONOR' || !res.role ? 'DONOR' : res.role) as UserRole;
+    const session: UserSession = {
+      id: res.user?.id || `usr-${Date.now()}`,
+      email: res.user?.email || email,
+      name: res.user?.name || email.split('@')[0],
+      role: roleCode,
+      token: res.token,
+      walletAddress: '0x0000000000000000000000000000000000000000',
+    };
+    setUser(session);
+    setRoleState(roleCode);
+  };
+
   const logout = () => {
     setUser(null);
   };
@@ -113,6 +144,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role,
         setRole,
         login,
+        registerDonor,
+        loginWithPassword,
         logout,
         signatoryWallet,
       }}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   FileCheck2,
@@ -99,6 +99,12 @@ export const AppLayout: React.FC = () => {
     logout();
     navigate('/trace');
   };
+
+  useEffect(() => {
+    if (role === 'DONOR') {
+      navigate('/donor', { replace: true });
+    }
+  }, [role, navigate]);
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col lg:flex-row">
