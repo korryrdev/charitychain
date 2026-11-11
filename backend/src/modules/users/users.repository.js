@@ -1,6 +1,6 @@
 import { prisma } from '@charitychain/database';
 
-const includeRoles = { roles: { include: { role: true } } };
+const includeRoles = { roles: { include: { role: { include: { permissions: { include: { permission: true } } } } } } };
 
 export function createUsersRepository(database = prisma) {
   return {

@@ -1,9 +1,12 @@
 'use strict';
 
 import { prisma } from '@charitychain/database';
-const include = { student: { select: { id: true, registrationNumber: true, fullName: true, verifiedPhone: true } }, semester: true, lines: { include: { batch: { include: { item: { include: { category: true } }, location: true } }, reservation: true }, orderBy: { createdAt: 'asc' } } };
+const include = { student: { select: { id: true, userId: true, registrationNumber: true, fullName: true, verifiedPhone: true } }, semester: true, lines: { include: { batch: { include: { item: { include: { category: true } }, location: true } }, reservation: true }, orderBy: { createdAt: 'asc' } } };
 export function createGoodsCollectionsRepository(database = prisma) { return {
   activePolicy() { return database.goodsCollectionPolicy.findFirst({ where: { active: true }, orderBy: { createdAt: 'desc' } }); },
+  findStudentByUserId(userId) { return database.student.findUnique({ where: { userId } }); },
+  availableBatches() { return database.inventoryBatch.findMany({ where: { status: 'AVAILABLE', availableQuantity: { gt: 0 }, OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }] }, include: { item: { include: { category: true } } }, orderBy: [{ item: { category: { code: 'asc' } } }, { receivedAt: 'asc' }] }); },
+  listForStudent(studentId) { return database.goodsCollection.findMany({ where: { studentId }, include, orderBy: { createdAt: 'desc' } }); },
   async eligibilityContext(registrationNumber, cooldownSince) { const student = await database.student.findUnique({ where: { registrationNumber }, include: { aidRecords: true, financeBlocks: true } }); if (!student) return { student: null }; const semester = await database.academicSemester.findFirst({ where: { active: true }, orderBy: { startsAt: 'desc' } }); const [financial, recentCollection] = semester ? await database.$transaction([database.studentFinancialRecord.findUnique({ where: { studentId_semesterId: { studentId: student.id, semesterId: semester.id } } }), database.goodsCollection.findFirst({ where: { studentId: student.id, status: 'RELEASED', releasedAt: { gte: cooldownSince } }, orderBy: { releasedAt: 'desc' } })]) : [null,null]; return { student, semester, financial, recentCollection }; },
   batches(ids) { return database.inventoryBatch.findMany({ where: { id: { in: ids } }, include: { item: { include: { category: true } }, location: true } }); },
   find(id) { return database.goodsCollection.findUnique({ where: { id }, include }); },

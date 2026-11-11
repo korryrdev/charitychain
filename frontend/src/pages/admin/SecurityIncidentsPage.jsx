@@ -1,3 +1,1 @@
-'use strict';
-
-// SecurityIncidentsPage: implementation pending.
+export function SecurityIncidentsPage(){return <main className="portal-page admin-page"><p className="section-kicker">Security incidents</p><h1>Access and operational safeguards.</h1><section className="portal-card"><ul><li>High-risk user and role changes require MFA.</li><li>Session revocation and account-status changes are audit logged.</li><li>Suspected fraud is handled through restricted forensic cases.</li><li>Credentials, secure tokens, and private evidence are never shown here.</li></ul></section></main>}

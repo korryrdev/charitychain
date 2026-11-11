@@ -1,3 +1,1 @@
-'use strict';
-
-// AllowanceSummary: implementation pending.
+export function AllowanceSummary({ overview }) { const { policy, eligibility } = overview; return <section className={`allowance-summary ${eligibility.eligible ? 'allowance-summary--eligible' : 'allowance-summary--ineligible'}`}><p className="section-kicker">Goods allowance</p><h2>{eligibility.eligible ? 'You may request a goods collection' : 'Goods collection is not currently available'}</h2><p>{eligibility.eligible ? 'Your selection is checked again by the clerk against current stock and policy before any reservation is made.' : eligibility.reason}</p><dl><div><dt>Categories</dt><dd>{policy.maximumCategories} maximum</dd></div><div><dt>Total items</dt><dd>{policy.maximumTotalUnits} maximum</dd></div><div><dt>Collection interval</dt><dd>Every {policy.cooldownDays} days</dd></div><div><dt>Reservation</dt><dd>{policy.reservationMinutes} minutes</dd></div></dl></section>; }

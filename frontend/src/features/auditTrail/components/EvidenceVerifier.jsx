@@ -1,3 +1,1 @@
-'use strict';
-
-// EvidenceVerifier: implementation pending.
+export function EvidenceVerifier({ integrity }) { if (!integrity) return null; return <section className={`evidence-verifier ${integrity.valid ? 'is-valid' : 'is-invalid'}`}><strong>{integrity.valid ? 'Audit chain verified' : 'Audit chain requires investigation'}</strong><p>{integrity.message ?? 'Integrity verification completed.'}</p></section>; }

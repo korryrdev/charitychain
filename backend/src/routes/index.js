@@ -37,6 +37,7 @@ import { auditLogsRouter } from '../modules/auditLogs/auditLogs.routes.js';
 import { forensicAnalyticsRouter } from '../modules/forensicAnalytics/forensicAnalytics.routes.js';
 import { transparencyRouter } from '../modules/transparency/transparency.routes.js';
 import { notificationsRouter } from '../modules/notifications/notifications.routes.js';
+import { complaintsRouter } from '../modules/complaints/complaints.routes.js';
 import { createAuthenticatedRouter } from './authenticated.routes.js';
 import { healthRouter } from './health.routes.js';
 import { createPublicRouter } from './public.routes.js';
@@ -76,7 +77,8 @@ const defaultAuthenticatedRoutes = Object.freeze([
   { path: '/forensics', router: forensicAnalyticsRouter },
   { path: '/public-profile', router: publicProfilesManagementRouter },
   { path: '/recognition', router: recognitionRouter },
-  { path: '/notifications', router: notificationsRouter }
+  { path: '/notifications', router: notificationsRouter },
+  { path: '/complaints', router: complaintsRouter }
 ]);
 const defaultAuthentication = createAuthenticate({ resolveSession: authService.resolveSession });
 

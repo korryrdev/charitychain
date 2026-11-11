@@ -1,3 +1,5 @@
-'use strict';
-
-// ReviewQueuePage: implementation pending.
+import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { approvalsApi } from '../../features/committeeApprovals/services/approvals.api.js';
+const caseRef = (application) => `CASE-${application.reference.slice(-8)}`;
+export function ReviewQueuePage() { const [items, setItems] = useState([]); const [status, setStatus] = useState('VERIFIED'); const [error, setError] = useState(null); useEffect(() => { approvalsApi.queue({ status, pageSize: 100 }).then(({ items: value }) => setItems(value ?? [])).catch((cause) => setError(cause.message)); }, [status]); return <main className="portal-page committee-page"><p className="section-kicker">Review queue</p><h1>Applications ready for committee action.</h1><label className="queue-filter">Status<select value={status} onChange={(event) => setStatus(event.target.value)}><option value="VERIFIED">Verified</option><option value="MANUAL_REVIEW">Manual review</option><option value="AWAITING_APPROVALS">Awaiting approvals</option><option value="APPROVED">Approved</option></select></label>{error && <p className="form-error">{error}</p>}<div className="committee-queue">{items.map((application) => <Link key={application.id} to={`/committee/review/${application.id}`}><strong>{caseRef(application)}</strong><span>{application.type} · KES {Number(application.requestedAmount).toLocaleString()}</span><small>{application.status.replaceAll('_', ' ')} · {application.semester.code}</small></Link>)}</div>{!items.length && !error && <p className="muted">No applications are in this queue.</p>}</main>; }

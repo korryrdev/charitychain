@@ -2,8 +2,10 @@ export const NAVIGATION = Object.freeze({
   community: [
     { to: '/donor', label: 'Donor dashboard', roles: ['DONOR'] },
     { to: '/donor/donate', label: 'Donate money', permissions: ['donation:create'] },
+    { to: '/donor/goods', label: 'Donate goods', roles: ['DONOR'] },
     { to: '/student', label: 'Student dashboard', roles: ['STUDENT'] },
     { to: '/student/applications', label: 'My applications', permissions: ['application:create'] },
+    { to: '/student/goods', label: 'Goods support', roles: ['STUDENT'] },
   ],
   operations: [
     { to: '/clerk', label: 'Clerk dashboard', roles: ['CLERK'] },

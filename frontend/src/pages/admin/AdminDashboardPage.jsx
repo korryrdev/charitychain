@@ -1,3 +1,1 @@
-'use strict';
-
-// AdminDashboardPage: implementation pending.
+import{Link}from'react-router-dom';export function AdminDashboardPage(){return <main className="portal-page admin-page"><p className="section-kicker">Administration</p><h1>Operate the system without overriding governance.</h1><p className="portal-page__lead">Administration manages access and configuration. It cannot substitute committee approvals, change an approved payout, or release unconfirmed goods.</p><div className="admin-actions">{[['users','Users and roles'],['policies','Policy configuration'],['university','Mock university data'],['inventory','Inventory configuration'],['integrations','Integration health'],['security','Security incidents']].map(([to,label])=><Link key={to} to={`/admin/${to}`}>{label}</Link>)}</div></main>}

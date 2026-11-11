@@ -1,3 +1,2 @@
-'use strict';
-
-// MoneyAuditPage: implementation pending.
+import{useEffect,useState}from'react';import{auditApi}from'../../features/auditTrail/services/audit.api.js';import{AuditTimeline}from'../../features/auditTrail/components/AuditTimeline.jsx';
+export function MoneyAuditPage(){const[items,setItems]=useState([]);useEffect(()=>{auditApi.events('?entityType=moneyDonation').then((v)=>setItems(v.items??[])).catch(()=>{});},[]);return <main className="portal-page auditor-page"><p className="section-kicker">Money audit</p><h1>Donation and payout events.</h1><AuditTimeline items={items}/></main>;}

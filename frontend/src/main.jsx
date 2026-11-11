@@ -11,6 +11,15 @@ import './assets/styles/homepage-refresh.css';
 import './assets/styles/public-pages.css';
 import './assets/styles/section9.css';
 import './assets/styles/donor.css';
+import './assets/styles/student-support.css';
+import './assets/styles/physical-donations.css';
+import './assets/styles/student-vetting.css';
+import './assets/styles/goods-collection.css';
+import './assets/styles/clerk.css';
+import './assets/styles/committee.css';
+import './assets/styles/finance.css';
+import './assets/styles/auditor.css';
+import './assets/styles/admin.css';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

@@ -1,3 +1,1 @@
-'use strict';
-
-// BatchInspector: implementation pending.
+export function BatchInspector({ batch }) { if (!batch) return <p className="muted">Select an inventory batch to inspect it.</p>; return <section className="batch-inspector"><h2>{batch.item?.name}</h2><dl><div><dt>Batch</dt><dd>{batch.batchNumber}</dd></div><div><dt>Location</dt><dd>{batch.location?.name ?? '—'}</dd></div><div><dt>Received</dt><dd>{batch.receivedQuantity}</dd></div><div><dt>Issued</dt><dd>{batch.issuedQuantity}</dd></div><div><dt>Damaged</dt><dd>{batch.damagedQuantity}</dd></div><div><dt>Status</dt><dd>{batch.status}</dd></div></dl>{batch.movements?.length ? <><h3>Stock movements</h3><ul>{batch.movements.map((movement) => <li key={movement.id}>{movement.type} · {movement.quantity} · {new Date(movement.createdAt).toLocaleString('en-KE')}</li>)}</ul></> : null}</section>; }

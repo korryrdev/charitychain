@@ -1,3 +1,1 @@
-'use strict';
-
-// PolicyConfigurationPage: implementation pending.
+export function PolicyConfigurationPage(){return <main className="portal-page admin-page"><p className="section-kicker">Policy configuration</p><h1>Versioned operational policies.</h1><section className="portal-card"><h2>Controlled policy areas</h2><ul><li>Need Index thresholds and factor weights</li><li>Goods category, quantity, and cooldown limits</li><li>Confirmation expiry and retry intervals</li><li>Retention and evidence-access controls</li></ul><p className="muted">Policy changes require the appropriate permission, are versioned, and apply prospectively; they never rewrite earlier decisions.</p></section></main>}

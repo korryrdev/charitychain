@@ -1,3 +1,1 @@
-'use strict';
-
-// UsersAndRolesPage: implementation pending.
+import{useEffect,useState}from'react';import{adminApi}from'../../features/administration/services/admin.api.js';export function UsersAndRolesPage(){const[users,setUsers]=useState([]);const[error,setError]=useState(null);useEffect(()=>{adminApi.users().then((v)=>setUsers(v.items??[])).catch((c)=>setError(c.message));},[]);return <main className="portal-page admin-page"><p className="section-kicker">Users and roles</p><h1>Manage access under MFA-protected controls.</h1>{error&&<p className="form-error">{error}</p>}<div className="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Roles</th></tr></thead><tbody>{users.map((user)=><tr key={user.id}><td>{user.name??'—'}</td><td>{user.email}</td><td>{user.status}</td><td>{user.roles?.join(', ')??'—'}</td></tr>)}</tbody></table></div></main>}

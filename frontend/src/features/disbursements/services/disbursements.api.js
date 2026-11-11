@@ -1,3 +1,2 @@
-'use strict';
-
-// disbursements api: implementation pending.
+import { httpClient } from '../../../services/httpClient.js';
+export const disbursementsApi = Object.freeze({ create: (applicationId, idempotencyKey) => httpClient.post(`/disbursements/applications/${applicationId}`, { idempotencyKey }), forApplication: (applicationId) => httpClient.get(`/disbursements/applications/${applicationId}`), get: (id) => httpClient.get(`/disbursements/${id}`), retry: (id) => httpClient.post(`/disbursements/${id}/retry`), reconcile: (payload) => httpClient.post('/reconciliation/runs', payload), reconciliation: (id) => httpClient.get(`/reconciliation/runs/${id}`) });

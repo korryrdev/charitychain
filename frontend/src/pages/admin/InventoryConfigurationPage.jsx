@@ -1,3 +1,1 @@
-'use strict';
-
-// InventoryConfigurationPage: implementation pending.
+export function InventoryConfigurationPage(){return <main className="portal-page admin-page"><p className="section-kicker">Inventory configuration</p><h1>Locations, categories, and expiry controls.</h1><p>Configuration establishes valid inventory locations and categories; it does not receive donations, adjust stock, or release student collections.</p><section className="portal-card"><ul><li>Categories are used for goods-allowance limits.</li><li>Locations identify approved physical storage points.</li><li>Batch expiry is handled by controlled inventory jobs and audit events.</li></ul></section></main>}
