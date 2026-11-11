@@ -43,6 +43,10 @@ export function DonorDashboardPage() {
     studentSupportApi.mine().then((response) => {
       setStudent(response.student);
       setStudentState({ loading: false, error: null });
+      // A linked university record makes this same account a student account as
+      // well. Restore that capability after a page refresh and open its home.
+      setSession({ ...session, roles: [...new Set([...(session?.roles ?? []), 'STUDENT'])] });
+      navigate('/student', { replace: true });
     }).catch((cause) => setStudentState({ loading: false, error: cause.status === 404 ? null : cause.message }));
   }, []);
 
