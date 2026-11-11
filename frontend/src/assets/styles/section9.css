@@ -1,2 +1,244 @@
-.transparency-summary { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; margin-bottom:1rem; background:var(--line); }.transparency-summary article { padding:1.5rem; background:white; }.transparency-summary span,.transparency-summary small { display:block; color:var(--muted); font-size:.78rem; }.transparency-summary strong { display:block; margin:.75rem 0; color:var(--forest-deep); font-size:1.55rem; letter-spacing:-.05em; }.transparency-visuals { display:grid; grid-template-columns:repeat(2,1fr); gap:1rem; margin-bottom:1rem; }.public-chart { padding:1.5rem; border:1px solid var(--line); border-radius:.7rem; background:white; }.public-chart__heading h2 { margin:0; color:var(--forest-deep); font-size:1.05rem; }.public-chart__heading p { margin:.45rem 0 1.5rem; color:var(--muted); font-size:.82rem; line-height:1.55; }.public-chart ul { display:grid; gap:1rem; padding:0; margin:0; list-style:none; }.public-chart li>div:first-child { display:flex; justify-content:space-between; gap:.5rem; color:var(--muted); font-size:.8rem; }.public-chart li>div:first-child strong { color:var(--forest-deep); font-size:.75rem; }.public-chart li>b { display:block; margin-top:.35rem; color:var(--forest); font-size:.8rem; }.public-chart__bar { height:.45rem; margin-top:.55rem; overflow:hidden; border-radius:999px; background:#e7eee8; }.public-chart__bar i { display:block; height:100%; border-radius:999px; background:var(--forest); }.public-chart__empty { color:var(--muted); font-size:.88rem; }.recognition-board { margin-top:1rem; padding:1.5rem; border:1px solid var(--line); border-radius:.7rem; background:white; }.recognition-board h2 { margin:0; color:var(--forest-deep); font-size:1.1rem; }.recognition-board>div>p { margin:.45rem 0 1.5rem; color:var(--muted); font-size:.84rem; }.recognition-board ol { display:grid; padding:0; margin:0; list-style:none; }.recognition-board li { display:grid; grid-template-columns:2rem 1fr auto auto; gap:.75rem; align-items:center; padding:.9rem 0; border-top:1px solid var(--line); }.recognition-board__rank { color:var(--muted); font-size:.72rem; font-weight:800; }.recognition-board li strong { color:var(--forest-deep); font-size:.9rem; }.recognition-board__total { color:var(--forest); font-size:.8rem; font-weight:750; }.recognition-board__empty { margin:0; color:var(--muted); font-size:.88rem; }.tier-badge { display:inline-flex; align-items:center; width:max-content; padding:.25rem .55rem; border-radius:999px; font-size:.68rem; font-weight:800; letter-spacing:.05em; text-transform:uppercase; }.tier-badge--silver { background:#e8ebed; color:#53606a; }.tier-badge--gold { background:#fff2c8; color:#806000; }.tier-badge--diamond { background:#daf5f6; color:#136a70; }.tier-badge--platinum { background:#e8def5; color:#5c3d87; }.tier-badge--default { background:var(--mist); color:var(--forest); }.tier-grid article { display:flex; flex-direction:column; align-items:start; gap:1.4rem; }.tier-grid article>span { color:var(--muted); font-size:.82rem; }.tier-progress { padding:1rem; border:1px solid var(--line); border-radius:.6rem; }.tier-progress>div:first-child { display:flex; gap:.75rem; align-items:center; }.tier-progress__bar { height:.45rem; margin:1rem 0 .4rem; border-radius:999px; overflow:hidden; background:var(--mist); }.tier-progress__bar i { display:block; height:100%; background:var(--forest); }.tier-progress small { color:var(--muted); }
-@media (max-width:760px) { .transparency-summary,.transparency-visuals { grid-template-columns:1fr; }.recognition-board li { grid-template-columns:1.5rem 1fr auto; }.recognition-board__total { grid-column:2 / -1; } }
+.transparency-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.75rem;
+  background: transparent;
+}
+
+.transparency-summary article {
+  padding: clamp(1.5rem, 2.5vw, 2rem);
+  border: 1px solid var(--line);
+  border-radius: 0.85rem;
+  background: white;
+}
+
+.transparency-summary span,
+.transparency-summary small {
+  display: block;
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.transparency-summary strong {
+  display: block;
+  margin: 0.75rem 0;
+  color: var(--forest-deep);
+  font-size: clamp(1.8rem, 2.5vw, 2.4rem);
+  letter-spacing: -0.04em;
+}
+
+.transparency-visuals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 28rem), 1fr));
+  gap: 1.75rem;
+  margin-bottom: 1.75rem;
+}
+
+.public-chart {
+  padding: clamp(1.6rem, 2.5vw, 2.25rem);
+  border: 1px solid var(--line);
+  border-radius: 0.85rem;
+  background: white;
+}
+
+.public-chart__heading h2 {
+  margin: 0;
+  color: var(--forest-deep);
+  font-size: 1.25rem;
+  text-wrap: balance;
+}
+
+.public-chart__heading p {
+  margin: 0.45rem 0 1.5rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+.public-chart ul {
+  display: grid;
+  gap: 1.25rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.public-chart li > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.public-chart li > div:first-child strong {
+  color: var(--forest-deep);
+  font-size: 0.88rem;
+}
+
+.public-chart li > b {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--forest);
+  font-size: 0.92rem;
+  font-weight: 750;
+}
+
+.public-chart__bar {
+  height: 0.5rem;
+  margin-top: 0.55rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e7eee8;
+}
+
+.public-chart__bar i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--forest);
+}
+
+.public-chart__empty {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.recognition-board {
+  margin-top: 1.5rem;
+  padding: clamp(1.6rem, 2.5vw, 2.25rem);
+  border: 1px solid var(--line);
+  border-radius: 0.85rem;
+  background: white;
+}
+
+.recognition-board h2 {
+  margin: 0;
+  color: var(--forest-deep);
+  font-size: 1.35rem;
+  text-wrap: balance;
+}
+
+.recognition-board > div > p {
+  margin: 0.45rem 0 1.5rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+.recognition-board ol {
+  display: grid;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.recognition-board li {
+  display: grid;
+  grid-template-columns: 2.5rem 1fr auto auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.recognition-board__rank {
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.recognition-board li strong {
+  color: var(--forest-deep);
+  font-size: 1rem;
+}
+
+.recognition-board__total {
+  color: var(--forest);
+  font-size: 0.95rem;
+  font-weight: 750;
+}
+
+.recognition-board__empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.tier-badge {
+  display: inline-flex;
+  align-items: center;
+  width: max-content;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.tier-badge--silver { background: #e8ebed; color: #53606a; }
+.tier-badge--gold { background: #fff2c8; color: #806000; }
+.tier-badge--diamond { background: #daf5f6; color: #136a70; }
+.tier-badge--platinum { background: #e8def5; color: #5c3d87; }
+.tier-badge--default { background: var(--mist); color: var(--forest); }
+
+.tier-grid article {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  gap: 1.25rem;
+}
+
+.tier-grid article > span {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.tier-progress {
+  padding: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+}
+
+.tier-progress > div:first-child {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.tier-progress__bar {
+  height: 0.5rem;
+  margin: 1rem 0 0.5rem;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--mist);
+}
+
+.tier-progress__bar i {
+  display: block;
+  height: 100%;
+  background: var(--forest);
+}
+
+.tier-progress small {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+@media (max-width: 760px) {
+  .transparency-summary,
+  .transparency-visuals {
+    grid-template-columns: 1fr;
+  }
+  .recognition-board li {
+    grid-template-columns: 2rem 1fr auto;
+  }
+  .recognition-board__total {
+    grid-column: 2 / -1;
+  }
+}
