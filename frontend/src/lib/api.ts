@@ -58,6 +58,12 @@ async function fetchApi<T>(url: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  demoLogin: async (data: { email?: string; role?: string }): Promise<any> => {
+    return fetchApi('/api/v1/public/auth/demo-login', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
   // Public Trace
   getDonationTrace: async (receiptCode: string): Promise<DonationTrace | null> => {
     try {

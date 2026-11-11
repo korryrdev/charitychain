@@ -8,7 +8,13 @@ const roles = [
   ['COMMITTEE_MEMBER', 'Committee Member'],
   ['FINANCE_OPERATOR', 'Finance Operator'],
   ['AUDITOR', 'Auditor'],
-  ['ADMINISTRATOR', 'Administrator']
+  ['ADMINISTRATOR', 'Administrator'],
+  ['PHARMACY_CUSTODIAN', 'Pharmacy Custodian'],
+  ['TREASURER', 'Treasurer'],
+  ['SIGNATORY', 'Signatory'],
+  ['SUBGROUP_REP', 'Subgroup Representative'],
+  ['MEMBER_AUDITOR', 'Member Auditor'],
+  ['SYSTEM_ADMIN', 'System Administrator']
 ];
 
 const permissions = [
@@ -50,7 +56,23 @@ const permissions = [
   'policy:manage',
   'role:manage',
   'user:manage',
-  'system:administer'
+  'system:administer',
+  'case:create',
+  'case:read',
+  'case:update:draft',
+  'case:submit',
+  'case:decide',
+  'release:authorize',
+  'bank-deposit:create',
+  'bank-deposit:verify',
+  'item-log:create',
+  'item:issue',
+  'alert:read',
+  'alert:resolve',
+  'rules:manage',
+  'donor-identity:reveal',
+  'recognition:moderate',
+  'badge-tier:manage'
 ];
 
 const rolePermissions = {
@@ -71,6 +93,8 @@ const rolePermissions = {
   ],
   CLERK: [
     'profile:read:self',
+    'item-log:create',
+    'item:issue',
     'physical-donation:record',
     'confirmation:manage',
     'inventory:read',
@@ -78,18 +102,55 @@ const rolePermissions = {
     'goods-collection:release',
     'student-record:read:all'
   ],
+  PHARMACY_CUSTODIAN: [
+    'item-log:create',
+    'item:issue',
+    'inventory:read',
+    'inventory:manage',
+    'physical-donation:record',
+    'goods-collection:record',
+    'goods-collection:release'
+  ],
   INVENTORY_SUPERVISOR: [
+    'item-log:create',
+    'item:issue',
     'inventory:read',
     'inventory:manage',
     'physical-donation:inspect',
     'report:read'
   ],
   COMMITTEE_MEMBER: [
+    'case:read',
+    'case:decide',
     'application:review',
     'application:approve',
     'vetting:execute',
     'evidence:read',
+    'report:read',
+    'bank-deposit:create',
+    'bank-deposit:verify'
+  ],
+  TREASURER: [
+    'bank-deposit:create',
+    'bank-deposit:verify',
+    'donation:read:all',
+    'disbursement:create',
+    'disbursement:execute',
+    'reconciliation:execute',
+    'reconciliation:read',
     'report:read'
+  ],
+  SIGNATORY: [
+    'release:authorize',
+    'case:read',
+    'disbursement:read',
+    'report:read'
+  ],
+  SUBGROUP_REP: [
+    'case:create',
+    'case:read',
+    'case:update:draft',
+    'case:submit'
   ],
   FINANCE_OPERATOR: [
     'donation:read:all',
@@ -107,11 +168,23 @@ const rolePermissions = {
     'reconciliation:read',
     'evidence:read',
     'audit:read',
+    'alert:read',
+    'alert:resolve',
     'forensics:read',
     'forensics:investigate',
     'report:read'
   ],
-  ADMINISTRATOR: permissions
+  MEMBER_AUDITOR: [
+    'donation:read:all',
+    'audit:read',
+    'alert:read',
+    'alert:resolve',
+    'forensics:read',
+    'forensics:investigate',
+    'report:read'
+  ],
+  ADMINISTRATOR: permissions,
+  SYSTEM_ADMIN: permissions
 };
 
 const recognitionTiers = [
@@ -159,6 +232,91 @@ await prisma.$transaction(
         update: tier,
         create: tier
       });
+    }
+
+    // Seed Demo Users with Permanent Active Sessions
+    const demoUsers = [
+      {
+        email: 'pharmacy@malkia.charity',
+        name: 'Jane Atieno (Pharmacy)',
+        roles: ['PHARMACY_CUSTODIAN', 'CLERK', 'INVENTORY_SUPERVISOR'],
+      },
+      {
+        email: 'committee@malkia.charity',
+        name: 'David Kimani (Committee)',
+        roles: ['COMMITTEE_MEMBER'],
+      },
+      {
+        email: 'chair@malkia.charity',
+        name: 'Malkia Committee Chair',
+        roles: ['COMMITTEE_MEMBER', 'SIGNATORY'],
+      },
+      {
+        email: 'signatory1@malkia.charity',
+        name: 'Wanjiku Mwangi (Signatory)',
+        roles: ['SIGNATORY'],
+      },
+      {
+        email: 'treasurer@malkia.charity',
+        name: 'Kevin Otieno (Treasurer)',
+        roles: ['TREASURER'],
+      },
+      {
+        email: 'kipyegonaldo@gmail.com',
+        name: 'Kipyegon Aldo (Admin)',
+        roles: ['ADMINISTRATOR', 'PHARMACY_CUSTODIAN', 'COMMITTEE_MEMBER', 'TREASURER', 'SIGNATORY', 'CLERK'],
+      },
+    ];
+
+    for (const u of demoUsers) {
+      const user = await transaction.user.upsert({
+        where: { email: u.email },
+        update: {
+          status: 'ACTIVE',
+          name: u.name,
+          emailVerified: true,
+        },
+        create: {
+          email: u.email,
+          name: u.name,
+          status: 'ACTIVE',
+          emailVerified: true,
+        },
+      });
+
+      for (const rCode of u.roles) {
+        const role = await transaction.role.findUnique({ where: { code: rCode } });
+        if (role) {
+          const existing = await transaction.userRole.findFirst({
+            where: { userId: user.id, roleId: role.id },
+          });
+          if (!existing) {
+            await transaction.userRole.create({
+              data: { userId: user.id, roleId: role.id },
+            });
+          }
+        }
+      }
+
+      // Permanent active session token
+      const token = `malkia-token-${Buffer.from(u.email).toString('hex').padEnd(32, '0')}`;
+      const expiresAt = new Date(Date.now() + 730 * 24 * 60 * 60 * 1000);
+
+      const existingSession = await transaction.session.findUnique({ where: { token } });
+      if (existingSession) {
+        await transaction.session.update({
+          where: { token },
+          data: { expiresAt },
+        });
+      } else {
+        await transaction.session.create({
+          data: {
+            userId: user.id,
+            token,
+            expiresAt,
+          },
+        });
+      }
     }
   },
   { timeout: 30_000 }

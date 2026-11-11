@@ -42,7 +42,7 @@ export class ItemsService {
       where: { name: category },
     });
     if (!inventoryCategory) {
-      const code = `CAT-${category.slice(0, 10).toUpperCase()}-${Date.now().toString().slice(-4)}`;
+      const code = `CAT-${category.slice(0, 8).toUpperCase()}-${Date.now().toString().slice(-4)}-${Math.random().toString(16).slice(2, 6)}`;
       inventoryCategory = await prisma.inventoryCategory.create({
         data: { name: category, code, active: true },
       });

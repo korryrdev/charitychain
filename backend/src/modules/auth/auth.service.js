@@ -49,6 +49,65 @@ export function createAuthService({
     getSession(headers) {
       return engine.api.getSession({ headers });
     },
+    async demoLogin({ email = 'pharmacy@malkia.charity', role } = {}) {
+      const normalizedEmail = email.toLowerCase().trim();
+      let user = await repository.findUserByEmail(normalizedEmail);
+      if (!user) {
+        user = await prisma.user.create({
+          data: {
+            name: email.split('@')[0],
+            email: normalizedEmail,
+            emailVerified: true,
+            status: STATUSES.USER.ACTIVE,
+          },
+        });
+      }
+
+      if (role) {
+        const roleRecord = await prisma.role.findFirst({
+          where: {
+            OR: [{ code: role.toUpperCase() }, { code: 'CLERK' }, { code: 'ADMINISTRATOR' }],
+          },
+        });
+        if (roleRecord) {
+          const existing = await prisma.userRole.findFirst({
+            where: { userId: user.id, roleId: roleRecord.id },
+          });
+          if (!existing) {
+            await prisma.userRole.create({
+              data: { userId: user.id, roleId: roleRecord.id },
+            });
+          }
+        }
+      }
+
+      const token = `malkia-token-${Buffer.from(normalizedEmail).toString('hex').padEnd(32, '0')}`;
+      const expiresAt = new Date(Date.now() + 730 * 24 * 60 * 60 * 1000);
+
+      const existingSession = await prisma.session.findUnique({ where: { token } });
+      let session;
+      if (existingSession) {
+        session = await prisma.session.update({
+          where: { token },
+          data: { expiresAt },
+        });
+      } else {
+        session = await prisma.session.create({
+          data: { userId: user.id, token, expiresAt },
+        });
+      }
+
+      return {
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: role || user.roles?.[0]?.role?.code || 'PHARMACY_CUSTODIAN',
+        },
+        token: session.token,
+        expiresAt: session.expiresAt,
+      };
+    },
     async resolveSession(token) {
       const session = await repository.findSessionByToken(token);
       if (!session) return null;
