@@ -25,6 +25,9 @@ import {
   PackageCheck,
   CheckCircle2,
   FileCheck2,
+  Loader2,
+  TrendingUp,
+  Inbox,
 } from 'lucide-react';
 import type { Channel, NeedCategory } from '@/types';
 
@@ -32,20 +35,24 @@ export type NodeType = 'INFLOW' | 'POOL' | 'CASE' | 'SIGNATORY' | 'DISBURSEMENT'
 
 export interface GraphNode {
   id: string;
+  rawId?: string;
   label: string;
   sublabel: string;
   type: NodeType;
   channel?: Channel;
   amountMinor: number;
+  remainingMinor?: number;
+  lotCount?: number;
   currency: 'KES' | 'ITM';
   colIndex: number;
-  yRatio: number; // 0.0 to 1.0 vertical placement in column
+  yRatio: number;
   txHash?: string;
   blockNumber?: number;
   alertId?: string;
   alertRule?: string;
   alertText?: string;
   alertSeverity?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  metadata?: Record<string, any>;
 }
 
 export interface GraphEdge {
@@ -60,272 +67,33 @@ export interface GraphEdge {
 }
 
 export const FundFlowGraphPage: React.FC = () => {
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>('node-case-142');
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [filterChannel, setFilterChannel] = useState<'ALL' | 'MPESA' | 'BANK' | 'IN_KIND'>('ALL');
   const [showFlaggedOnly, setShowFlaggedOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [zoomLevel, setZoomLevel] = useState(1);
 
-  const { data: liveGraph } = useQuery({
+  const { data: liveGraph, isLoading, error, refetch } = useQuery({
     queryKey: ['fund-flow-graph'],
     queryFn: () => api.getFundFlowGraph(),
+    refetchInterval: 30000,
   });
 
-  const rawNodes: GraphNode[] = useMemo(
-    () => [
-      // Column 0: Inflow Lots
-      {
-        id: 'node-lot-92qd',
-        label: 'MLK-7F3K-92QD',
-        sublabel: 'M-Pesa Inflow (Wanjiku M.)',
-        type: 'INFLOW',
-        channel: 'MPESA',
-        amountMinor: 50000,
-        currency: 'KES',
-        colIndex: 0,
-        yRatio: 0.18,
-        txHash: '0x3a4b9c1d2e5f60718293a4b5c6d7e8f90123456789abcdef0123456789abcdef',
-        blockNumber: 4218902,
-      },
-      {
-        id: 'node-lot-88lk',
-        label: 'MLK-4B2N-88LK',
-        sublabel: 'Bank Wire Transfer',
-        type: 'INFLOW',
-        channel: 'BANK',
-        amountMinor: 250000,
-        currency: 'KES',
-        colIndex: 0,
-        yRatio: 0.52,
-        txHash: '0x7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c',
-        blockNumber: 4220150,
-        alertId: 'alert-02',
-        alertRule: 'R05',
-        alertSeverity: 'LOW',
-        alertText: 'Pool Dwell Time Warning: Lot unallocated balance has dwelled >45 days in pool.',
-      },
-      {
-        id: 'node-lot-9201',
-        label: 'MLK-ITEM-9201',
-        sublabel: 'Pharmacy Textbooks Lot',
-        type: 'INFLOW',
-        channel: 'IN_KIND',
-        amountMinor: 15,
-        currency: 'ITM',
-        colIndex: 0,
-        yRatio: 0.84,
-        txHash: '0x99aa88bb77cc66dd55ee44ff33aa22bb11cc00dd99887766554433221100ffaa',
-        blockNumber: 4221500,
-      },
-
-      // Column 1: Pools / Earmarks
-      {
-        id: 'node-pool-gen',
-        label: 'General Fund Pool',
-        sublabel: 'Unrestricted Inflows',
-        type: 'POOL',
-        channel: 'MPESA',
-        amountMinor: 50000,
-        currency: 'KES',
-        colIndex: 1,
-        yRatio: 0.22,
-      },
-      {
-        id: 'node-pool-med',
-        label: 'Medical Earmark Pool',
-        sublabel: 'Restricted Health Relief',
-        type: 'POOL',
-        channel: 'BANK',
-        amountMinor: 250000,
-        currency: 'KES',
-        colIndex: 1,
-        yRatio: 0.52,
-        alertId: 'alert-02',
-        alertRule: 'R05',
-        alertSeverity: 'LOW',
-        alertText: 'Pool Dwell Time Warning: 130,000 KES minor unallocated >45 days.',
-      },
-      {
-        id: 'node-pool-itm',
-        label: 'Pharmacy Dispensary Lot',
-        sublabel: 'Physical Supply Inventory',
-        type: 'POOL',
-        channel: 'IN_KIND',
-        amountMinor: 15,
-        currency: 'ITM',
-        colIndex: 1,
-        yRatio: 0.84,
-      },
-
-      // Column 2: Student Cases
-      {
-        id: 'node-case-142',
-        label: 'CASE-2026-0142',
-        sublabel: 'Tuition Top-up (Engineering)',
-        type: 'CASE',
-        amountMinor: 450000,
-        currency: 'KES',
-        colIndex: 2,
-        yRatio: 0.16,
-      },
-      {
-        id: 'node-case-143',
-        label: 'CASE-2026-0143',
-        sublabel: 'Textbook Grant (Science)',
-        type: 'CASE',
-        amountMinor: 15000,
-        currency: 'KES',
-        colIndex: 2,
-        yRatio: 0.44,
-      },
-      {
-        id: 'node-case-145',
-        label: 'CASE-2026-0145',
-        sublabel: 'Emergency Medical (Health)',
-        type: 'CASE',
-        amountMinor: 250000,
-        currency: 'KES',
-        colIndex: 2,
-        yRatio: 0.74,
-      },
-
-      // Column 3: Signatories (EIP-712 Multi-Sig)
-      {
-        id: 'node-sig-wanjiku',
-        label: 'Wanjiku Mwangi (0x90F7)',
-        sublabel: 'Executive Chair (Signer 1)',
-        type: 'SIGNATORY',
-        amountMinor: 450000,
-        currency: 'KES',
-        colIndex: 3,
-        yRatio: 0.22,
-        alertId: 'alert-01',
-        alertRule: 'R10',
-        alertSeverity: 'MEDIUM',
-        alertText: 'Signatory Concentration Risk (R10): 0x90F7 signed 92% of all releases in past 30 days.',
-      },
-      {
-        id: 'node-sig-kevin',
-        label: 'Kevin Otieno (0x15d3)',
-        sublabel: 'Treasurer (Signer 2)',
-        type: 'SIGNATORY',
-        amountMinor: 450000,
-        currency: 'KES',
-        colIndex: 3,
-        yRatio: 0.54,
-        alertId: 'alert-01',
-        alertRule: 'R10',
-        alertSeverity: 'MEDIUM',
-        alertText: 'Signatory Concentration Risk (R10): Pair 0x90F7 + 0x15d3 dominates approval flow.',
-      },
-      {
-        id: 'node-sig-amina',
-        label: 'Dr. Amina Hassan (0x2546)',
-        sublabel: 'Staff Rep (Signer 3)',
-        type: 'SIGNATORY',
-        amountMinor: 0,
-        currency: 'KES',
-        colIndex: 3,
-        yRatio: 0.84,
-      },
-
-      // Column 4: Disbursements & Real Payouts
-      {
-        id: 'node-disb-mpesa',
-        label: 'M-Pesa B2C SGH98214K',
-        sublabel: 'Bank-to-Phone Payment',
-        type: 'DISBURSEMENT',
-        channel: 'MPESA',
-        amountMinor: 450000,
-        currency: 'KES',
-        colIndex: 4,
-        yRatio: 0.25,
-      },
-      {
-        id: 'node-disb-pharm',
-        label: 'Physical Handover #089',
-        sublabel: 'Pharmacy Desk Dispensed',
-        type: 'DISBURSEMENT',
-        channel: 'IN_KIND',
-        amountMinor: 3,
-        currency: 'ITM',
-        colIndex: 4,
-        yRatio: 0.65,
-      },
-    ],
-    []
-  );
-
-  const rawEdges: GraphEdge[] = useMemo(
-    () => [
-      // Inflow Lots -> Pools
-      { id: 'e1', source: 'node-lot-92qd', target: 'node-pool-gen', amountMinor: 50000, currency: 'KES', channel: 'MPESA' },
-      { id: 'e2', source: 'node-lot-88lk', target: 'node-pool-med', amountMinor: 250000, currency: 'KES', channel: 'BANK', flagged: true },
-      { id: 'e3', source: 'node-lot-9201', target: 'node-pool-itm', amountMinor: 15, currency: 'ITM', channel: 'IN_KIND' },
-
-      // Pools -> Cases
-      { id: 'e4', source: 'node-pool-gen', target: 'node-case-142', amountMinor: 35000, currency: 'KES', channel: 'MPESA' },
-      { id: 'e5', source: 'node-pool-gen', target: 'node-case-143', amountMinor: 15000, currency: 'KES', channel: 'MPESA' },
-      { id: 'e6', source: 'node-pool-med', target: 'node-case-145', amountMinor: 120000, currency: 'KES', channel: 'BANK' },
-      { id: 'e7', source: 'node-pool-itm', target: 'node-case-143', amountMinor: 3, currency: 'ITM', channel: 'IN_KIND' },
-
-      // Cases -> Signatories
-      { id: 'e8', source: 'node-case-142', target: 'node-sig-wanjiku', amountMinor: 450000, currency: 'KES', flagged: true },
-      { id: 'e9', source: 'node-case-142', target: 'node-sig-kevin', amountMinor: 450000, currency: 'KES', flagged: true },
-      { id: 'e10', source: 'node-case-145', target: 'node-sig-wanjiku', amountMinor: 250000, currency: 'KES' },
-
-      // Signatories -> Disbursements
-      { id: 'e11', source: 'node-sig-wanjiku', target: 'node-disb-mpesa', amountMinor: 450000, currency: 'KES' },
-      { id: 'e12', source: 'node-sig-kevin', target: 'node-disb-mpesa', amountMinor: 450000, currency: 'KES' },
-      { id: 'e13', source: 'node-case-143', target: 'node-disb-pharm', amountMinor: 3, currency: 'ITM', channel: 'IN_KIND' },
-    ],
-    []
-  );
-
-  const { nodes: graphNodes, edges: graphEdges } = useMemo(() => {
-    if (!liveGraph?.nodes || liveGraph.nodes.length === 0) {
-      return { nodes: rawNodes, edges: rawEdges };
-    }
-
-    const lots = liveGraph.nodes.filter((n: any) => n.type === 'LOT');
-    const cases = liveGraph.nodes.filter((n: any) => n.type === 'CASE');
-
-    const mappedLots: GraphNode[] = lots.map((l: any, i: number) => ({
-      id: l.id,
-      label: l.label,
-      sublabel: `${l.channel || 'DONATION'} Inflow`,
-      type: 'INFLOW',
-      channel: l.channel,
-      amountMinor: Number(l.amountMinor || 0),
-      currency: l.currency || 'KES',
-      colIndex: 0,
-      yRatio: (i + 1) / (lots.length + 1),
+  const graphNodes: GraphNode[] = useMemo(() => {
+    if (!liveGraph?.nodes || !Array.isArray(liveGraph.nodes)) return [];
+    return liveGraph.nodes.map((n: any) => ({
+      ...n,
+      amountMinor: Number(n.amountMinor || 0),
+      remainingMinor: n.remainingMinor !== undefined ? Number(n.remainingMinor) : undefined,
     }));
+  }, [liveGraph]);
 
-    const mappedCases: GraphNode[] = cases.map((c: any, i: number) => ({
-      id: c.id,
-      label: c.label,
-      sublabel: `Case ${c.status || 'ACTIVE'}`,
-      type: 'CASE',
-      amountMinor: Number(c.amountMinor || 0),
-      currency: 'KES',
-      colIndex: 2,
-      yRatio: (i + 1) / (cases.length + 1),
-    }));
-
-    const dynamicEdges: GraphEdge[] = (liveGraph.edges || []).map((e: any) => ({
-      id: e.id,
-      source: e.source,
-      target: e.target,
+  const graphEdges: GraphEdge[] = useMemo(() => {
+    if (!liveGraph?.edges || !Array.isArray(liveGraph.edges)) return [];
+    return liveGraph.edges.map((e: any) => ({
+      ...e,
       amountMinor: Number(e.amountMinor || 0),
-      currency: 'KES',
     }));
-
-    return {
-      nodes: mappedLots.length > 0 || mappedCases.length > 0 ? [...mappedLots, ...mappedCases] : rawNodes,
-      edges: dynamicEdges.length > 0 ? dynamicEdges : rawEdges,
-    };
-  }, [liveGraph, rawNodes, rawEdges]);
+  }, [liveGraph]);
 
   const filteredNodes = useMemo(() => {
     return graphNodes.filter((node) => {
@@ -339,7 +107,8 @@ export const FundFlowGraphPage: React.FC = () => {
         const query = searchQuery.toLowerCase();
         const matchLabel = node.label.toLowerCase().includes(query);
         const matchSub = node.sublabel.toLowerCase().includes(query);
-        if (!matchLabel && !matchSub) return false;
+        const matchRule = node.alertRule?.toLowerCase().includes(query);
+        if (!matchLabel && !matchSub && !matchRule) return false;
       }
       return true;
     });
@@ -352,10 +121,12 @@ export const FundFlowGraphPage: React.FC = () => {
   }, [graphEdges, activeNodeIds]);
 
   const selectedNode = useMemo(() => {
-    return graphNodes.find((n) => n.id === selectedNodeId) || graphNodes[0] || null;
+    if (selectedNodeId) {
+      return graphNodes.find((n) => n.id === selectedNodeId) || null;
+    }
+    return graphNodes.find((n) => Boolean(n.alertId)) || graphNodes[0] || null;
   }, [graphNodes, selectedNodeId]);
 
-  // Layout parameters for SVG
   const width = 1100;
   const height = 620;
   const colX = [100, 320, 560, 800, 1020];
@@ -370,9 +141,11 @@ export const FundFlowGraphPage: React.FC = () => {
     '1. Inflow Lots',
     '2. Common Pools',
     '3. Need Cases',
-    '4. 2-of-3 Signatories',
+    '4. Multi-Sig Approvers',
     '5. Real Payouts',
   ];
+
+  const summary = liveGraph?.summary;
 
   return (
     <div className="space-y-6">
@@ -381,8 +154,11 @@ export const FundFlowGraphPage: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 flex items-center gap-2.5">
             <Network className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
-            Fund flow
+            Fund Flow & Allocation Graph
           </h1>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+            Real-time FIFO lot allocation DAG tracing donation intake, earmarked pools, approved cases, and disbursements.
+          </p>
         </div>
 
         {/* Action Controls */}
@@ -394,20 +170,80 @@ export const FundFlowGraphPage: React.FC = () => {
               setFilterChannel('ALL');
               setShowFlaggedOnly(false);
               setSearchQuery('');
+              refetch();
             }}
             className="text-xs gap-1.5"
           >
             <RefreshCw className="w-3.5 h-3.5" />
-            <span>Reset View</span>
+            <span>Refresh Live Data</span>
           </Button>
           <Link to="/app/alerts">
             <Button size="sm" variant="outline" className="text-xs gap-1.5 text-amber-600 border-amber-300 dark:border-amber-800">
               <AlertTriangle className="w-3.5 h-3.5" />
-              <span>View Forensic Inbox (2)</span>
+              <span>Forensic Inbox ({summary?.openAlertsCount ?? 0})</span>
             </Button>
           </Link>
         </div>
       </div>
+
+      {/* Live Metrics Summary Bar */}
+      {summary && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <Card className="p-4 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xs">
+            <div className="flex items-center justify-between text-zinc-500 text-xs font-medium">
+              <span>Total Intake Volume</span>
+              <Coins className="w-4 h-4 text-emerald-600" />
+            </div>
+            <div className="mt-2">
+              <Money
+                amountMinor={summary.totalInflowMinor}
+                currency="KES"
+                className="text-xl font-bold text-zinc-900 dark:text-zinc-50"
+              />
+              <span className="text-[11px] text-zinc-400 mt-0.5 block">{summary.totalLotsCount} lots recorded</span>
+            </div>
+          </Card>
+
+          <Card className="p-4 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xs">
+            <div className="flex items-center justify-between text-zinc-500 text-xs font-medium">
+              <span>Allocated to Cases</span>
+              <Layers className="w-4 h-4 text-blue-600" />
+            </div>
+            <div className="mt-2 font-bold text-xl text-zinc-900 dark:text-zinc-50">
+              {summary.totalAllocationsCount} Allocations
+              <span className="text-[11px] text-zinc-400 font-normal mt-0.5 block">FIFO Lot consumption</span>
+            </div>
+          </Card>
+
+          <Card className="p-4 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xs">
+            <div className="flex items-center justify-between text-zinc-500 text-xs font-medium">
+              <span>Disbursed Payouts</span>
+              <CheckCircle2 className="w-4 h-4 text-teal-600" />
+            </div>
+            <div className="mt-2">
+              <Money
+                amountMinor={summary.totalDisbursedMinor}
+                currency="KES"
+                className="text-xl font-bold text-zinc-900 dark:text-zinc-50"
+              />
+              <span className="text-[11px] text-zinc-400 mt-0.5 block">M-Pesa, Bank & Pharmacy</span>
+            </div>
+          </Card>
+
+          <Card className="p-4 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xs">
+            <div className="flex items-center justify-between text-zinc-500 text-xs font-medium">
+              <span>Active Forensic Alerts</span>
+              <AlertTriangle className="w-4 h-4 text-amber-500" />
+            </div>
+            <div className="mt-2 flex items-baseline gap-2">
+              <span className="text-xl font-bold text-amber-600 dark:text-amber-400">
+                {summary.openAlertsCount}
+              </span>
+              <span className="text-[11px] text-zinc-400">Overlaid on graph</span>
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Filter / Search Bar */}
       <Card className="p-4 border-zinc-200 dark:border-zinc-800">
@@ -453,7 +289,7 @@ export const FundFlowGraphPage: React.FC = () => {
               <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
               <Input
                 type="text"
-                placeholder="Search node or case..."
+                placeholder="Search node, case, or alert..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-8 text-xs h-9 min-h-[36px]"
@@ -463,360 +299,495 @@ export const FundFlowGraphPage: React.FC = () => {
         </div>
       </Card>
 
-      {/* Main Graph Canvas & Inspector Drawer Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Interactive SVG Graph Canvas */}
-        <Card className="lg:col-span-8 overflow-hidden border-zinc-200 dark:border-zinc-800 relative">
-          <div className="p-3 bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between text-xs text-zinc-500">
-            <div className="flex items-center gap-3">
-              <span className="font-semibold text-zinc-700 dark:text-zinc-300">Live Network Explorer</span>
-              <span className="hidden sm:inline">| Click any node to inspect audit proof</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[11px]">Showing {filteredNodes.length} nodes, {filteredEdges.length} flows</span>
-            </div>
-          </div>
-
-          <div className="overflow-x-auto p-4 bg-zinc-950/[0.02] dark:bg-zinc-950/40">
-            <div className="min-w-[900px] select-none">
-              <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto">
-                <defs>
-                  {/* Marker for directed arrowheads */}
-                  <marker
-                    id="arrowhead"
-                    viewBox="0 0 10 10"
-                    refX="22"
-                    refY="5"
-                    markerWidth="6"
-                    markerHeight="6"
-                    orient="auto-start-reverse"
-                  >
-                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#10b981" />
-                  </marker>
-                  <marker
-                    id="arrowhead-flagged"
-                    viewBox="0 0 10 10"
-                    refX="22"
-                    refY="5"
-                    markerWidth="6"
-                    markerHeight="6"
-                    orient="auto-start-reverse"
-                  >
-                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#f59e0b" />
-                  </marker>
-                </defs>
-
-                {/* Column Headers & Grid Guidelines */}
-                {columnHeaders.map((header, idx) => (
-                  <g key={header}>
-                    <line
-                      x1={colX[idx]}
-                      y1={45}
-                      x2={colX[idx]}
-                      y2={height - 20}
-                      stroke="currentColor"
-                      strokeOpacity="0.06"
-                      strokeDasharray="4 4"
-                    />
-                    <text
-                      x={colX[idx]}
-                      y={30}
-                      textAnchor="middle"
-                      className="fill-zinc-400 dark:fill-zinc-500 text-[11px] font-bold uppercase tracking-wider font-sans"
-                    >
-                      {header}
-                    </text>
-                  </g>
-                ))}
-
-                {/* Directed Edges (Bezier Flow Paths) */}
-                {filteredEdges.map((edge) => {
-                  const sourceNode = rawNodes.find((n) => n.id === edge.source);
-                  const targetNode = rawNodes.find((n) => n.id === edge.target);
-                  if (!sourceNode || !targetNode) return null;
-
-                  const sPos = getNodePos(sourceNode);
-                  const tPos = getNodePos(targetNode);
-                  const isSelected =
-                    selectedNodeId === edge.source || selectedNodeId === edge.target;
-                  const dx = (tPos.x - sPos.x) / 2;
-                  const pathD = `M ${sPos.x} ${sPos.y} C ${sPos.x + dx} ${sPos.y}, ${tPos.x - dx} ${tPos.y}, ${tPos.x} ${tPos.y}`;
-
-                  return (
-                    <g key={edge.id} className="transition-all duration-300">
-                      <path
-                        d={pathD}
-                        fill="none"
-                        stroke={
-                          edge.flagged
-                            ? '#f59e0b'
-                            : isSelected
-                            ? '#10b981'
-                            : '#71717a'
-                        }
-                        strokeWidth={isSelected ? 3.5 : edge.flagged ? 2.5 : 1.8}
-                        strokeOpacity={isSelected ? 0.95 : edge.flagged ? 0.8 : 0.25}
-                        strokeDasharray={isSelected ? '6 3' : 'none'}
-                        markerEnd={edge.flagged ? 'url(#arrowhead-flagged)' : 'url(#arrowhead)'}
-                      />
-                    </g>
-                  );
-                })}
-
-                {/* Nodes */}
-                {filteredNodes.map((node) => {
-                  const { x, y } = getNodePos(node);
-                  const isSelected = selectedNodeId === node.id;
-                  const isFlagged = Boolean(node.alertId);
-
-                  // Colors by type
-                  const typeColors = {
-                    INFLOW: 'fill-emerald-500 stroke-emerald-600',
-                    POOL: 'fill-blue-500 stroke-blue-600',
-                    CASE: 'fill-indigo-500 stroke-indigo-600',
-                    SIGNATORY: 'fill-purple-500 stroke-purple-600',
-                    DISBURSEMENT: 'fill-teal-500 stroke-teal-600',
-                  };
-
-                  return (
-                    <g
-                      key={node.id}
-                      transform={`translate(${x}, ${y})`}
-                      onClick={() => setSelectedNodeId(node.id)}
-                      className="cursor-pointer group"
-                    >
-                      {/* Alert Pulse Ring if flagged */}
-                      {isFlagged && (
-                        <circle
-                          r="28"
-                          fill="none"
-                          stroke="#f59e0b"
-                          strokeWidth="2"
-                          strokeOpacity="0.4"
-                          className="animate-ping"
-                        />
-                      )}
-
-                      {/* Selection Glow */}
-                      {isSelected && (
-                        <circle
-                          r="26"
-                          fill="none"
-                          stroke="#10b981"
-                          strokeWidth="3"
-                          strokeOpacity="0.6"
-                        />
-                      )}
-
-                      {/* Main Node Circle */}
-                      <circle
-                        r="20"
-                        className={`transition-all duration-200 ${
-                          isFlagged
-                            ? 'fill-amber-500 stroke-amber-600'
-                            : isSelected
-                            ? 'fill-emerald-600 stroke-emerald-700 ring-2'
-                            : typeColors[node.type]
-                        }`}
-                        strokeWidth="3"
-                      />
-
-                      {/* Node Icon / Letter */}
-                      <text
-                        textAnchor="middle"
-                        dy="4.5"
-                        className="fill-white font-bold text-xs pointer-events-none select-none font-sans"
-                      >
-                        {node.type === 'INFLOW'
-                          ? 'IN'
-                          : node.type === 'POOL'
-                          ? 'PL'
-                          : node.type === 'CASE'
-                          ? 'CS'
-                          : node.type === 'SIGNATORY'
-                          ? 'SG'
-                          : 'DS'}
-                      </text>
-
-                      {/* Node Primary Label */}
-                      <text
-                        x="0"
-                        y="34"
-                        textAnchor="middle"
-                        className={`font-mono text-[11px] font-bold select-none ${
-                          isSelected
-                            ? 'fill-emerald-600 dark:fill-emerald-400 font-extrabold'
-                            : 'fill-zinc-800 dark:fill-zinc-200'
-                        }`}
-                      >
-                        {node.label}
-                      </text>
-
-                      {/* Node Sublabel */}
-                      <text
-                        x="0"
-                        y="47"
-                        textAnchor="middle"
-                        className="font-sans text-[9px] fill-zinc-500 dark:fill-zinc-400 select-none max-w-[120px]"
-                      >
-                        {node.sublabel.length > 20 ? `${node.sublabel.slice(0, 19)}…` : node.sublabel}
-                      </text>
-                    </g>
-                  );
-                })}
-              </svg>
-            </div>
-          </div>
-
-          {/* Graph Legend */}
-          <div className="p-3 bg-zinc-50/70 dark:bg-zinc-900/50 border-t border-zinc-200 dark:border-zinc-800 flex flex-wrap items-center justify-between gap-3 text-xs text-zinc-600 dark:text-zinc-400">
-            <div className="flex flex-wrap items-center gap-4">
-              <span className="flex items-center gap-1.5 font-medium">
-                <span className="w-3 h-3 rounded-full bg-emerald-500 inline-block" /> Inflow Lot
-              </span>
-              <span className="flex items-center gap-1.5 font-medium">
-                <span className="w-3 h-3 rounded-full bg-blue-500 inline-block" /> Pool / Earmark
-              </span>
-              <span className="flex items-center gap-1.5 font-medium">
-                <span className="w-3 h-3 rounded-full bg-indigo-500 inline-block" /> Need Case
-              </span>
-              <span className="flex items-center gap-1.5 font-medium">
-                <span className="w-3 h-3 rounded-full bg-purple-500 inline-block" /> 2-of-3 Signer
-              </span>
-              <span className="flex items-center gap-1.5 font-medium">
-                <span className="w-3 h-3 rounded-full bg-amber-500 inline-block ring-2 ring-amber-300 dark:ring-amber-800" /> Flagged Risk
-              </span>
-            </div>
-          </div>
+      {/* Loading & Error States */}
+      {isLoading && (
+        <Card className="p-12 text-center border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center space-y-3">
+          <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+          <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
+            Constructing live cryptographic fund flow DAG...
+          </p>
         </Card>
+      )}
 
-        {/* Selected Node Audit Inspector Drawer */}
-        <div className="lg:col-span-4">
-          {selectedNode ? (
-            <Card className="border-2 border-emerald-500/30 shadow-md">
-              <CardHeader className="pb-3 border-b border-zinc-200 dark:border-zinc-800">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-mono uppercase tracking-wider font-bold text-zinc-400">
-                    Node Audit Inspector
-                  </span>
-                  <button
-                    onClick={() => setSelectedNodeId(null)}
-                    className="p-1 rounded-md text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-                <CardTitle className="text-lg font-bold font-mono text-zinc-900 dark:text-zinc-50 flex items-center gap-2 mt-1">
-                  {selectedNode.label}
-                </CardTitle>
-                <CardDescription className="text-xs">{selectedNode.sublabel}</CardDescription>
-              </CardHeader>
+      {error && !isLoading && (
+        <Card className="p-6 border-red-200 dark:border-red-900 bg-red-50/50 dark:bg-red-950/20 text-center space-y-3">
+          <AlertTriangle className="w-8 h-8 mx-auto text-red-600" />
+          <h3 className="text-sm font-semibold text-red-800 dark:text-red-300">
+            Failed to Load Live Fund Flow
+          </h3>
+          <p className="text-xs text-red-600 dark:text-red-400 max-w-md mx-auto">
+            {(error as any)?.message || 'An error occurred while fetching the live allocation graph from PostgreSQL.'}
+          </p>
+          <Button size="sm" variant="outline" onClick={() => refetch()} className="text-xs">
+            Try Again
+          </Button>
+        </Card>
+      )}
 
-              <CardContent className="p-4 space-y-4 text-xs">
-                {/* Forensic Alert Callout if present */}
-                {selectedNode.alertId && (
-                  <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 space-y-2">
-                    <div className="flex items-center gap-1.5 font-bold text-amber-700 dark:text-amber-400">
-                      <AlertTriangle className="w-4 h-4 shrink-0" />
-                      <span>Forensic Alert Triggered (Rule {selectedNode.alertRule})</span>
-                    </div>
-                    <p className="text-[11px] leading-relaxed">{selectedNode.alertText}</p>
-                    <Link to="/app/alerts" className="inline-block mt-1">
-                      <Button size="sm" variant="outline" className="h-7 text-[11px] bg-white dark:bg-zinc-900 border-amber-300">
-                        Resolve in Alert Triage
-                      </Button>
-                    </Link>
+      {/* Main Graph Canvas & Inspector Drawer Grid */}
+      {!isLoading && !error && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* Interactive SVG Graph Canvas */}
+          <Card className="lg:col-span-8 overflow-hidden border-zinc-200 dark:border-zinc-800 relative">
+            <div className="p-3 bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between text-xs text-zinc-500">
+              <div className="flex items-center gap-3">
+                <span className="font-semibold text-zinc-700 dark:text-zinc-300">Live Network Explorer</span>
+                <span className="hidden sm:inline">| Click any node to inspect cryptographic audit proof</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px]">
+                  Showing {filteredNodes.length} nodes, {filteredEdges.length} flows
+                </span>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto p-4 bg-zinc-950/[0.02] dark:bg-zinc-950/40">
+              <div className="min-w-[900px] select-none">
+                {filteredNodes.length === 0 ? (
+                  <div className="py-24 text-center space-y-2">
+                    <Inbox className="w-8 h-8 mx-auto text-zinc-400" />
+                    <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
+                      No matching nodes found for current filters.
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setFilterChannel('ALL');
+                        setShowFlaggedOnly(false);
+                        setSearchQuery('');
+                      }}
+                      className="text-xs"
+                    >
+                      Clear Filters
+                    </Button>
                   </div>
-                )}
-
-                {/* Amount and Currency */}
-                <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
-                  <span className="text-zinc-500 font-medium">Node Flow Volume</span>
-                  <Money
-                    amountMinor={selectedNode.amountMinor}
-                    currency={selectedNode.currency}
-                    className="text-base font-bold text-zinc-900 dark:text-zinc-50"
-                  />
-                </div>
-
-                {/* Details List */}
-                <div className="space-y-2.5">
-                  <div className="flex items-center justify-between py-1 border-b border-zinc-100 dark:border-zinc-800/60">
-                    <span className="text-zinc-500">Node Stage</span>
-                    <span className="font-semibold">{selectedNode.type}</span>
-                  </div>
-
-                  {selectedNode.channel && (
-                    <div className="flex items-center justify-between py-1 border-b border-zinc-100 dark:border-zinc-800/60">
-                      <span className="text-zinc-500">Rail Channel</span>
-                      <StatusChip status={selectedNode.channel} />
-                    </div>
-                  )}
-
-                  {selectedNode.blockNumber && (
-                    <div className="flex items-center justify-between py-1 border-b border-zinc-100 dark:border-zinc-800/60">
-                      <span className="text-zinc-500">Polygon Amoy Block</span>
-                      <span className="font-mono font-medium">#{selectedNode.blockNumber}</span>
-                    </div>
-                  )}
-
-                  {selectedNode.txHash && (
-                    <div className="py-1 border-b border-zinc-100 dark:border-zinc-800/60 space-y-1">
-                      <span className="text-zinc-500 block">Transaction Hash</span>
-                      <a
-                        href={`https://amoy.polygonscan.com/tx/${selectedNode.txHash}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="font-mono text-[10px] text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 break-all"
+                ) : (
+                  <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto">
+                    <defs>
+                      <marker
+                        id="arrowhead"
+                        viewBox="0 0 10 10"
+                        refX="22"
+                        refY="5"
+                        markerWidth="6"
+                        markerHeight="6"
+                        orient="auto-start-reverse"
                       >
-                        {selectedNode.txHash}
-                        <ExternalLink className="w-3 h-3 shrink-0" />
-                      </a>
+                        <path d="M 0 0 L 10 5 L 0 10 z" fill="#10b981" />
+                      </marker>
+                      <marker
+                        id="arrowhead-flagged"
+                        viewBox="0 0 10 10"
+                        refX="22"
+                        refY="5"
+                        markerWidth="6"
+                        markerHeight="6"
+                        orient="auto-start-reverse"
+                      >
+                        <path d="M 0 0 L 10 5 L 0 10 z" fill="#f59e0b" />
+                      </marker>
+                    </defs>
+
+                    {/* Column Headers & Grid Guidelines */}
+                    {columnHeaders.map((header, idx) => (
+                      <g key={header}>
+                        <line
+                          x1={colX[idx]}
+                          y1={45}
+                          x2={colX[idx]}
+                          y2={height - 20}
+                          stroke="currentColor"
+                          strokeOpacity="0.06"
+                          strokeDasharray="4 4"
+                        />
+                        <text
+                          x={colX[idx]}
+                          y={30}
+                          textAnchor="middle"
+                          className="fill-zinc-400 dark:fill-zinc-500 text-[11px] font-bold uppercase tracking-wider font-sans"
+                        >
+                          {header}
+                        </text>
+                      </g>
+                    ))}
+
+                    {/* Directed Edges (Bezier Flow Paths) */}
+                    {filteredEdges.map((edge) => {
+                      const sourceNode = graphNodes.find((n) => n.id === edge.source);
+                      const targetNode = graphNodes.find((n) => n.id === edge.target);
+                      if (!sourceNode || !targetNode) return null;
+
+                      const sPos = getNodePos(sourceNode);
+                      const tPos = getNodePos(targetNode);
+                      const isSelected =
+                        selectedNodeId === edge.source || selectedNodeId === edge.target;
+                      const dx = (tPos.x - sPos.x) / 2;
+                      const pathD = `M ${sPos.x} ${sPos.y} C ${sPos.x + dx} ${sPos.y}, ${tPos.x - dx} ${tPos.y}, ${tPos.x} ${tPos.y}`;
+
+                      return (
+                        <g key={edge.id} className="transition-all duration-300">
+                          <path
+                            d={pathD}
+                            fill="none"
+                            stroke={
+                              edge.flagged
+                                ? '#f59e0b'
+                                : isSelected
+                                ? '#10b981'
+                                : '#71717a'
+                            }
+                            strokeWidth={isSelected ? 3.5 : edge.flagged ? 2.5 : 1.8}
+                            strokeOpacity={isSelected ? 0.95 : edge.flagged ? 0.8 : 0.25}
+                            strokeDasharray={isSelected ? '6 3' : 'none'}
+                            markerEnd={edge.flagged ? 'url(#arrowhead-flagged)' : 'url(#arrowhead)'}
+                          />
+                        </g>
+                      );
+                    })}
+
+                    {/* Nodes */}
+                    {filteredNodes.map((node) => {
+                      const { x, y } = getNodePos(node);
+                      const isSelected = selectedNode?.id === node.id;
+                      const isFlagged = Boolean(node.alertId);
+
+                      const typeColors: Record<NodeType, string> = {
+                        INFLOW: 'fill-emerald-500 stroke-emerald-600',
+                        POOL: 'fill-blue-500 stroke-blue-600',
+                        CASE: 'fill-indigo-500 stroke-indigo-600',
+                        SIGNATORY: 'fill-purple-500 stroke-purple-600',
+                        DISBURSEMENT: 'fill-teal-500 stroke-teal-600',
+                      };
+
+                      return (
+                        <g
+                          key={node.id}
+                          transform={`translate(${x}, ${y})`}
+                          onClick={() => setSelectedNodeId(node.id)}
+                          className="cursor-pointer group"
+                        >
+                          {/* Selection Ripple */}
+                          {isSelected && (
+                            <circle
+                              r="26"
+                              className="fill-none stroke-emerald-500 stroke-2 animate-ping opacity-40"
+                            />
+                          )}
+
+                          {/* Outer Flagged Warning Ring */}
+                          {isFlagged && (
+                            <circle
+                              r="23"
+                              className="fill-none stroke-amber-500 stroke-2 animate-pulse"
+                              strokeDasharray="3 2"
+                            />
+                          )}
+
+                          {/* Base Node Circle */}
+                          <circle
+                            r="18"
+                            className={`transition-all duration-200 stroke-2 ${
+                              isSelected
+                                ? 'stroke-zinc-900 dark:stroke-zinc-50 scale-110'
+                                : isFlagged
+                                ? 'stroke-amber-500'
+                                : 'stroke-white dark:stroke-zinc-900'
+                            } ${typeColors[node.type]}`}
+                          />
+
+                          {/* Node Icon / Type Glyph */}
+                          {node.type === 'INFLOW' && (
+                            <Coins className="w-4 h-4 -translate-x-2 -translate-y-2 text-white pointer-events-none" />
+                          )}
+                          {node.type === 'POOL' && (
+                            <Layers className="w-4 h-4 -translate-x-2 -translate-y-2 text-white pointer-events-none" />
+                          )}
+                          {node.type === 'CASE' && (
+                            <FileCheck2 className="w-4 h-4 -translate-x-2 -translate-y-2 text-white pointer-events-none" />
+                          )}
+                          {node.type === 'SIGNATORY' && (
+                            <ShieldCheck className="w-4 h-4 -translate-x-2 -translate-y-2 text-white pointer-events-none" />
+                          )}
+                          {node.type === 'DISBURSEMENT' && (
+                            <CheckCircle2 className="w-4 h-4 -translate-x-2 -translate-y-2 text-white pointer-events-none" />
+                          )}
+
+                          {/* Alert Badge Indicator */}
+                          {isFlagged && (
+                            <g transform="translate(11, -15)">
+                              <circle r="7" className="fill-amber-500 stroke-white stroke-1" />
+                              <text
+                                x="0"
+                                y="2.5"
+                                textAnchor="middle"
+                                className="fill-white text-[8px] font-bold font-mono"
+                              >
+                                !
+                              </text>
+                            </g>
+                          )}
+
+                          {/* Node Label */}
+                          <text
+                            x="0"
+                            y="33"
+                            textAnchor="middle"
+                            className={`font-mono text-[10px] font-bold select-none transition-colors ${
+                              isSelected
+                                ? 'fill-emerald-600 dark:fill-emerald-400 font-extrabold'
+                                : isFlagged
+                                ? 'fill-amber-600 dark:fill-amber-400 font-bold'
+                                : 'fill-zinc-800 dark:fill-zinc-200 group-hover:fill-zinc-950 dark:group-hover:fill-white'
+                            }`}
+                          >
+                            {node.label}
+                          </text>
+
+                          {/* Node Sublabel */}
+                          <text
+                            x="0"
+                            y="47"
+                            textAnchor="middle"
+                            className="font-sans text-[9px] fill-zinc-500 dark:fill-zinc-400 select-none max-w-[120px]"
+                          >
+                            {node.sublabel.length > 20 ? `${node.sublabel.slice(0, 19)}…` : node.sublabel}
+                          </text>
+                        </g>
+                      );
+                    })}
+                  </svg>
+                )}
+              </div>
+            </div>
+
+            {/* Graph Legend */}
+            <div className="p-3 bg-zinc-50/70 dark:bg-zinc-900/50 border-t border-zinc-200 dark:border-zinc-800 flex flex-wrap items-center justify-between gap-3 text-xs text-zinc-600 dark:text-zinc-400">
+              <div className="flex flex-wrap items-center gap-4">
+                <span className="flex items-center gap-1.5 font-medium">
+                  <span className="w-3 h-3 rounded-full bg-emerald-500 inline-block" /> Inflow Lot
+                </span>
+                <span className="flex items-center gap-1.5 font-medium">
+                  <span className="w-3 h-3 rounded-full bg-blue-500 inline-block" /> Pool / Earmark
+                </span>
+                <span className="flex items-center gap-1.5 font-medium">
+                  <span className="w-3 h-3 rounded-full bg-indigo-500 inline-block" /> Need Case
+                </span>
+                <span className="flex items-center gap-1.5 font-medium">
+                  <span className="w-3 h-3 rounded-full bg-purple-500 inline-block" /> Multi-Sig Approver
+                </span>
+                <span className="flex items-center gap-1.5 font-medium">
+                  <span className="w-3 h-3 rounded-full bg-teal-500 inline-block" /> Payout Release
+                </span>
+                <span className="flex items-center gap-1.5 font-medium">
+                  <span className="w-3 h-3 rounded-full bg-amber-500 inline-block ring-2 ring-amber-300 dark:ring-amber-800" /> Flagged Risk
+                </span>
+              </div>
+            </div>
+          </Card>
+
+          {/* Selected Node Audit Inspector Drawer */}
+          <div className="lg:col-span-4">
+            {selectedNode ? (
+              <Card className="border-2 border-emerald-500/30 shadow-md">
+                <CardHeader className="pb-3 border-b border-zinc-200 dark:border-zinc-800">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-mono uppercase tracking-wider font-bold text-zinc-400">
+                      Node Audit Inspector
+                    </span>
+                    <button
+                      onClick={() => setSelectedNodeId(null)}
+                      className="p-1 rounded-md text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <CardTitle className="text-lg font-bold font-mono text-zinc-900 dark:text-zinc-50 flex items-center gap-2 mt-1">
+                    {selectedNode.label}
+                  </CardTitle>
+                  <CardDescription className="text-xs">{selectedNode.sublabel}</CardDescription>
+                </CardHeader>
+
+                <CardContent className="p-4 space-y-4 text-xs">
+                  {/* Forensic Alert Callout if present */}
+                  {selectedNode.alertId && (
+                    <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200 space-y-2">
+                      <div className="flex items-center gap-1.5 font-bold text-amber-700 dark:text-amber-400">
+                        <AlertTriangle className="w-4 h-4 shrink-0" />
+                        <span>Forensic Alert Triggered (Rule {selectedNode.alertRule})</span>
+                      </div>
+                      <p className="text-[11px] leading-relaxed">{selectedNode.alertText}</p>
+                      <Link to="/app/alerts" className="inline-block mt-1">
+                        <Button size="sm" variant="outline" className="h-7 text-[11px] bg-white dark:bg-zinc-900 border-amber-300">
+                          Resolve in Alert Triage
+                        </Button>
+                      </Link>
                     </div>
                   )}
-                </div>
 
-                {/* Direct Action Link */}
-                <div className="pt-2">
-                  {selectedNode.type === 'INFLOW' && (
-                    <Link to={`/trace?code=${selectedNode.label}`}>
-                      <Button variant="emerald" className="w-full text-xs gap-1.5">
-                        <Search className="w-3.5 h-3.5" />
-                        <span>Trace Receipt on Public Ledger</span>
-                      </Button>
-                    </Link>
+                  {/* Amount and Currency */}
+                  <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
+                    <span className="text-zinc-500 font-medium">Node Flow Volume</span>
+                    <Money
+                      amountMinor={selectedNode.amountMinor}
+                      currency={selectedNode.currency}
+                      className="text-base font-bold text-zinc-900 dark:text-zinc-50"
+                    />
+                  </div>
+
+                  {/* Pool Details */}
+                  {selectedNode.type === 'POOL' && selectedNode.remainingMinor !== undefined && (
+                    <div className="p-3 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/50 flex items-center justify-between">
+                      <span className="text-blue-700 dark:text-blue-300 font-medium">Unallocated Pool Balance</span>
+                      <Money
+                        amountMinor={selectedNode.remainingMinor}
+                        currency={selectedNode.currency}
+                        className="text-sm font-bold text-blue-900 dark:text-blue-100"
+                      />
+                    </div>
                   )}
 
-                  {selectedNode.type === 'CASE' && (
-                    <Link to="/app/cases">
-                      <Button variant="emerald" className="w-full text-xs gap-1.5">
-                        <FileCheck2 className="w-3.5 h-3.5" />
-                        <span>Inspect in Cases Queue</span>
-                      </Button>
-                    </Link>
-                  )}
+                  {/* Details List */}
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between py-1 border-b border-zinc-100 dark:border-zinc-800/60">
+                      <span className="text-zinc-500">Node Stage</span>
+                      <span className="font-semibold">{selectedNode.type}</span>
+                    </div>
 
-                  {selectedNode.type === 'SIGNATORY' && (
-                    <Link to="/app/signing">
-                      <Button variant="outline" className="w-full text-xs gap-1.5">
-                        <ShieldCheck className="w-3.5 h-3.5" />
-                        <span>View 2-of-3 Release Queue</span>
-                      </Button>
-                    </Link>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card className="p-8 text-center text-zinc-500 border-dashed border-2">
-              <Network className="w-8 h-8 mx-auto text-zinc-400 mb-2 opacity-50" />
-              <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">No Node Selected</h3>
-              <p className="text-xs mt-1">Click any circle in the graph to inspect cryptographic hashes and flow splits.</p>
-            </Card>
-          )}
+                    {selectedNode.channel && (
+                      <div className="flex items-center justify-between py-1 border-b border-zinc-100 dark:border-zinc-800/60">
+                        <span className="text-zinc-500">Rail Channel</span>
+                        <StatusChip status={selectedNode.channel} />
+                      </div>
+                    )}
+
+                    {selectedNode.metadata?.needCategory && (
+                      <div className="flex items-center justify-between py-1 border-b border-zinc-100 dark:border-zinc-800/60">
+                        <span className="text-zinc-500">Need Category</span>
+                        <span className="font-semibold">{selectedNode.metadata.needCategory}</span>
+                      </div>
+                    )}
+
+                    {selectedNode.metadata?.state && (
+                      <div className="flex items-center justify-between py-1 border-b border-zinc-100 dark:border-zinc-800/60">
+                        <span className="text-zinc-500">Case State</span>
+                        <StatusChip status={selectedNode.metadata.state} />
+                      </div>
+                    )}
+
+                    {selectedNode.metadata?.earmark && (
+                      <div className="flex items-center justify-between py-1 border-b border-zinc-100 dark:border-zinc-800/60">
+                        <span className="text-zinc-500">Earmark / Purpose</span>
+                        <span className="font-semibold text-[11px] truncate max-w-[180px]">
+                          {selectedNode.metadata.earmark}
+                        </span>
+                      </div>
+                    )}
+
+                    {selectedNode.metadata?.justification && (
+                      <div className="py-1 border-b border-zinc-100 dark:border-zinc-800/60 space-y-1">
+                        <span className="text-zinc-500 block">Case Justification</span>
+                        <p className="text-[11px] text-zinc-700 dark:text-zinc-300 leading-relaxed bg-zinc-50 dark:bg-zinc-800/50 p-2 rounded">
+                          {selectedNode.metadata.justification}
+                        </p>
+                      </div>
+                    )}
+
+                    {selectedNode.metadata?.studentIdentifierHash && (
+                      <div className="py-1 border-b border-zinc-100 dark:border-zinc-800/60 space-y-1">
+                        <span className="text-zinc-500 block">Student Identity Hash (Zero-Knowledge)</span>
+                        <code className="font-mono text-[10px] text-zinc-700 dark:text-zinc-300 block truncate">
+                          {selectedNode.metadata.studentIdentifierHash}
+                        </code>
+                      </div>
+                    )}
+
+                    {selectedNode.metadata?.donorRef && (
+                      <div className="py-1 border-b border-zinc-100 dark:border-zinc-800/60 space-y-1">
+                        <span className="text-zinc-500 block">Donor Reference HMAC</span>
+                        <code className="font-mono text-[10px] text-zinc-700 dark:text-zinc-300 block truncate">
+                          {selectedNode.metadata.donorRef}
+                        </code>
+                      </div>
+                    )}
+
+                    {selectedNode.metadata?.evidenceCid && (
+                      <div className="py-1 border-b border-zinc-100 dark:border-zinc-800/60 space-y-1">
+                        <span className="text-zinc-500 block">IPFS Proof CID</span>
+                        <a
+                          href={`https://ipfs.io/ipfs/${selectedNode.metadata.evidenceCid}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-mono text-[10px] text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 break-all"
+                        >
+                          {selectedNode.metadata.evidenceCid}
+                          <ExternalLink className="w-3 h-3 shrink-0" />
+                        </a>
+                      </div>
+                    )}
+
+                    {selectedNode.txHash && (
+                      <div className="py-1 border-b border-zinc-100 dark:border-zinc-800/60 space-y-1">
+                        <span className="text-zinc-500 block">Anchor / Ledger Hash</span>
+                        <code className="font-mono text-[10px] text-zinc-700 dark:text-zinc-300 block truncate">
+                          {selectedNode.txHash}
+                        </code>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Direct Action Links */}
+                  <div className="pt-2 space-y-2">
+                    {selectedNode.type === 'INFLOW' && (
+                      <Link to={`/trace?code=${selectedNode.label}`}>
+                        <Button variant="emerald" className="w-full text-xs gap-1.5">
+                          <Search className="w-3.5 h-3.5" />
+                          <span>Trace Receipt on Public Ledger</span>
+                        </Button>
+                      </Link>
+                    )}
+
+                    {selectedNode.type === 'CASE' && (
+                      <Link to="/app/cases">
+                        <Button variant="emerald" className="w-full text-xs gap-1.5">
+                          <FileCheck2 className="w-3.5 h-3.5" />
+                          <span>Inspect in Cases Queue</span>
+                        </Button>
+                      </Link>
+                    )}
+
+                    {selectedNode.type === 'SIGNATORY' && (
+                      <Link to="/app/signing">
+                        <Button variant="outline" className="w-full text-xs gap-1.5">
+                          <ShieldCheck className="w-3.5 h-3.5" />
+                          <span>View 2-of-3 Release Queue</span>
+                        </Button>
+                      </Link>
+                    )}
+
+                    {selectedNode.type === 'DISBURSEMENT' && (
+                      <Link to="/app/disbursements">
+                        <Button variant="outline" className="w-full text-xs gap-1.5">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>View Disbursement Logs</span>
+                        </Button>
+                      </Link>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="p-8 text-center text-zinc-500 border-dashed border-2">
+                <Network className="w-8 h-8 mx-auto text-zinc-400 mb-2 opacity-50" />
+                <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">No Node Selected</h3>
+                <p className="text-xs mt-1">
+                  Click any circle in the graph to inspect cryptographic hashes, allocations, and audit proofs.
+                </p>
+              </Card>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
-

@@ -128,7 +128,9 @@ const rolePermissions = {
     'evidence:read',
     'report:read',
     'bank-deposit:create',
-    'bank-deposit:verify'
+    'bank-deposit:verify',
+    'alert:read',
+    'forensics:read'
   ],
   TREASURER: [
     'bank-deposit:create',
@@ -138,13 +140,17 @@ const rolePermissions = {
     'disbursement:execute',
     'reconciliation:execute',
     'reconciliation:read',
-    'report:read'
+    'report:read',
+    'alert:read',
+    'forensics:read'
   ],
   SIGNATORY: [
     'release:authorize',
     'case:read',
     'disbursement:read',
-    'report:read'
+    'report:read',
+    'alert:read',
+    'forensics:read'
   ],
   SUBGROUP_REP: [
     'case:create',

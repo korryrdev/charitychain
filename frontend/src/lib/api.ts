@@ -551,7 +551,17 @@ export const api = {
   },
 
   // Fund Flow Graph
-  getFundFlowGraph: async (): Promise<{ nodes: any[]; edges: any[] }> => {
+  getFundFlowGraph: async (): Promise<{
+    nodes: any[];
+    edges: any[];
+    summary?: {
+      totalLotsCount: number;
+      totalInflowMinor: number;
+      totalAllocationsCount: number;
+      totalDisbursedMinor: number;
+      openAlertsCount: number;
+    };
+  }> => {
     return fetchApi('/api/v1/alerts/graph');
   },
 
