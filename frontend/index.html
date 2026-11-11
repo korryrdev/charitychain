@@ -4,6 +4,19 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="text-scale" content="scale" />
+    <meta name="color-scheme" content="light dark" />
+    <script>
+      (function() {
+        try {
+          var stored = localStorage.getItem('charitychain_theme') || JSON.parse(localStorage.getItem('charitychain.preferences') || '{}').theme;
+          var theme = stored === 'dark' || stored === 'light' ? stored : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+          document.documentElement.dataset.theme = theme;
+          document.documentElement.style.colorScheme = theme;
+          var meta = document.querySelector('meta[name="color-scheme"]');
+          if (meta) meta.content = theme;
+        } catch (e) {}
+      })();
+    </script>
     <meta name="description" content="Transparent donations, accountable student assistance, and public fund-flow reporting." />
     <meta name="theme-color" content="#16643f" />
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />

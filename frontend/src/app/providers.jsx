@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { createQueryClient } from './queryClient.js';
 import { authStore } from '../store/auth.store.js';
 import { httpClient } from '../services/httpClient.js';
+import { ThemeProvider } from './theme/ThemeContext.jsx';
 
 const AppContext = createContext(null);
 const defaultSessionLoader = async () => {
@@ -34,6 +35,10 @@ export function AppProviders({ children, sessionLoader = defaultSessionLoader })
     clearSession,
     sessionLoader,
   }), [authState, clearSession, queryClient, sessionLoader, setSession]);
-  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+  return (
+    <ThemeProvider>
+      <AppContext.Provider value={value}>{children}</AppContext.Provider>
+    </ThemeProvider>
+  );
 }
 export function useAppContext() { const value = useContext(AppContext); if (!value) throw new Error('useAppContext must be used within AppProviders.'); return value; }

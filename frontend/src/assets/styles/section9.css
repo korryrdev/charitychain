@@ -242,3 +242,34 @@
     grid-column: 2 / -1;
   }
 }
+
+/* Dark Mode - Section 9 (Transparency & Recognition) */
+:root[data-theme="dark"] .transparency-summary article,
+:root[data-theme="dark"] .public-chart,
+:root[data-theme="dark"] .recognition-board {
+  background: #112219;
+  border-color: #1e3a2c;
+}
+
+:root[data-theme="dark"] .transparency-summary strong,
+:root[data-theme="dark"] .public-chart__heading h2,
+:root[data-theme="dark"] .public-chart li > div:first-child strong,
+:root[data-theme="dark"] .recognition-board h2,
+:root[data-theme="dark"] .recognition-board li strong {
+  color: #eaf3ed;
+}
+
+:root[data-theme="dark"] .public-chart__bar {
+  background: #1a3325;
+}
+
+:root[data-theme="dark"] .tier-progress {
+  background: #112219;
+  border-color: #1e3a2c;
+}
+
+:root[data-theme="dark"] .tier-badge--silver { background: #26332c; color: #a3b8ad; }
+:root[data-theme="dark"] .tier-badge--gold { background: #3b2a0c; color: #fbbf24; }
+:root[data-theme="dark"] .tier-badge--diamond { background: #133a38; color: #67e8f9; }
+:root[data-theme="dark"] .tier-badge--platinum { background: #2e1d44; color: #c084fc; }
+:root[data-theme="dark"] .tier-badge--default { background: #182e22; color: #2fa36f; }

@@ -724,3 +724,125 @@
     gap: 0.35rem;
   }
 }
+
+/* Dark Mode - Public & Marketing Shell */
+:root[data-theme="dark"] .marketing-shell {
+  --ink: #eaf3ed;
+  --muted: #95aba0;
+  --line: #1e3a2c;
+  --paper: #0b1410;
+  --mist: #13241c;
+  --forest: #2fa36f;
+  --forest-deep: #eaf3ed;
+  --lime: #98e873;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+:root[data-theme="dark"] .marketing-header {
+  background: rgb(11 20 16 / 0.88);
+  border-bottom: 1px solid rgb(30 58 44 / 0.8);
+}
+
+:root[data-theme="dark"] .marketing-brand {
+  color: #eaf3ed;
+}
+
+:root[data-theme="dark"] .marketing-nav a {
+  color: #95aba0;
+}
+:root[data-theme="dark"] .marketing-nav a:hover,
+:root[data-theme="dark"] .marketing-nav a.active {
+  color: #2fa36f;
+}
+
+:root[data-theme="dark"] .marketing-nav--open {
+  background: #122219;
+  border-color: #1e3a2c;
+  box-shadow: 0 1.2rem 2.5rem rgb(0 0 0 / 0.5);
+}
+
+:root[data-theme="dark"] .marketing-banner {
+  background: #0a2418;
+  color: #d4f2c8;
+  border-bottom: 1px solid #1a3e2b;
+}
+
+:root[data-theme="dark"] .home-hero {
+  background: linear-gradient(135deg, #11221a 0%, #0c1813 100%);
+  border-color: #1e3a2c;
+}
+:root[data-theme="dark"] .home-hero::before {
+  background: radial-gradient(circle, #1a3828 0, rgb(26 56 40 / 0) 67%);
+}
+
+:root[data-theme="dark"] .home-hero h1,
+:root[data-theme="dark"] .home-section-heading h2,
+:root[data-theme="dark"] .home-closing h2,
+:root[data-theme="dark"] .home-hero dd {
+  color: #eaf3ed;
+}
+
+:root[data-theme="dark"] .home-hero .button--secondary,
+:root[data-theme="dark"] .home-closing .button--secondary {
+  background: #183325;
+  color: #eaf3ed;
+}
+
+:root[data-theme="dark"] .home-hero__ledger {
+  background: #122219;
+  border-color: #1e3a2c;
+  box-shadow: 0 1.5rem 3.5rem rgb(0 0 0 / 0.4);
+}
+
+:root[data-theme="dark"] .ledger-card__line {
+  background: #172c21;
+  color: #eaf3ed;
+}
+
+:root[data-theme="dark"] .home-impact {
+  background: #112219;
+  border-color: #1e3a2c;
+}
+
+:root[data-theme="dark"] .impact-grid article {
+  background: #112219;
+}
+:root[data-theme="dark"] .impact-grid strong {
+  color: #eaf3ed;
+}
+
+:root[data-theme="dark"] .path-grid article {
+  background: #122219;
+  border: 1px solid #1e3a2c;
+}
+:root[data-theme="dark"] .path-grid article:nth-child(2) {
+  background: #15261d;
+}
+:root[data-theme="dark"] .path-icon {
+  background: #1c3629;
+  color: #2fa36f;
+}
+:root[data-theme="dark"] .path-grid h3 {
+  color: #eaf3ed;
+}
+
+:root[data-theme="dark"] .home-closing {
+  background: #13271d;
+  border: 1px solid #1e3a2c;
+}
+
+:root[data-theme="dark"] .home-campaigns {
+  background: #122219;
+  border-color: #1e3a2c;
+}
+
+:root[data-theme="dark"] .activity-summary span {
+  background: #16291f;
+  color: #eaf3ed;
+}
+
+:root[data-theme="dark"] .marketing-footer {
+  background: #060e0a;
+  border-top: 1px solid #182e22;
+}

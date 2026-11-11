@@ -350,6 +350,12 @@
   box-shadow: none;
 }
 
+.marketing-shell .tracking-form input {
+  background-color: #ffffff;
+  color: var(--ink, #12251c);
+  border: 1px solid var(--line, #cfe0d6);
+}
+
 .marketing-shell .tracking-result h2 {
   color: var(--forest-deep);
   font-size: 1.35rem;
@@ -400,4 +406,70 @@
   .flow-card {
     padding: 1.5rem;
   }
+}
+
+/* Dark Mode - Public Pages */
+:root[data-theme="dark"] .marketing-shell .public-page__header h1 {
+  color: #eaf3ed;
+}
+
+:root[data-theme="dark"] .marketing-shell .information-card,
+:root[data-theme="dark"] .flow-card,
+:root[data-theme="dark"] .transparency-metrics article,
+:root[data-theme="dark"] .transparency-columns article,
+:root[data-theme="dark"] .tier-grid article {
+  background: #112219;
+  border-color: #1e3a2c;
+}
+
+:root[data-theme="dark"] .flow-card:nth-child(2) {
+  background: #14281e;
+}
+
+:root[data-theme="dark"] .marketing-shell .information-card h2,
+:root[data-theme="dark"] .flow-card h2,
+:root[data-theme="dark"] .transparency-columns h2,
+:root[data-theme="dark"] .tier-grid h2,
+:root[data-theme="dark"] .transparency-metrics strong {
+  color: #eaf3ed;
+}
+
+:root[data-theme="dark"] .public-note {
+  background: #13241c;
+  border-left-color: #2fa36f;
+  color: #95aba0;
+}
+:root[data-theme="dark"] .public-note strong {
+  color: #eaf3ed;
+}
+
+:root[data-theme="dark"] .public-data-state {
+  background: #13241c;
+  border-color: #244633;
+  color: #95aba0;
+}
+
+:root[data-theme="dark"] .recognition-intro span {
+  background: #16291f;
+  color: #2fa36f;
+}
+
+:root[data-theme="dark"] .marketing-shell .tracking-form,
+:root[data-theme="dark"] .marketing-shell .tracking-result {
+  background: #112219;
+  border-color: #1e3a2c;
+}
+:root[data-theme="dark"] .marketing-shell .tracking-form input {
+  background-color: #0d1813 !important;
+  border-color: #244633 !important;
+  color: #eaf3ed !important;
+}
+:root[data-theme="dark"] .marketing-shell .tracking-result h2,
+:root[data-theme="dark"] .tracking-result dd {
+  color: #eaf3ed;
+}
+
+:root[data-theme="dark"] .marketing-shell .public-callout {
+  background: #13241c;
+  border-color: #1e3a2c;
 }
