@@ -30,9 +30,7 @@ export const PublicLayout: React.FC = () => {
       <header className="sticky top-0 z-40 w-full border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md">
         <div className="w-full px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
           <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-lg bg-emerald-600 flex items-center justify-center text-white font-bold shadow-xs group-hover:bg-emerald-700 transition-colors">
-              M
-            </div>
+            <img src="/logo.svg" alt="CharityChain Logo" className="w-8 h-8 rounded-lg shadow-xs group-hover:opacity-90 transition-opacity" />
             <div>
               <span className="text-base sm:text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
                 CharityChain

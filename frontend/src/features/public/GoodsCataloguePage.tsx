@@ -110,3 +110,4 @@ export const GoodsCataloguePage: React.FC = () => {
     </div>
   );
 };
+

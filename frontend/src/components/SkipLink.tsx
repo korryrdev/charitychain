@@ -10,3 +10,4 @@ export const SkipLink: React.FC<{ targetId?: string }> = ({ targetId = 'main-con
     </a>
   );
 };
+

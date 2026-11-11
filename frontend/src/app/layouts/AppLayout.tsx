@@ -105,9 +105,7 @@ export const AppLayout: React.FC = () => {
       {/* Mobile Top Header */}
       <div className="lg:hidden sticky top-0 z-50 flex items-center justify-between px-4 h-16 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800">
         <Link to="/app" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center text-white font-bold text-sm">
-            M
-          </div>
+          <img src="/logo.svg" alt="CharityChain Logo" className="w-8 h-8 rounded-lg shadow-xs" />
           <span className="font-bold text-base">CharityChain</span>
         </Link>
         <div className="flex items-center gap-2">
@@ -134,9 +132,7 @@ export const AppLayout: React.FC = () => {
           {/* Logo & Header */}
           <div className="h-16 px-6 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
             <Link to="/app" className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center text-white font-bold text-sm shadow-xs">
-                M
-              </div>
+              <img src="/logo.svg" alt="CharityChain Logo" className="w-8 h-8 rounded-lg shadow-xs" />
               <div className="flex flex-col">
                 <span className="font-bold text-sm leading-tight">CharityChain</span>
               </div>

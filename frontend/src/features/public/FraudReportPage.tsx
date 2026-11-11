@@ -129,3 +129,4 @@ export const FraudReportPage: React.FC = () => {
     </div>
   );
 };
+
