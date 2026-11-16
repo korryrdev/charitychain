@@ -4,14 +4,14 @@ This guide describes how to run CharityChain from a fresh clone. It covers the f
 
 ## What runs in the project
 
-| Component | Technology | Local endpoint |
-| --- | --- | --- |
-| Web application | React 19.3, React Router 7.18, Vite 8.3 | `http://localhost:5173` |
-| API | Node.js 22.12+, Express 5.3 | `http://localhost:3000` |
-| Database | PostgreSQL 17 | host port `5433` |
-| ORM and migrations | Prisma Client and Prisma CLI 6.19 | database workspace |
-| Evidence storage | IPFS Kubo 0.39 | API `http://localhost:5001`, gateway `http://localhost:8080` |
-| Smart contracts | Solidity, Hardhat 3.21, OpenZeppelin 5.4, Web3.js 4.16 | `blockchain/` |
+| Component          | Technology                                             | Local endpoint                                               |
+| ------------------ | ------------------------------------------------------ | ------------------------------------------------------------ |
+| Web application    | React 19.3, React Router 7.18, Vite 8.3                | `http://localhost:5173`                                      |
+| API                | Node.js 22.12+, Express 5.3                            | `http://localhost:3000`                                      |
+| Database           | PostgreSQL 17                                          | host port `5433`                                             |
+| ORM and migrations | Prisma Client and Prisma CLI 6.19                      | database workspace                                           |
+| Evidence storage   | IPFS Kubo 0.39                                         | API `http://localhost:5001`, gateway `http://localhost:8080` |
+| Smart contracts    | Solidity, Hardhat 3.21, OpenZeppelin 5.4, Web3.js 4.16 | `blockchain/`                                                |
 
 The repository is an npm-workspace monorepo containing `frontend`, `backend`, `database`, `blockchain`, `shared`, simulations, infrastructure, and documentation.
 
@@ -40,11 +40,11 @@ Never commit a real `.env` file. Start from the versioned template:
 Copy-Item .env.example .env
 ```
 
-For local development, set `POSTGRES_PASSWORD`, `SESSION_SECRET`, and `ENCRYPTION_KEY` to private values. Keep external payment and SMS feature flags disabled unless valid sandbox credentials are configured. The defaults use normal fiat integrations (M-Pesa, Paybill/bank, and SMS); no cryptocurrency wallet is required for users.
+The repository-root `.env` is the single configuration source for Docker, the backend, Prisma, and Vite (`VITE_` variables only are exposed to browser code). Set `POSTGRES_PASSWORD`, `SESSION_SECRET`, and `ENCRYPTION_KEY` to private values. Keep external payment and SMS feature flags disabled unless valid sandbox credentials are configured. Never put production credentials in a frontend-prefixed variable.
 
 `DATABASE_URL` is different depending on where the API runs:
 
-- Local Node.js process: use `localhost:5433`.
+- Local Node.js process with Docker PostgreSQL: use `localhost:5435`.
 - Docker API container: Compose overrides it to `postgres:5432` automatically.
 
 Use either the Docker workflow or the local-development workflow below; do not run both frontend/API modes on the same ports at the same time.
@@ -147,19 +147,25 @@ npm run dev -w @charitychain/backend
 npm run dev -w @charitychain/frontend
 ```
 
+### M-Pesa Daraja sandbox
+
+Set `MPESA_ENVIRONMENT=sandbox` and fill `MPESA_CONSUMER_KEY`, `MPESA_CONSUMER_SECRET`, `MPESA_SHORTCODE`, and `MPESA_PASSKEY` in the root `.env`, then set `FEATURE_MPESA_ENABLED=true`. STK Push uses the Safaricom sandbox API; its callback URL is `${MPESA_CALLBACK_BASE_URL}/api/v1/webhooks/payments/mpesa/stk`. Daraja must be able to reach that callback URL, so use a public HTTPS tunnel for local testing. The callback is reconciled with Daraja's STK Push Query API before a donation can be marked paid.
+
+The initiator/security credential and university shortcode/account variables are needed only for M-Pesa disbursements. Do not send Daraja credentials in chat or commit them; configure them only in the ignored root `.env`.
+
 ## Database operations
 
 Prisma schema: `database/prisma/schema.prisma`.
 
-| Task | Command |
-| --- | --- |
-| Generate Prisma Client | `npm run db:generate` |
-| Validate Prisma schema | `npm run db:validate` |
-| Create a new local migration during schema development | `npm run db:migrate` |
-| Apply committed migrations in a deployment | `npm run migrate:deploy -w @charitychain/database` |
-| Seed roles, permissions, and recognition tiers | `npm run db:seed` |
-| Seed simulated university records | `npm run db:seed:university` |
-| Check migration state | `npx prisma migrate status --schema database/prisma/schema.prisma` |
+| Task                                                   | Command                                                            |
+| ------------------------------------------------------ | ------------------------------------------------------------------ |
+| Generate Prisma Client                                 | `npm run db:generate`                                              |
+| Validate Prisma schema                                 | `npm run db:validate`                                              |
+| Create a new local migration during schema development | `npm run db:migrate`                                               |
+| Apply committed migrations in a deployment             | `npm run migrate:deploy -w @charitychain/database`                 |
+| Seed roles, permissions, and recognition tiers         | `npm run db:seed`                                                  |
+| Seed simulated university records                      | `npm run db:seed:university`                                       |
+| Check migration state                                  | `npx prisma migrate status --schema database/prisma/schema.prisma` |
 
 Fresh databases must receive both migrations and the core seed before accounts can be created because registration assigns the `DONOR` role. Student-support workflows also need the simulated university-record seed.
 

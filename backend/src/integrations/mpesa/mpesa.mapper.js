@@ -1,3 +1,30 @@
-export function mpesaTimestamp(date = new Date()) { return date.toISOString().replace(/[-:T.Z]/g, '').slice(0, 14); }
-export function mapStkRequest({ config, donation, phoneNumber, timestamp = mpesaTimestamp() }) { return { BusinessShortCode: config.shortcode, Password: Buffer.from(`${config.shortcode}${config.passkey}${timestamp}`).toString('base64'), Timestamp: timestamp, TransactionType: 'CustomerPayBillOnline', Amount: Number(donation.amount), PartyA: phoneNumber, PartyB: config.shortcode, PhoneNumber: phoneNumber, CallBackURL: config.callbackUrl, AccountReference: donation.trackingId, TransactionDesc: 'CharityChain donation' }; }
-export function mapStkResponse(body) { return { providerRequestId: body.CheckoutRequestID, status: 'PENDING', responseCode: String(body.ResponseCode ?? ''), responseMessage: body.ResponseDescription ?? body.CustomerMessage ?? null }; }
+export function mpesaTimestamp(date = new Date()) {
+  const shifted = new Date(date.getTime() + 3 * 60 * 60 * 1000);
+  return shifted
+    .toISOString()
+    .replace(/[-:T.Z]/g, '')
+    .slice(0, 14);
+}
+export function mapStkRequest({ config, donation, phoneNumber, timestamp = mpesaTimestamp() }) {
+  return {
+    BusinessShortCode: config.shortcode,
+    Password: Buffer.from(`${config.shortcode}${config.passkey}${timestamp}`).toString('base64'),
+    Timestamp: timestamp,
+    TransactionType: 'CustomerPayBillOnline',
+    Amount: Number(donation.amount),
+    PartyA: phoneNumber,
+    PartyB: config.shortcode,
+    PhoneNumber: phoneNumber,
+    CallBackURL: config.callbackUrl,
+    AccountReference: donation.trackingId,
+    TransactionDesc: 'CharityChain donation'
+  };
+}
+export function mapStkResponse(body) {
+  return {
+    providerRequestId: body.CheckoutRequestID,
+    status: 'PENDING',
+    responseCode: String(body.ResponseCode ?? ''),
+    responseMessage: body.ResponseDescription ?? body.CustomerMessage ?? null
+  };
+}
