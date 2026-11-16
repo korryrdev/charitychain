@@ -1,8 +1,10 @@
 import { STATUSES } from '../../constants/statuses.js';
+import { ValidationError } from '../../errors/ValidationError.js';
 import { donorsService } from '../donors/donors.service.js';
 import { assertUserCanSignIn } from './auth.policy.js';
 import { accountVerificationService } from './accountVerification.service.js';
 import { authRepository } from './auth.repository.js';
+import { STUDENT_EMAIL_REGEX } from './auth.validation.js';
 import { authEngine } from './betterAuth.js';
 import { env } from '../../config/environment.js';
 
@@ -19,16 +21,28 @@ export function createAuthService({
 } = {}) {
   return {
     async register(input) {
+      const normalizedEmail = String(input.email ?? '').trim().toLowerCase();
+      const isStudent =
+        input.role === 'STUDENT' || normalizedEmail.endsWith('@students.must.ac.ke');
+      if (isStudent && !STUDENT_EMAIL_REGEX.test(normalizedEmail)) {
+        throw new ValidationError('Incorrect email', [
+          { path: 'email', message: 'Incorrect email', code: 'custom' }
+        ]);
+      }
       const result = unwrap(
         await engine.api.signUpEmail({
-          body: { name: input.name, email: input.email, password: input.password }
+          body: { name: input.name, email: normalizedEmail, password: input.password }
         })
       );
       try {
-        await repository.assignDefaultRole(result.user.id);
-        await donorProvisioning.provision(result.user.id);
-        const token = await verificationService.issue(input.email);
-        await sendVerification({ email: input.email, token, user: result.user });
+        if (isStudent) {
+          await repository.assignDefaultRole(result.user.id, 'STUDENT');
+        } else {
+          await repository.assignDefaultRole(result.user.id, 'DONOR');
+          await donorProvisioning.provision(result.user.id);
+        }
+        const token = await verificationService.issue(normalizedEmail);
+        await sendVerification({ email: normalizedEmail, token, user: result.user });
         return {
           ...result,
           ...(env.NODE_ENV === 'production' ? {} : { developmentVerificationToken: token })
@@ -39,10 +53,19 @@ export function createAuthService({
       }
     },
     async login(input, headers) {
-      const user = await repository.findUserByEmail(input.email);
+      const normalizedEmail = String(input.email ?? '').trim().toLowerCase();
+      if (
+        (input.role === 'STUDENT' || normalizedEmail.endsWith('@students.must.ac.ke')) &&
+        !STUDENT_EMAIL_REGEX.test(normalizedEmail)
+      ) {
+        throw new ValidationError('Incorrect email', [
+          { path: 'email', message: 'Incorrect email', code: 'custom' }
+        ]);
+      }
+      const user = await repository.findUserByEmail(normalizedEmail);
       assertUserCanSignIn(user);
       const result = await engine.api.signInEmail({
-        body: { email: input.email, password: input.password },
+        body: { email: normalizedEmail, password: input.password },
         headers,
         returnHeaders: true
       });
