@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { AuthShell } from '../../features/authentication/components/AuthShell.jsx';
 import { LoginForm } from '../../features/authentication/components/LoginForm.jsx';
 import { useAuth } from '../../features/authentication/hooks/useAuth.js';
 
@@ -33,8 +34,8 @@ export function LoginPage() {
     }
   };
   return (
-    <main className="auth-page">
+    <AuthShell>
       <LoginForm onSubmit={submit} pending={pending} error={error} />
-    </main>
+    </AuthShell>
   );
 }

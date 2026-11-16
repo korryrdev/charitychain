@@ -2,10 +2,10 @@ export const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const studentEmailPattern = /^[a-zA-Z]+\d{6}@students\.must\.ac\.ke$/i;
 export const PORTAL_ROLES = Object.freeze(['STUDENT', 'DONOR', 'ADMIN', 'SECRETARIAT']);
 export const PORTAL_ROLE_OPTIONS = Object.freeze([
-  { id: 'STUDENT', label: 'Student' },
-  { id: 'DONOR', label: 'Donor' },
-  { id: 'ADMIN', label: 'Admin' },
-  { id: 'SECRETARIAT', label: 'Secretariat' }
+  { id: 'STUDENT', label: 'Student', description: 'Apply for support', staff: false },
+  { id: 'DONOR', label: 'Donor', description: 'Give money or goods', staff: false },
+  { id: 'ADMIN', label: 'Admin', description: 'Platform administration', staff: true },
+  { id: 'SECRETARIAT', label: 'Secretariat', description: 'Records and committee office', staff: true }
 ]);
 
 function errorsFor(values, rules) {

@@ -86,7 +86,7 @@ describe('authentication foundation', () => {
     expect(validateLogin({ email: 'donor@example.org', password: 'password' }, { role: 'DONOR' })).toEqual({});
   });
 
-  it('renders role tabs on LoginForm with Student active by default and shows Incorrect email for invalid student emails', async () => {
+  it('renders portal tabs on LoginForm with Student active by default, staff toggle, and Incorrect email for invalid student emails', async () => {
     const onSubmit = vi.fn();
     render(
       <MemoryRouter>
@@ -98,8 +98,14 @@ describe('authentication foundation', () => {
     const donorTab = screen.getByRole('tab', { name: 'Donor' });
     expect(studentTab).toHaveAttribute('aria-selected', 'true');
     expect(donorTab).toHaveAttribute('aria-selected', 'false');
+    expect(screen.queryByRole('tab', { name: 'Admin' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Staff sign in' }));
     expect(screen.getByRole('tab', { name: 'Admin' })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Secretariat' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Back to Student and Donor' }));
+    expect(screen.getByRole('tab', { name: 'Student' })).toHaveAttribute('aria-selected', 'true');
 
     fireEvent.change(screen.getByLabelText('Email address'), { target: { value: 'donor@example.org' } });
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'StrongPassword123' } });
@@ -122,7 +128,7 @@ describe('authentication foundation', () => {
     );
   });
 
-  it('renders role tabs on RegisterForm with Student active by default and validates student emails', async () => {
+  it('renders Student and Donor portal tabs on RegisterForm without staff self-registration and validates student emails', async () => {
     const onSubmit = vi.fn();
     render(
       <MemoryRouter>
@@ -132,8 +138,8 @@ describe('authentication foundation', () => {
 
     expect(screen.getByRole('tab', { name: 'Student' })).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByRole('tab', { name: 'Donor' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Admin' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Secretariat' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Staff sign in' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Admin' })).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText('Full name'), { target: { value: 'Student Name' } });
     fireEvent.change(screen.getByLabelText('Email address'), { target: { value: 'invalid@must.ac.ke' } });

@@ -1,84 +1,117 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Button } from '../../../components/common/Button.jsx';
-import { FormField } from '../../../components/forms/FormField.jsx';
-import { Alert } from '../../../components/feedback/Alert.jsx';
-import { PORTAL_ROLE_OPTIONS, validateLogin } from '../validation/auth.schema.js';
+import { CircleAlert } from 'lucide-react';
+import { AuthField } from './AuthField.jsx';
+import { PortalSelector } from './PortalSelector.jsx';
+import { validateLogin, validatePortalEmail } from '../validation/auth.schema.js';
+
+const SUBTITLES = {
+  STUDENT: 'Use your MUST student email to open your support portal.',
+  DONOR: 'Track your giving and manage how you are recognised.',
+  ADMIN: 'Staff access for platform administration.',
+  SECRETARIAT: 'Staff access for the records and committee office.'
+};
 
 export function LoginForm({ onSubmit, pending = false, error = null, defaultRole = 'STUDENT' }) {
   const [role, setRole] = useState(defaultRole);
   const [values, setValues] = useState({ email: '', password: '' });
   const [errors, setErrors] = useState({});
   const isStudent = role === 'STUDENT';
+  const emailValue = values.email.trim();
+  const emailValid = Boolean(emailValue) && !validatePortalEmail(emailValue, role);
+
+  const withEmailError = (current, email, nextRole) => {
+    const message = validatePortalEmail(email, nextRole);
+    const next = { ...current };
+    if (message) next.email = message;
+    else delete next.email;
+    return next;
+  };
 
   const selectRole = (nextRole) => {
     setRole(nextRole);
     setErrors({});
   };
 
+  const changeEmail = (email) => {
+    setValues({ ...values, email });
+    if (errors.email) setErrors((current) => withEmailError(current, email, role));
+  };
+
+  const blurEmail = () => {
+    if (values.email.trim()) setErrors((current) => withEmailError(current, values.email, role));
+  };
+
   const submit = async (event) => {
     event.preventDefault();
     const nextErrors = validateLogin({ ...values, role }, { role });
     setErrors(nextErrors);
-    if (!Object.keys(nextErrors).length) await onSubmit({ ...values, role });
+    const firstInvalid = Object.keys(nextErrors)[0];
+    if (firstInvalid) {
+      document.getElementById(firstInvalid)?.focus();
+      return;
+    }
+    await onSubmit({ ...values, role });
   };
 
   return (
-    <form noValidate onSubmit={submit}>
-      <h1>Sign in</h1>
-      <div className="auth-role-tabs" role="tablist" aria-label="Account portal">
-        {PORTAL_ROLE_OPTIONS.map((option) => (
-          <button
-            key={option.id}
-            type="button"
-            role="tab"
-            aria-selected={role === option.id}
-            className={`auth-role-tab${role === option.id ? ' auth-role-tab--active' : ''}`}
-            onClick={() => selectRole(option.id)}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
-      {error && (
-        <Alert tone="danger" title="Unable to sign in">
-          {error}
-        </Alert>
-      )}
-      <FormField
-        id="email"
-        label="Email address"
-        hint={isStudent ? 'Format: name123456@students.must.ac.ke' : undefined}
-        error={errors.email}
-      >
-        <input
+    <form className="cc-form" noValidate onSubmit={submit}>
+      <header className="cc-form__header">
+        <h1>Welcome back</h1>
+        <p>{SUBTITLES[role]}</p>
+      </header>
+
+      <PortalSelector role={role} onChange={selectRole} idPrefix="login" />
+
+      <div className="cc-form__panel" role="tabpanel" id="login-panel" aria-labelledby={`login-tab-${role}`}>
+        {error && (
+          <div className="cc-notice cc-notice--danger" role="alert">
+            <CircleAlert size={20} strokeWidth={1.75} aria-hidden="true" />
+            <div>
+              <strong>Unable to sign in</strong>
+              <p>{error}</p>
+            </div>
+          </div>
+        )}
+
+        <AuthField
           id="email"
+          label="Email address"
           type="email"
           autoComplete="email"
-          placeholder={isStudent ? 'name123456@students.must.ac.ke' : undefined}
+          placeholder={isStudent ? 'name123456@students.must.ac.ke' : 'you@example.org'}
+          hint={isStudent ? 'Format: name123456@students.must.ac.ke' : undefined}
           value={values.email}
-          onChange={(event) => setValues({ ...values, email: event.target.value })}
-          aria-invalid={Boolean(errors.email)}
+          onChange={changeEmail}
+          onBlur={blurEmail}
+          error={errors.email}
+          valid={emailValid}
         />
-      </FormField>
-      <FormField id="password" label="Password" error={errors.password}>
-        <input
+
+        <AuthField
           id="password"
+          label="Password"
           type="password"
           autoComplete="current-password"
           value={values.password}
-          onChange={(event) => setValues({ ...values, password: event.target.value })}
-          aria-invalid={Boolean(errors.password)}
+          onChange={(password) => setValues({ ...values, password })}
+          error={errors.password}
         />
-      </FormField>
-      <Button type="submit" loading={pending}>
-        Sign in
-      </Button>
-      <p>
-        <Link to="/auth/password-recovery">Forgot your password?</Link>
-      </p>
-      <p>
-        New here? <Link to="/auth/register">Create an account</Link>.
+
+        <div className="cc-form__row">
+          <Link className="cc-link" to="/auth/password-recovery">
+            Forgot your password?
+          </Link>
+        </div>
+
+        <button type="submit" className="cc-btn cc-btn--primary cc-btn--lg cc-btn--block" disabled={pending} aria-busy={pending || undefined}>
+          {pending && <span className="cc-spinner" aria-hidden="true" />}
+          {pending ? 'Signing in…' : 'Sign in'}
+        </button>
+      </div>
+
+      <p className="cc-form__alt">
+        New here? <Link className="cc-link" to="/auth/register">Create an account</Link>
       </p>
     </form>
   );

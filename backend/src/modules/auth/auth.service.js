@@ -1,6 +1,10 @@
 import { STATUSES } from '../../constants/statuses.js';
+import { AuthenticationError } from '../../errors/AuthenticationError.js';
+import { ConflictError } from '../../errors/ConflictError.js';
+import { ERROR_CODES } from '../../errors/errorCodes.js';
 import { ValidationError } from '../../errors/ValidationError.js';
 import { donorsService } from '../donors/donors.service.js';
+import { EmailAlreadyRegisteredError } from './auth.errors.js';
 import { assertUserCanSignIn } from './auth.policy.js';
 import { accountVerificationService } from './accountVerification.service.js';
 import { authRepository } from './auth.repository.js';
@@ -29,14 +33,34 @@ export function createAuthService({
           { path: 'email', message: 'Incorrect email', code: 'custom' }
         ]);
       }
-      const result = unwrap(
-        await engine.api.signUpEmail({
-          body: { name: input.name, email: normalizedEmail, password: input.password }
-        })
-      );
+      if (await repository.findUserByEmail?.(normalizedEmail)) {
+        throw new EmailAlreadyRegisteredError();
+      }
+      let result;
+      try {
+        result = unwrap(
+          await engine.api.signUpEmail({
+            body: { name: input.name, email: normalizedEmail, password: input.password }
+          })
+        );
+      } catch (error) {
+        if (
+          error?.statusCode === 422 ||
+          error?.status === 'UNPROCESSABLE_ENTITY' ||
+          error?.body?.code === 'USER_ALREADY_EXISTS' ||
+          error?.body?.code === 'USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL'
+        ) {
+          throw new ConflictError('An account with this email address already exists.', {
+            code: ERROR_CODES.CONFLICT,
+            cause: error
+          });
+        }
+        throw error;
+      }
       try {
         if (isStudent) {
           await repository.assignDefaultRole(result.user.id, 'STUDENT');
+          await repository.ensureStudentProfile?.(result.user.id, input.name);
         } else {
           await repository.assignDefaultRole(result.user.id, 'DONOR');
           await donorProvisioning.provision(result.user.id);
@@ -64,13 +88,31 @@ export function createAuthService({
       }
       const user = await repository.findUserByEmail(normalizedEmail);
       assertUserCanSignIn(user);
-      const result = await engine.api.signInEmail({
-        body: { email: normalizedEmail, password: input.password },
-        headers,
-        returnHeaders: true
-      });
+      let result;
+      try {
+        result = await engine.api.signInEmail({
+          body: { email: normalizedEmail, password: input.password },
+          headers,
+          returnHeaders: true
+        });
+      } catch (error) {
+        if (
+          error?.statusCode === 401 ||
+          error?.status === 'UNAUTHORIZED' ||
+          error?.body?.code === 'INVALID_EMAIL_OR_PASSWORD'
+        ) {
+          throw new AuthenticationError('The email or password is incorrect.', {
+            code: ERROR_CODES.INVALID_CREDENTIALS,
+            cause: error
+          });
+        }
+        throw error;
+      }
       const response = result.response ?? result;
       const roles = user.roles.map((assignment) => assignment.role.code);
+      if (roles.includes('STUDENT')) {
+        await repository.ensureStudentProfile?.(user.id, user.name);
+      }
       const permissions = [
         ...new Set(
           user.roles.flatMap(
