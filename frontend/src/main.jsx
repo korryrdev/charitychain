@@ -14,6 +14,7 @@ import '@fontsource/inter/400.css';
 import '@fontsource/inter/500.css';
 import '@fontsource/inter/600.css';
 import '@fontsource/inter/700.css';
+import './assets/styles/tokens.css';
 import './assets/styles/global.css';
 import './assets/styles/public.css';
 import './assets/styles/homepage-refresh.css';
@@ -29,6 +30,7 @@ import './assets/styles/committee.css';
 import './assets/styles/finance.css';
 import './assets/styles/auditor.css';
 import './assets/styles/admin.css';
+import './assets/styles/ui.css';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

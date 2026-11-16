@@ -1,5 +1,5 @@
 import { createElement } from 'react';
-import { FoundationStatus, FrontendHealth } from '../App.jsx';
+import { FrontendHealth } from '../App.jsx';
 import { PublicLayout } from '../layouts/PublicLayout.jsx';
 import { AuthLayout } from '../layouts/AuthLayout.jsx';
 import { LoginPage } from '../pages/auth/LoginPage.jsx';
@@ -21,6 +21,8 @@ import { PrivacyPage } from '../pages/public/PrivacyPage.jsx';
 import { ContactPage } from '../pages/public/ContactPage.jsx';
 import { ComplaintPage } from '../pages/public/ComplaintPage.jsx';
 import { FraudReportPage } from '../pages/public/FraudReportPage.jsx';
+import { FaqPage } from '../pages/public/FaqPage.jsx';
+import { HelpPage } from '../pages/public/HelpPage.jsx';
 import { PhysicalDonationConfirmationPage } from '../pages/public/PhysicalDonationConfirmationPage.jsx';
 import { GoodsCollectionConfirmationPage } from '../pages/public/GoodsCollectionConfirmationPage.jsx';
 import { CommunityLayout } from '../layouts/CommunityLayout.jsx';
@@ -77,7 +79,7 @@ export const routeConfig = Object.freeze([
   { path: '/', element: createElement(PublicLayout), children: [
     { index: true, element: createElement(HomePage) }, { path: 'health', element: createElement(FrontendHealth) }, { path: 'how-it-works', element: createElement(HowItWorksPage) }, { path: 'transparency', element: createElement(TransparencyPage) },
     { path: 'recognition', element: createElement(DonorRecognitionPage) }, { path: 'track', element: createElement(TrackDonationPage) }, { path: 'goods', element: createElement(GoodsCataloguePage) }, { path: 'governance', element: createElement(GovernancePage) },
-    { path: 'policies', element: createElement(PoliciesPage) }, { path: 'privacy', element: createElement(PrivacyPage) }, { path: 'contact', element: createElement(ContactPage) }, { path: 'complaints', element: createElement(ComplaintPage) }, { path: 'report-fraud', element: createElement(FraudReportPage) }, { path: 'confirm-physical-donation', element: createElement(PhysicalDonationConfirmationPage) }, { path: 'confirm-goods', element: createElement(GoodsCollectionConfirmationPage) },
+    { path: 'policies', element: createElement(PoliciesPage) }, { path: 'privacy', element: createElement(PrivacyPage) }, { path: 'faq', element: createElement(FaqPage) }, { path: 'help', element: createElement(HelpPage) }, { path: 'contact', element: createElement(ContactPage) }, { path: 'complaints', element: createElement(ComplaintPage) }, { path: 'report-fraud', element: createElement(FraudReportPage) }, { path: 'confirm-physical-donation', element: createElement(PhysicalDonationConfirmationPage) }, { path: 'confirm-goods', element: createElement(GoodsCollectionConfirmationPage) },
   ] },
   { path: '/', element: createElement(AuthLayout), children: [
     { path: 'auth/login', element: createElement(LoginPage) }, { path: 'auth/register', element: createElement(RegisterPage) }, { path: 'auth/verify-account', element: createElement(VerifyAccountPage) },

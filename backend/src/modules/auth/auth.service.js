@@ -1,8 +1,14 @@
 import { STATUSES } from '../../constants/statuses.js';
+import { AuthenticationError } from '../../errors/AuthenticationError.js';
+import { ConflictError } from '../../errors/ConflictError.js';
+import { ERROR_CODES } from '../../errors/errorCodes.js';
+import { ValidationError } from '../../errors/ValidationError.js';
 import { donorsService } from '../donors/donors.service.js';
+import { EmailAlreadyRegisteredError } from './auth.errors.js';
 import { assertUserCanSignIn } from './auth.policy.js';
 import { accountVerificationService } from './accountVerification.service.js';
 import { authRepository } from './auth.repository.js';
+import { STUDENT_EMAIL_REGEX } from './auth.validation.js';
 import { authEngine } from './betterAuth.js';
 import { env } from '../../config/environment.js';
 
@@ -19,16 +25,48 @@ export function createAuthService({
 } = {}) {
   return {
     async register(input) {
-      const result = unwrap(
-        await engine.api.signUpEmail({
-          body: { name: input.name, email: input.email, password: input.password }
-        })
-      );
+      const normalizedEmail = String(input.email ?? '').trim().toLowerCase();
+      const isStudent =
+        input.role === 'STUDENT' || normalizedEmail.endsWith('@students.must.ac.ke');
+      if (isStudent && !STUDENT_EMAIL_REGEX.test(normalizedEmail)) {
+        throw new ValidationError('Incorrect email', [
+          { path: 'email', message: 'Incorrect email', code: 'custom' }
+        ]);
+      }
+      if (await repository.findUserByEmail?.(normalizedEmail)) {
+        throw new EmailAlreadyRegisteredError();
+      }
+      let result;
       try {
-        await repository.assignDefaultRole(result.user.id);
-        await donorProvisioning.provision(result.user.id);
-        const token = await verificationService.issue(input.email);
-        await sendVerification({ email: input.email, token, user: result.user });
+        result = unwrap(
+          await engine.api.signUpEmail({
+            body: { name: input.name, email: normalizedEmail, password: input.password }
+          })
+        );
+      } catch (error) {
+        if (
+          error?.statusCode === 422 ||
+          error?.status === 'UNPROCESSABLE_ENTITY' ||
+          error?.body?.code === 'USER_ALREADY_EXISTS' ||
+          error?.body?.code === 'USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL'
+        ) {
+          throw new ConflictError('An account with this email address already exists.', {
+            code: ERROR_CODES.CONFLICT,
+            cause: error
+          });
+        }
+        throw error;
+      }
+      try {
+        if (isStudent) {
+          await repository.assignDefaultRole(result.user.id, 'STUDENT');
+          await repository.ensureStudentProfile?.(result.user.id, input.name);
+        } else {
+          await repository.assignDefaultRole(result.user.id, 'DONOR');
+          await donorProvisioning.provision(result.user.id);
+        }
+        const token = await verificationService.issue(normalizedEmail);
+        await sendVerification({ email: normalizedEmail, token, user: result.user });
         return {
           ...result,
           ...(env.NODE_ENV === 'production' ? {} : { developmentVerificationToken: token })
@@ -39,15 +77,42 @@ export function createAuthService({
       }
     },
     async login(input, headers) {
-      const user = await repository.findUserByEmail(input.email);
+      const normalizedEmail = String(input.email ?? '').trim().toLowerCase();
+      if (
+        (input.role === 'STUDENT' || normalizedEmail.endsWith('@students.must.ac.ke')) &&
+        !STUDENT_EMAIL_REGEX.test(normalizedEmail)
+      ) {
+        throw new ValidationError('Incorrect email', [
+          { path: 'email', message: 'Incorrect email', code: 'custom' }
+        ]);
+      }
+      const user = await repository.findUserByEmail(normalizedEmail);
       assertUserCanSignIn(user);
-      const result = await engine.api.signInEmail({
-        body: { email: input.email, password: input.password },
-        headers,
-        returnHeaders: true
-      });
+      let result;
+      try {
+        result = await engine.api.signInEmail({
+          body: { email: normalizedEmail, password: input.password },
+          headers,
+          returnHeaders: true
+        });
+      } catch (error) {
+        if (
+          error?.statusCode === 401 ||
+          error?.status === 'UNAUTHORIZED' ||
+          error?.body?.code === 'INVALID_EMAIL_OR_PASSWORD'
+        ) {
+          throw new AuthenticationError('The email or password is incorrect.', {
+            code: ERROR_CODES.INVALID_CREDENTIALS,
+            cause: error
+          });
+        }
+        throw error;
+      }
       const response = result.response ?? result;
       const roles = user.roles.map((assignment) => assignment.role.code);
+      if (roles.includes('STUDENT')) {
+        await repository.ensureStudentProfile?.(user.id, user.name);
+      }
       const permissions = [
         ...new Set(
           user.roles.flatMap(
