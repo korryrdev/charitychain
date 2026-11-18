@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
+  envDir: '..',
   envPrefix: 'VITE_',
   server: {
     host: '127.0.0.1',
@@ -11,12 +12,18 @@ export default defineConfig({
     proxy: { '/api': { target: 'http://localhost:3000', changeOrigin: true } }
   },
   preview: { host: '127.0.0.1', port: 4173, strictPort: true },
-  build: { sourcemap: true, reportCompressedSize: true },
+  build: { sourcemap: true, reportCompressedSize: true, cssMinify: 'esbuild' },
   test: {
     environment: 'jsdom',
     setupFiles: './src/tests/setup.js',
     clearMocks: true,
     restoreMocks: true,
-    coverage: { provider: 'v8', reporter: ['text', 'html', 'lcov'], all: true, include: ['src/**/*.{js,jsx}'], exclude: ['src/tests/**'] }
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html', 'lcov'],
+      all: true,
+      include: ['src/**/*.{js,jsx}'],
+      exclude: ['src/tests/**']
+    }
   }
 });

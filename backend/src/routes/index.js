@@ -20,7 +20,10 @@ import { sessionsRouter } from '../modules/sessions/sessions.routes.js';
 import { usersRouter } from '../modules/users/users.routes.js';
 import { paymentsRouter, paymentsWebhookRouter } from '../modules/payments/payments.routes.js';
 import { physicalDonationsRouter } from '../modules/physicalDonations/physicalDonations.routes.js';
-import { confirmationsRouter, publicConfirmationsRouter } from '../modules/confirmations/confirmations.routes.js';
+import {
+  confirmationsRouter,
+  publicConfirmationsRouter
+} from '../modules/confirmations/confirmations.routes.js';
 import { inventoryRouter } from '../modules/inventory/inventory.routes.js';
 import { studentsRouter } from '../modules/students/students.routes.js';
 import { universityRecordsRouter } from '../modules/universityRecords/universityRecords.routes.js';
@@ -28,8 +31,14 @@ import { applicationsRouter } from '../modules/applications/applications.routes.
 import { vettingRouter } from '../modules/vetting/vetting.routes.js';
 import { committeeRouter } from '../modules/committee/committee.routes.js';
 import { approvalsRouter } from '../modules/approvals/approvals.routes.js';
-import { disbursementsRouter, disbursementsWebhookRouter } from '../modules/disbursements/disbursements.routes.js';
-import { goodsCollectionsRouter, publicGoodsCollectionsRouter } from '../modules/goodsCollections/goodsCollections.routes.js';
+import {
+  disbursementsRouter,
+  disbursementsWebhookRouter
+} from '../modules/disbursements/disbursements.routes.js';
+import {
+  goodsCollectionsRouter,
+  publicGoodsCollectionsRouter
+} from '../modules/goodsCollections/goodsCollections.routes.js';
 import { reconciliationRouter } from '../modules/reconciliation/reconciliation.routes.js';
 import { evidenceRouter } from '../modules/evidence/evidence.routes.js';
 import { blockchainAuditRouter } from '../modules/blockchainAudit/blockchainAudit.routes.js';
@@ -42,6 +51,7 @@ import { createAuthenticatedRouter } from './authenticated.routes.js';
 import { healthRouter } from './health.routes.js';
 import { createPublicRouter } from './public.routes.js';
 import { createWebhookRouter } from './webhook.routes.js';
+import { mpesaCallbacksRouter } from '../integrations/mpesa/mpesa.routes.js';
 
 const defaultPublicRoutes = Object.freeze([
   { path: '/auth', router: authRouter },
@@ -86,7 +96,11 @@ export function createApiRouter({
   health = healthRouter,
   publicRoutes = defaultPublicRoutes,
   authenticatedRoutes = defaultAuthenticatedRoutes,
-  webhookRoutes = [{ path: '/payments', router: paymentsWebhookRouter }, { path: '/disbursements', router: disbursementsWebhookRouter }],
+  webhookRoutes = [
+    { path: '/payments', router: paymentsWebhookRouter },
+    { path: '/payments/mpesa', router: mpesaCallbacksRouter },
+    { path: '/disbursements', router: disbursementsWebhookRouter }
+  ],
   authenticationMiddleware = defaultAuthentication,
   auditMiddleware
 } = {}) {
