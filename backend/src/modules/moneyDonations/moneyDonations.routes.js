@@ -13,6 +13,8 @@ export function createMoneyDonationsRouter(controller = moneyDonationsController
   const router = Router();
   router.post('/', validateRequest({ body: createMoneyDonationSchema }), idempotency, controller.create);
   router.get('/', validateRequest({ query: donationListQuerySchema }), controller.listMine);
+  router.get('/:donationId/receipt', validateRequest({ params: donationIdParamsSchema }), controller.receiptDocument);
+  router.get('/:donationId/receipt/verify', validateRequest({ params: donationIdParamsSchema }), controller.verifyReceipt);
   router.get('/:donationId', validateRequest({ params: donationIdParamsSchema }), controller.get);
   return router;
 }

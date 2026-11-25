@@ -1,0 +1,45 @@
+/* Donor-only warm accents: green remains the primary navigation and action colour. */
+.portal-page.donor-page .section-kicker,
+.physical-donation-page .physical-process__eyebrow { color: #765c17; }
+
+.portal-page.donor-page .portal-page__lead,
+.physical-donation-page .portal-page__header > p { border-left: 3px solid #f3c969; padding-left: .9rem; }
+
+.donation-flow__form { border-top: 3px solid #f3c969; }
+.donation-page .donation-flow__aside .section-kicker,
+.donation-page .donation-flow__aside li > span,
+.donation-page .donation-flow__aside .donation-flow__note strong { color: #f6d77f; }
+.donation-page .payment-method-selector label.is-selected { border-color: #e2bd57; background: #fff9e9; }
+.donation-page .suggested-amounts button.is-selected { border-color: #d5aa35; background: #fff7df; color: #5b460e; }
+.donation-success-card { border-top: 3px solid #f3c969; }
+.donation-success-card > header { background: #fff8e6; }
+.donation-success-card > header span { color: #765c17; }
+
+.donation-history-table-wrap { border-top-color: #ead291; }
+.donation-history-table thead { background: #fffaf0; }
+.donation-history-preview-note,
+.donation-history-feedback { border-left-color: #e1b744; background: #fff9e9; }
+
+.donation-detail-hero { border-bottom-color: #ead291; }
+.donation-detail-flow { border-bottom-color: #ead291; }
+.donation-detail-card { border-bottom-color: #ead291; }
+.donation-detail-page .donation-detail-amount > strong { color: #6c5210; }
+
+.donor-settings-nav button.is-active { background: #fff4d6; color: #55400b; }
+.donor-settings-nav button:hover { background: #fff9e9; }
+.donor-account-card { border-top: 3px solid #f3c969; }
+.donor-settings-identity .public-profile-preview { background: #fff9e9; border-color: #ecd28a; }
+.donor-settings-identity .public-identity-form fieldset { border-top-color: #ead291; }
+
+.physical-donation-page .portal-page__header { border-left: 0; }
+.physical-donation-page .physical-declaration-card,
+.physical-donation-page .physical-summary { border-top: 3px solid #f3c969; }
+.physical-donation-page .physical-process { border-color: #ead291; background: #fffaf0; }
+.physical-donation-page .physical-process span { background: transparent; color: #181818; }
+.physical-donation-page .physical-safety-note { border-left: 3px solid #f3c969; background: #fff9e9; }
+.physical-donation-page .physical-line { background: #fffdf8; }
+
+@media (max-width: 700px) {
+  .portal-page.donor-page .portal-page__lead,
+  .physical-donation-page .portal-page__header > p { padding-left: .7rem; }
+}

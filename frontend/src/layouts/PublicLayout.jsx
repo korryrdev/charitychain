@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import { ThemeToggle } from '../components/common/ThemeToggle.jsx';
 import { ContextualHelpDrawer } from '../components/navigation/ContextualHelpDrawer.jsx';
 import { GlobalSearch } from '../components/navigation/GlobalSearch.jsx';
+import { defaultAuthorizedPath } from '../features/authorization/permissions.js';
+import { authStore } from '../store/auth.store.js';
 import { HelpMenu } from './components/HelpMenu.jsx';
 import { MobileMenu } from './components/MobileMenu.jsx';
 
@@ -46,6 +48,9 @@ export function PublicLayout() {
   const { pathname } = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const { ready, session } = useSyncExternalStore(authStore.subscribe, authStore.get);
+  const authenticated = Boolean(ready && session);
+  const dashboardTo = defaultAuthorizedPath(session);
   const closeMenu = () => setMenuOpen(false);
 
   return (
@@ -55,7 +60,7 @@ export function PublicLayout() {
       </div>
       <header className="cc-header">
         <div className="cc-header__inner">
-          <Link className="cc-brand" to="/">
+          <Link className="cc-brand" to="/" onClick={closeMenu}>
             <span className="cc-brand__mark" aria-hidden="true">
               C
             </span>
@@ -76,12 +81,20 @@ export function PublicLayout() {
             <span className="cc-hide-sm">
               <ThemeToggle />
             </span>
-            <Link className="cc-btn cc-btn--secondary cc-btn--sm cc-hide-sm" to="/auth/login">
-              Sign in
-            </Link>
-            <Link className="cc-btn cc-btn--primary cc-btn--sm cc-hide-sm" to="/auth/register">
-              Give support <span aria-hidden="true">→</span>
-            </Link>
+            {authenticated ? (
+              <Link className="cc-btn cc-btn--primary cc-btn--sm cc-hide-sm" to={dashboardTo}>
+                My dashboard
+              </Link>
+            ) : (
+              <>
+                <Link className="cc-btn cc-btn--secondary cc-btn--sm cc-hide-sm" to="/auth/login">
+                  Sign in
+                </Link>
+                <Link className="cc-btn cc-btn--primary cc-btn--sm cc-hide-sm" to="/auth/register">
+                  Give support <span aria-hidden="true">→</span>
+                </Link>
+              </>
+            )}
             <button
               type="button"
               className="cc-icon-btn cc-menu-btn"
@@ -102,6 +115,8 @@ export function PublicLayout() {
         primaryLinks={primaryLinks}
         helpLinks={helpLinks}
         onOpenScreenHelp={() => setHelpOpen(true)}
+        authenticated={authenticated}
+        dashboardTo={dashboardTo}
       />
       <ContextualHelpDrawer open={helpOpen} onClose={() => setHelpOpen(false)} pathname={pathname} />
 

@@ -31,14 +31,25 @@ function refinePortalEmail(data, ctx) {
   }
 }
 
-export const registerSchema = z
+const registerFields = {
+  name: z.string().trim().min(2).max(100),
+  email: rawEmail,
+  password,
+  role: portalRole
+};
+
+export const registerSchema = z.object(registerFields).superRefine(refinePortalEmail);
+export const studentRegisterSchema = z
   .object({
-    name: z.string().trim().min(2).max(100),
-    email: rawEmail,
-    password,
-    role: portalRole
+    ...registerFields,
+    registrationNumber: z
+      .string()
+      .trim()
+      .min(4)
+      .max(80)
+      .transform((value) => value.toUpperCase())
   })
-  .superRefine(refinePortalEmail);
+  .superRefine((data, ctx) => refinePortalEmail({ ...data, role: 'STUDENT' }, ctx));
 
 export const loginSchema = z
   .object({

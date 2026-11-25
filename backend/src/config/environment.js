@@ -71,6 +71,8 @@ const environmentSchema = z
     SMS_API_KEY: optionalString,
     SMS_USERNAME: optionalString,
     SMS_SENDER_ID: optionalString,
+    RESEND_API_KEY: optionalString,
+    EMAIL_FROM: optionalString,
     IPFS_API_URL: z.url().default('http://localhost:5001'),
     IPFS_GATEWAY_URL: z.url().default('http://localhost:8080'),
     BLOCKCHAIN_NETWORK: z.enum(['localhost', 'polygon_amoy', 'polygon']).default('localhost'),
@@ -81,6 +83,7 @@ const environmentSchema = z
     FEATURE_MPESA_ENABLED: booleanValue.default(false),
     FEATURE_BANK_ENABLED: booleanValue.default(false),
     FEATURE_SMS_ENABLED: booleanValue.default(false),
+    FEATURE_EMAIL_ENABLED: booleanValue.default(false),
     FEATURE_IPFS_ENABLED: booleanValue.default(true),
     FEATURE_BLOCKCHAIN_ANCHORING_ENABLED: booleanValue.default(false),
     FEATURE_BACKGROUND_JOBS_ENABLED: booleanValue.default(false),
@@ -140,6 +143,7 @@ const environmentSchema = z
       ['SMS_API_KEY', 'SMS_USERNAME'],
       'for the selected SMS provider'
     );
+    requireValues(value.FEATURE_EMAIL_ENABLED, ['RESEND_API_KEY', 'EMAIL_FROM'], 'when email delivery is enabled');
     requireValues(
       value.FEATURE_BLOCKCHAIN_ANCHORING_ENABLED,
       ['POLYGON_RPC_URL', 'BLOCKCHAIN_SERVICE_PRIVATE_KEY', 'BLOCKCHAIN_AUDIT_CONTRACT_ADDRESS'],

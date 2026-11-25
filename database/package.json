@@ -15,6 +15,9 @@
     "migrate:deploy": "node scripts/prisma.js migrate deploy --schema prisma/schema.prisma",
     "seed": "node prisma/seed.js",
     "seed:university": "node prisma/seedUniversityRecords.js",
+    "seed:inventory": "node prisma/seedInventory.js",
+    "seed:admin": "node prisma/seedAdmin.js",
+    "seed:all": "node prisma/seed.js && node prisma/seedUniversityRecords.js && node prisma/seedInventory.js && node prisma/seedAdmin.js",
     "test": "vitest run"
   },
   "dependencies": {

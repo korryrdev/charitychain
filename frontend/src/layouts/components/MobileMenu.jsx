@@ -6,7 +6,15 @@ import { ThemeToggle } from '../../components/common/ThemeToggle.jsx';
 import { useOverlay } from '../../hooks/useOverlay.js';
 
 /** Full-height navigation sheet for small screens. */
-export function MobileMenu({ open, onClose, primaryLinks, helpLinks, onOpenScreenHelp }) {
+export function MobileMenu({
+  open,
+  onClose,
+  primaryLinks,
+  helpLinks,
+  onOpenScreenHelp,
+  authenticated = false,
+  dashboardTo = '/'
+}) {
   const panelRef = useRef(null);
   useOverlay(panelRef, open, onClose);
   if (!open) return null;
@@ -79,12 +87,20 @@ export function MobileMenu({ open, onClose, primaryLinks, helpLinks, onOpenScree
       </div>
 
       <div className="cc-sheet__footer">
-        <Link className="cc-btn cc-btn--secondary cc-btn--lg" to="/auth/login" onClick={onClose}>
-          Sign in
-        </Link>
-        <Link className="cc-btn cc-btn--primary cc-btn--lg" to="/auth/register" onClick={onClose}>
-          Give support
-        </Link>
+        {authenticated ? (
+          <Link className="cc-btn cc-btn--primary cc-btn--lg" to={dashboardTo} onClick={onClose}>
+            My dashboard
+          </Link>
+        ) : (
+          <>
+            <Link className="cc-btn cc-btn--secondary cc-btn--lg" to="/auth/login" onClick={onClose}>
+              Sign in
+            </Link>
+            <Link className="cc-btn cc-btn--primary cc-btn--lg" to="/auth/register" onClick={onClose}>
+              Give support
+            </Link>
+          </>
+        )}
       </div>
     </div>
   );

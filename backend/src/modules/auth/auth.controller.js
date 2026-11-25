@@ -55,6 +55,7 @@ export function createAuthController({
         next(error);
       }
     },
+    registerStudent: async (request, response, next) => { try { const result = await service.registerStudent(request.body); response.status(201).json({ user: result.user, requiresVerification: true, ...(result.developmentVerificationToken ? { developmentVerificationToken: result.developmentVerificationToken } : {}) }); } catch (error) { next(error); } },
     verifyAccount: async (request, response, next) => {
       try {
         await verificationService.verify(request.body.email, request.body.token);

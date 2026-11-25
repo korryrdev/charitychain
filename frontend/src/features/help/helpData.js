@@ -399,9 +399,11 @@ export function searchEverything(rawQuery, session = null) {
 
   const portalNav = session
     ? [
-        ...allowedNavigation(NAVIGATION.community, session),
-        ...allowedNavigation(NAVIGATION.operations, session),
-        ...allowedNavigation(NAVIGATION.governance, session)
+        ...allowedNavigation(NAVIGATION.community ?? [], session),
+        ...allowedNavigation(NAVIGATION.student ?? [], session),
+        ...allowedNavigation(NAVIGATION.operations ?? [], session),
+        ...allowedNavigation(NAVIGATION.governance ?? [], session),
+        ...allowedNavigation(NAVIGATION.administration ?? [], session)
       ].map((item) => ({
         to: item.to,
         label: item.label,
