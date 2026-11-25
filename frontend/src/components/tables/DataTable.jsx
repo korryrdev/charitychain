@@ -1,3 +1,2 @@
-'use strict';
-
-// DataTable: implementation pending.
+import { EmptyState } from '../feedback/EmptyState.jsx';
+export function DataTable({ columns, rows, caption = 'Data table', rowKey = (row) => row.id }) { if (!rows.length) return <EmptyState title="No records found" />; return <div className="table-scroll"><table><caption>{caption}</caption><thead><tr>{columns.map((column) => <th key={column.key} scope="col">{column.label}</th>)}</tr></thead><tbody>{rows.map((row) => <tr key={rowKey(row)}>{columns.map((column) => <td key={column.key}>{column.render ? column.render(row) : row[column.key] ?? '—'}</td>)}</tr>)}</tbody></table></div>; }

@@ -1,12 +1,14 @@
 import { Router } from 'express';
 import { validateRequest } from '../../middleware/validateRequest.js';
 import { authController } from './auth.controller.js';
+import { authService } from './auth.service.js';
 import {
   emailSchema,
   loginSchema,
   mfaCodeSchema,
   passwordSchema,
   registerSchema,
+  studentRegisterSchema,
   resetPasswordSchema,
   verifyAccountSchema
 } from './auth.validation.js';
@@ -14,6 +16,7 @@ import {
 export function createAuthRouter(controller = authController) {
   const router = Router();
   router.post('/register', validateRequest({ body: registerSchema }), controller.register);
+  router.post('/register-student', validateRequest({ body: studentRegisterSchema }), controller.registerStudent);
   router.post(
     '/verify-account',
     validateRequest({ body: verifyAccountSchema }),

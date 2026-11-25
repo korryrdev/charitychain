@@ -1,14 +1,19 @@
-import { timingSafeEqual } from 'node:crypto';
+import { randomBytes, timingSafeEqual } from 'node:crypto';
+import { authenticationConfig } from '../config/authentication.js';
 import { AuthorizationError } from '../errors/AuthorizationError.js';
 
 const safeMethods = new Set(['GET', 'HEAD', 'OPTIONS']);
 const unauthenticatedAuthPaths = new Set([
   '/api/v1/public/auth/register',
+  '/api/v1/public/auth/register-student',
   '/api/v1/public/auth/verify-account',
   '/api/v1/public/auth/login',
+  '/api/v1/public/auth/demo-login',
   '/api/v1/public/auth/password-reset/request',
   '/api/v1/public/auth/password-reset/complete'
 ]);
+
+const csrfExemptPrefixes = ['/api/v1/daraja/', '/api/v1/webhooks/'];
 
 function tokensMatch(first, second) {
   if (typeof first !== 'string' || typeof second !== 'string') return false;
@@ -24,11 +29,27 @@ export function createCsrfProtection({
   sessionCookieName = 'charitychain_session',
   headerName = 'x-csrf-token'
 } = {}) {
-  return function csrfProtection(request, _response, next) {
-    const requestPath = request.originalUrl?.split('?')[0];
+  return function csrfProtection(request, response, next) {
+    const requestPath = request.originalUrl?.split('?')[0] ?? '';
+    // A persisted session can outlive a browser's non-HttpOnly CSRF cookie.
+    // Reissue it during a safe authenticated request so the next mutation can
+    // satisfy the double-submit check without weakening it.
+    if (
+      safeMethods.has(request.method) &&
+      request.cookies?.[sessionCookieName] &&
+      !request.cookies?.[cookieName]
+    ) {
+      response.cookie(cookieName, randomBytes(32).toString('base64url'), {
+        httpOnly: false,
+        secure: authenticationConfig.session.cookie.secure,
+        sameSite: authenticationConfig.session.cookie.sameSite,
+        path: '/'
+      });
+    }
     if (
       safeMethods.has(request.method) ||
       unauthenticatedAuthPaths.has(requestPath) ||
+      csrfExemptPrefixes.some((prefix) => requestPath.startsWith(prefix)) ||
       request.get('authorization')?.startsWith('Bearer ') ||
       !request.cookies?.[sessionCookieName]
     ) {

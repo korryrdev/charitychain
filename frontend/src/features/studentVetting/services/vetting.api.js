@@ -1,3 +1,10 @@
-'use strict';
+import { httpClient } from '../../../services/httpClient.js';
 
-// vetting api: implementation pending.
+export const studentRecordsApi = Object.freeze({
+  mine: () => httpClient.get('/university-records/me')
+});
+
+export const vettingApi = Object.freeze({
+  policy: () => httpClient.get('/vetting/policy'),
+  run: (runId) => httpClient.get(`/vetting/runs/${runId}`)
+});

@@ -6,7 +6,11 @@ import { ERROR_CODES } from '../errors/errorCodes.js';
 function extractSessionToken(request, cookieName) {
   const authorization = request.get('authorization');
   if (authorization?.startsWith('Bearer ')) return authorization.slice(7).trim();
-  return request.cookies?.[cookieName] ?? null;
+  const cookie = request.cookies?.[cookieName] ?? null;
+  // Better Auth signs the browser cookie as `token.signature`; the database
+  // session identifier is the first segment. Cookie-parser has already URL-
+  // decoded it at this point.
+  return typeof cookie === 'string' ? cookie.split('.', 1)[0] : null;
 }
 
 export function createAuthenticate({

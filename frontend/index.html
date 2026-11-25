@@ -3,25 +3,46 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="text-scale" content="scale" />
     <meta name="color-scheme" content="light dark" />
     <script>
-      (function() {
+      (function () {
         try {
-          var saved = localStorage.getItem('charitychain_theme') || 'system';
-          var isDark = saved === 'dark' || (saved === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-          if (isDark) {
-            document.documentElement.classList.add('dark');
-            var meta = document.querySelector('meta[name="color-scheme"]');
-            if (meta) meta.content = 'dark';
-          }
+          var stored =
+            localStorage.getItem('charitychain_theme') ||
+            JSON.parse(localStorage.getItem('charitychain.preferences') || '{}').theme ||
+            'system';
+          var theme =
+            stored === 'dark' || stored === 'light'
+              ? stored
+              : window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light';
+          var root = document.documentElement;
+          root.dataset.theme = theme;
+          root.style.colorScheme = theme;
+          root.classList.toggle('dark', theme === 'dark');
+          root.classList.toggle('light', theme === 'light');
+          var meta = document.querySelector('meta[name="color-scheme"]');
+          if (meta) meta.content = theme;
         } catch (e) {}
       })();
     </script>
+    <meta
+      name="description"
+      content="Transparent donations, accountable student assistance, smart-contract audit anchoring, and forensic fund-flow tracking."
+    />
+    <meta name="theme-color" content="#16643f" />
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <title>CharityChain | Malkia Transparent Donation Ledger</title>
+    <title>CharityChain | Transparent Donation Ledger</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+      referrerpolicy="no-referrer"
+    />
   </head>
-  <body class="bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 min-h-screen">
+  <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

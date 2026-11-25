@@ -1,3 +1,1 @@
-'use strict';
-
-// AuditTimeline: implementation pending.
+export function AuditTimeline({ items = [] }) { return <ol className="audit-timeline">{items.map((event) => <li key={event.id}><strong>{event.action}</strong><span>{event.entityType} · {event.entityId ?? '—'}</span><small>{new Date(event.createdAt).toLocaleString('en-KE')}</small></li>)}</ol>; }

@@ -6,13 +6,20 @@ import { authenticationConfig } from '../../config/authentication.js';
 import { env } from '../../config/environment.js';
 import { STATUSES } from '../../constants/statuses.js';
 
+const trustedOrigins = Object.freeze([
+  env.APP_URL,
+  ...(env.NODE_ENV === 'development'
+    ? ['http://localhost:5173', 'http://127.0.0.1:5173']
+    : [])
+]);
+
 export function createAuthEngine({ database = prisma } = {}) {
   return betterAuth({
     appName: env.APP_NAME,
     baseURL: env.API_URL,
     basePath: '/api/v1/public/auth/provider',
     secret: authenticationConfig.session.secret,
-    trustedOrigins: [env.APP_URL],
+    trustedOrigins,
     database: prismaAdapter(database, { provider: 'postgresql' }),
     emailAndPassword: {
       enabled: true,

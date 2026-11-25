@@ -1,3 +1,1 @@
-'use strict';
-
-// publicIdentity schema: implementation pending.
+export function validatePublicIdentity(values) { const errors = {}; const alias = String(values.publicAlias ?? '').trim(); if (alias.length < 3 || alias.length > 60) errors.publicAlias = 'Use an alias between 3 and 60 characters.'; if (!/^[\p{L}\p{N} ._-]+$/u.test(alias)) errors.publicAlias = 'Use letters, numbers, spaces, dots, dashes, or underscores only.'; return errors; }

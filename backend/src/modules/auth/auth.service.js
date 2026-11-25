@@ -1,10 +1,16 @@
-import { randomUUID } from 'node:crypto';
 import { prisma } from '@charitychain/database';
+import { env } from '../../config/environment.js';
 import { STATUSES } from '../../constants/statuses.js';
+import { AuthenticationError } from '../../errors/AuthenticationError.js';
+import { ConflictError } from '../../errors/ConflictError.js';
+import { ERROR_CODES } from '../../errors/errorCodes.js';
+import { ValidationError } from '../../errors/ValidationError.js';
 import { donorsService } from '../donors/donors.service.js';
-import { assertUserCanSignIn } from './auth.policy.js';
 import { accountVerificationService } from './accountVerification.service.js';
+import { EmailAlreadyRegisteredError } from './auth.errors.js';
+import { assertUserCanSignIn } from './auth.policy.js';
 import { authRepository } from './auth.repository.js';
+import { STUDENT_EMAIL_REGEX } from './auth.validation.js';
 import { authEngine } from './betterAuth.js';
 
 function unwrap(result) {
@@ -19,37 +25,76 @@ export function createAuthService({
   sendVerification = async () => {}
 } = {}) {
   return {
-    async register(input) {
+    async registerStaff(input) {
+      const result = unwrap(await engine.api.signUpEmail({ body: input }));
+      return result.user;
+    },
+    async registerStudent(input) {
       const result = unwrap(
         await engine.api.signUpEmail({
           body: { name: input.name, email: input.email, password: input.password }
         })
       );
       try {
-        await repository.assignDefaultRole(result.user.id, 'DONOR');
-        await donorProvisioning.provision(result.user.id);
-        await prisma.user.update({
-          where: { id: result.user.id },
-          data: { status: STATUSES.USER.ACTIVE, emailVerified: true }
-        });
-
-        const sessionToken = `malkia-token-${randomUUID()}`;
-        const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-        await prisma.session.create({
-          data: {
-            token: sessionToken,
-            userId: result.user.id,
-            expiresAt,
-            ipAddress: '127.0.0.1',
-            userAgent: 'CharityChain-DonorWeb'
-          }
-        });
-
+        await repository.assignDefaultRole(result.user.id, 'STUDENT');
+        await repository.ensureStudentProfile?.(result.user.id, input.name);
+        const token = await verificationService.issue(input.email);
+        await sendVerification({ email: input.email, token, user: result.user });
         return {
-          user: { ...result.user, status: STATUSES.USER.ACTIVE, emailVerified: true },
-          token: sessionToken,
-          expiresAt,
-          role: 'DONOR'
+          ...result,
+          ...(env.NODE_ENV === 'production' ? {} : { developmentVerificationToken: token })
+        };
+      } catch (error) {
+        await repository.deleteUser(result.user.id).catch(() => {});
+        throw error;
+      }
+    },
+    async register(input) {
+      const normalizedEmail = String(input.email ?? '').trim().toLowerCase();
+      const isStudent =
+        input.role === 'STUDENT' || normalizedEmail.endsWith('@students.must.ac.ke');
+      if (isStudent && !STUDENT_EMAIL_REGEX.test(normalizedEmail)) {
+        throw new ValidationError('Incorrect email', [
+          { path: 'email', message: 'Incorrect email', code: 'custom' }
+        ]);
+      }
+      if (await repository.findUserByEmail?.(normalizedEmail)) {
+        throw new EmailAlreadyRegisteredError();
+      }
+      let result;
+      try {
+        result = unwrap(
+          await engine.api.signUpEmail({
+            body: { name: input.name, email: normalizedEmail, password: input.password }
+          })
+        );
+      } catch (error) {
+        if (
+          error?.statusCode === 422 ||
+          error?.status === 'UNPROCESSABLE_ENTITY' ||
+          error?.body?.code === 'USER_ALREADY_EXISTS' ||
+          error?.body?.code === 'USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL'
+        ) {
+          throw new ConflictError('An account with this email address already exists.', {
+            code: ERROR_CODES.CONFLICT,
+            cause: error
+          });
+        }
+        throw error;
+      }
+      try {
+        if (isStudent) {
+          await repository.assignDefaultRole(result.user.id, 'STUDENT');
+          await repository.ensureStudentProfile?.(result.user.id, input.name);
+        } else {
+          await repository.assignDefaultRole(result.user.id, 'DONOR');
+          await donorProvisioning.provision(result.user.id);
+        }
+        const token = await verificationService.issue(normalizedEmail);
+        await sendVerification({ email: normalizedEmail, token, user: result.user });
+        return {
+          ...result,
+          ...(env.NODE_ENV === 'production' ? {} : { developmentVerificationToken: token })
         };
       } catch (error) {
         await repository.deleteUser(result.user.id).catch(() => {});
@@ -57,53 +102,59 @@ export function createAuthService({
       }
     },
     async login(input, headers) {
-      const user = await repository.findUserByEmail(input.email);
+      const normalizedEmail = String(input.email ?? '').trim().toLowerCase();
+      if (
+        (input.role === 'STUDENT' || normalizedEmail.endsWith('@students.must.ac.ke')) &&
+        !STUDENT_EMAIL_REGEX.test(normalizedEmail)
+      ) {
+        throw new ValidationError('Incorrect email', [
+          { path: 'email', message: 'Incorrect email', code: 'custom' }
+        ]);
+      }
+      const user = await repository.findUserByEmail(normalizedEmail);
       assertUserCanSignIn(user);
-      const res = await engine.api.signInEmail({
-        body: { email: input.email, password: input.password },
-        headers,
-        returnHeaders: true
-      });
-
-      const unwrapRes = unwrap(res);
-      let token = unwrapRes?.token;
-      if (!token) {
-        const activeSession = await prisma.session.findFirst({
-          where: { userId: user.id, expiresAt: { gt: new Date() } },
-          orderBy: { createdAt: 'desc' }
+      let result;
+      try {
+        result = await engine.api.signInEmail({
+          body: { email: normalizedEmail, password: input.password },
+          headers,
+          returnHeaders: true
         });
-        if (activeSession) {
-          token = activeSession.token;
-        } else {
-          token = `malkia-token-${randomUUID()}`;
-          await prisma.session.create({
-            data: {
-              token,
-              userId: user.id,
-              expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-            }
+      } catch (error) {
+        if (
+          error?.statusCode === 401 ||
+          error?.status === 'UNAUTHORIZED' ||
+          error?.body?.code === 'INVALID_EMAIL_OR_PASSWORD'
+        ) {
+          throw new AuthenticationError('The email or password is incorrect.', {
+            code: ERROR_CODES.INVALID_CREDENTIALS,
+            cause: error
           });
         }
+        throw error;
       }
-
-      const userRoles = await prisma.userRole.findMany({
-        where: { userId: user.id },
-        include: { role: true }
-      });
-      const roles = userRoles.map((ur) => ur.role.code);
-      const primaryRole = roles.includes('DONOR') && roles.length === 1 ? 'DONOR' : roles[0] || 'DONOR';
-
+      const response = result.response ?? result;
+      const roles = user.roles.map((assignment) => assignment.role.code);
+      if (roles.includes('STUDENT')) {
+        await repository.ensureStudentProfile?.(user.id, user.name);
+      }
+      const permissions = [
+        ...new Set(
+          user.roles.flatMap(
+            (assignment) => assignment.role.permissions?.map((item) => item.permission.code) ?? []
+          )
+        )
+      ];
+      const primaryRole =
+        roles.includes('DONOR') && roles.length === 1 ? 'DONOR' : roles[0] || 'DONOR';
       return {
-        headers: res.headers,
+        ...(result.response ? result : { response }),
         response: {
-          token,
-          user: {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            status: user.status
-          },
-          role: primaryRole
+          ...response,
+          role: primaryRole,
+          roles,
+          permissions,
+          mfaVerified: Boolean(user.twoFactorEnabled)
         }
       };
     },
@@ -122,24 +173,24 @@ export function createAuthService({
             name: email.split('@')[0],
             email: normalizedEmail,
             emailVerified: true,
-            status: STATUSES.USER.ACTIVE,
-          },
+            status: STATUSES.USER.ACTIVE
+          }
         });
       }
 
       if (role) {
         const roleRecord = await prisma.role.findFirst({
           where: {
-            OR: [{ code: role.toUpperCase() }, { code: 'CLERK' }, { code: 'ADMINISTRATOR' }],
-          },
+            OR: [{ code: role.toUpperCase() }, { code: 'CLERK' }, { code: 'ADMINISTRATOR' }]
+          }
         });
         if (roleRecord) {
           const existing = await prisma.userRole.findFirst({
-            where: { userId: user.id, roleId: roleRecord.id },
+            where: { userId: user.id, roleId: roleRecord.id }
           });
           if (!existing) {
             await prisma.userRole.create({
-              data: { userId: user.id, roleId: roleRecord.id },
+              data: { userId: user.id, roleId: roleRecord.id }
             });
           }
         }
@@ -153,11 +204,11 @@ export function createAuthService({
       if (existingSession) {
         session = await prisma.session.update({
           where: { token },
-          data: { expiresAt },
+          data: { expiresAt }
         });
       } else {
         session = await prisma.session.create({
-          data: { userId: user.id, token, expiresAt },
+          data: { userId: user.id, token, expiresAt }
         });
       }
 
@@ -166,11 +217,14 @@ export function createAuthService({
           id: user.id,
           email: user.email,
           name: user.name,
-          role: role || user.roles?.[0]?.role?.code || 'PHARMACY_CUSTODIAN',
+          role: role || user.roles?.[0]?.role?.code || 'PHARMACY_CUSTODIAN'
         },
         token: session.token,
-        expiresAt: session.expiresAt,
+        expiresAt: session.expiresAt
       };
+    },
+    verifyCurrentPassword(password, headers) {
+      return engine.api.verifyPassword({ body: { password }, headers });
     },
     async resolveSession(token) {
       const session = await repository.findSessionByToken(token);

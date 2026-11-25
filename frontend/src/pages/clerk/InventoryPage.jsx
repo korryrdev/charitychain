@@ -1,3 +1,7 @@
-'use strict';
-
-// InventoryPage: implementation pending.
+import { useEffect, useState } from 'react';
+import { inventoryApi } from '../../features/inventory/services/inventory.api.js';
+import { InventoryTable } from '../../features/inventory/components/InventoryTable.jsx';
+import { BatchInspector } from '../../features/inventory/components/BatchInspector.jsx';
+import { StockMovementForm } from '../../features/inventory/components/StockMovementForm.jsx';
+import { StockVarianceAlert } from '../../features/inventory/components/StockVarianceAlert.jsx';
+export function InventoryPage() { const [items, setItems] = useState([]); const [selected, setSelected] = useState(null); const [message, setMessage] = useState(null); const [pending, setPending] = useState(false); const load = () => inventoryApi.list({ pageSize: 100 }).then(({ items: value }) => setItems(value ?? [])).catch((cause) => setMessage(cause.message)); useEffect(() => { load(); }, []); const select = async (batch) => { try { setSelected((await inventoryApi.get(batch.id)).batch); } catch (cause) { setMessage(cause.message); } }; const adjust = async (payload) => { setPending(true); try { const { batch } = await inventoryApi.adjust(selected.id, payload); setSelected(batch); setMessage('Adjustment recorded with its reason and reference.'); load(); } catch (cause) { setMessage(cause.message); } finally { setPending(false); } }; return <main className="portal-page clerk-page"><p className="section-kicker">Inventory control</p><h1>Available, reserved, and expiring stock.</h1><StockVarianceAlert message={message} /><div className="inventory-layout"><section><InventoryTable items={items} onSelect={select} /></section><aside><BatchInspector batch={selected} /><StockMovementForm batch={selected} onSubmit={adjust} pending={pending} /></aside></div></main>; }

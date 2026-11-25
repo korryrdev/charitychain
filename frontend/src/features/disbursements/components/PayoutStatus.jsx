@@ -1,3 +1,1 @@
-'use strict';
-
-// PayoutStatus: implementation pending.
+export function PayoutStatus({ payout }) { if (!payout) return null; return <section className={`payout-status payout-status--${payout.status.toLowerCase()}`}><strong>{payout.status.replaceAll('_', ' ')}</strong><span>{payout.type.replaceAll('_', ' ')} · KES {Number(payout.amount).toLocaleString()}</span>{payout.failureMessage && <p>{payout.failureMessage}</p>}</section>; }

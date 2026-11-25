@@ -1,3 +1,31 @@
+import { classifyMpesaResult } from '../../integrations/mpesa/mpesaResultCodes.js';
+
+function failureFields(donation) {
+  if (donation.status !== 'FAILED') {
+    return {
+      failureCode: donation.failureCode ?? null,
+      failureReason: donation.failureReason ?? null,
+      failureCategory: null,
+      failureTitle: null
+    };
+  }
+  if (donation.failureCode && donation.channel?.startsWith('MPESA')) {
+    const classification = classifyMpesaResult(donation.failureCode, donation.failureReason);
+    return {
+      failureCode: donation.failureCode,
+      failureReason: donation.failureReason ?? classification.message,
+      failureCategory: classification.category,
+      failureTitle: classification.title
+    };
+  }
+  return {
+    failureCode: donation.failureCode ?? null,
+    failureReason: donation.failureReason ?? null,
+    failureCategory: donation.failureCode ? 'PAYMENT_DECLINED' : null,
+    failureTitle: 'Payment failed'
+  };
+}
+
 export function toMoneyDonation(donation) {
   return Object.freeze({
     id: donation.id,
@@ -10,6 +38,7 @@ export function toMoneyDonation(donation) {
     trackingId: donation.trackingId,
     providerReference: donation.providerReference,
     providerReceipt: donation.providerReceipt,
+    ...failureFields(donation),
     confirmedAt: donation.confirmedAt,
     reconciledAt: donation.reconciledAt,
     reversedAt: donation.reversedAt,
@@ -42,6 +71,7 @@ export function toTrackedDonation(donation) {
     currency: donation.currency,
     purpose: donation.purpose,
     status: donation.status,
+    ...failureFields(donation),
     confirmedAt: donation.confirmedAt,
     reconciledAt: donation.reconciledAt,
     allocations: donation.allocations?.map((allocation) => ({

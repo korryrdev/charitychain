@@ -1,3 +1,1 @@
-'use strict';
-
-// ApprovalProgress: implementation pending.
+export function ApprovalProgress({ round }) { if (!round) return <p className="muted">No approval round has been opened.</p>; return <section className={`approval-progress approval-progress--${round.status.toLowerCase()}`}><p className="section-kicker">Approval round {round.sequence}</p><h2>{round.approvals} of {round.threshold} approvals</h2><div className="approval-progress__dots">{Array.from({ length: round.threshold }, (_, index) => <span key={index} className={index < round.approvals ? 'is-filled' : ''} />)}</div><p>{round.status.replaceAll('_', ' ')} · {round.declines} decline{round.declines === 1 ? '' : 's'}</p></section>; }

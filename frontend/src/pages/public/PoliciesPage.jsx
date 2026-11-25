@@ -1,3 +1,2 @@
-'use strict';
-
-// PoliciesPage: implementation pending.
+import { PublicPage, InformationGrid } from './PublicPage.jsx';
+export function PoliciesPage() { return <PublicPage title="Policies" lead="Policies define how contributions, student support, approvals, inventory, and recognition are handled. The authoritative operational policy is maintained by authorised administrators."><InformationGrid items={[{ title: 'Eligibility and vetting', body: 'Support assessment uses documented need factors and simulated university records; funding is not determined by public popularity or donor preference.' }, { title: 'Goods collection', body: 'Collection limits, eligibility checks, and donor/student confirmations protect stock from misuse.' }, { title: 'Financial controls', body: 'Fiat provider callbacks, reconciliation, and the committee approval rule govern money movement.' }]} /></PublicPage>; }

@@ -43,6 +43,39 @@ describe('backend configuration', () => {
     );
   });
 
+  it('accepts STK Push credentials without requiring disbursement-only settings', () => {
+    const environment = parseEnvironment({
+      ...baseEnvironment,
+      FEATURE_MPESA_ENABLED: 'true',
+      MPESA_CONSUMER_KEY: 'consumer-key',
+      MPESA_CONSUMER_SECRET: 'consumer-secret',
+      MPESA_SHORTCODE: '174379',
+      MPESA_PASSKEY: 'passkey'
+    });
+
+    expect(environment.FEATURE_MPESA_ENABLED).toBe(true);
+    expect(environment.MPESA_INITIATOR_NAME).toBeUndefined();
+    expect(environment.MPESA_UNIVERSITY_SHORTCODE).toBeUndefined();
+  });
+
+  it('accepts the Daraja shortcode and callback URL aliases used by the local environment', () => {
+    const environment = parseEnvironment({
+      ...baseEnvironment,
+      FEATURE_MPESA_ENABLED: 'true',
+      MPESA_CONSUMER_KEY: 'consumer-key',
+      MPESA_CONSUMER_SECRET: 'consumer-secret',
+      MPESA_BUSINESS_SHORT_CODE: '174379',
+      MPESA_PASSKEY: 'passkey',
+      MPESA_CALLBACK_URL: 'https://payments.example.test'
+    });
+
+    expect(createIntegrationsConfig(environment).mpesa).toMatchObject({
+      enabled: true,
+      shortcode: '174379',
+      callbackBaseUrl: 'https://payments.example.test'
+    });
+  });
+
   it('fails closed for insecure production URLs and placeholder secrets', () => {
     expect(() =>
       parseEnvironment({

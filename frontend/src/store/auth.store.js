@@ -1,3 +1,2 @@
-'use strict';
-
-// auth store: implementation pending.
+export function createAuthStore() { let state = { session: null, ready: false }; const listeners = new Set(); const publish = () => listeners.forEach((listener) => listener(state)); return Object.freeze({ get: () => state, subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); }, setSession(session) { state = { session, ready: true }; publish(); }, clear() { state = { session: null, ready: true }; publish(); } }); }
+export const authStore = createAuthStore();

@@ -1,14 +1,64 @@
 import { z } from 'zod';
 
-const email = z.email().transform((value) => value.trim().toLowerCase());
+export const STUDENT_EMAIL_REGEX = /^[a-zA-Z]+\d{6}@students\.must\.ac\.ke$/i;
+const portalRole = z.enum(['STUDENT', 'DONOR', 'ADMIN', 'SECRETARIAT']).optional();
+
+const email = z.string().trim().toLowerCase().pipe(z.email());
+const rawEmail = z.string().trim().toLowerCase();
 const password = z.string().min(12).max(128);
 
-export const registerSchema = z.object({
+function refinePortalEmail(data, ctx) {
+  const isStudentEmail = data.email.endsWith('@students.must.ac.ke');
+  if (data.role === 'STUDENT' || isStudentEmail) {
+    if (!STUDENT_EMAIL_REGEX.test(data.email)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['email'],
+        message: 'Incorrect email'
+      });
+    }
+    return;
+  }
+
+  const emailCheck = z.email().safeParse(data.email);
+  if (!emailCheck.success) {
+    for (const issue of emailCheck.error.issues) {
+      ctx.addIssue({
+        ...issue,
+        path: ['email']
+      });
+    }
+  }
+}
+
+const registerFields = {
   name: z.string().trim().min(2).max(100),
-  email,
-  password
-});
-export const loginSchema = z.object({ email, password });
+  email: rawEmail,
+  password,
+  role: portalRole
+};
+
+export const registerSchema = z.object(registerFields).superRefine(refinePortalEmail);
+export const studentRegisterSchema = z
+  .object({
+    ...registerFields,
+    registrationNumber: z
+      .string()
+      .trim()
+      .min(4)
+      .max(80)
+      .transform((value) => value.toUpperCase())
+  })
+  .superRefine((data, ctx) => refinePortalEmail({ ...data, role: 'STUDENT' }, ctx));
+
+export const loginSchema = z
+  .object({
+    email: rawEmail,
+    password,
+    role: portalRole
+  })
+  .superRefine(refinePortalEmail);
+
 export const emailSchema = z.object({ email });
 export const tokenSchema = z.object({ token: z.string().min(32).max(512) });
 export const verifyAccountSchema = tokenSchema.extend({ email });

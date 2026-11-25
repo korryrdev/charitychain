@@ -7,14 +7,18 @@ export function createIntegrationsConfig(environment = env) {
       environment: environment.MPESA_ENVIRONMENT,
       consumerKey: environment.MPESA_CONSUMER_KEY ?? null,
       consumerSecret: environment.MPESA_CONSUMER_SECRET ?? null,
-      shortcode: environment.MPESA_SHORTCODE ?? null,
+      shortcode:
+        environment.MPESA_SHORTCODE ?? environment.MPESA_BUSINESS_SHORT_CODE ?? null,
       passkey: environment.MPESA_PASSKEY ?? null,
       initiatorName: environment.MPESA_INITIATOR_NAME ?? null,
       securityCredential: environment.MPESA_SECURITY_CREDENTIAL ?? null,
       callbackSecret: environment.MPESA_CALLBACK_SECRET ?? null,
       universityShortcode: environment.MPESA_UNIVERSITY_SHORTCODE ?? null,
       universityAccount: environment.MPESA_UNIVERSITY_ACCOUNT ?? null,
-      callbackBaseUrl: environment.MPESA_CALLBACK_BASE_URL ?? environment.API_URL
+      callbackBaseUrl:
+        environment.MPESA_CALLBACK_BASE_URL ??
+        environment.MPESA_CALLBACK_URL ??
+        environment.API_URL
     },
     bank: {
       enabled: environment.FEATURE_BANK_ENABLED,

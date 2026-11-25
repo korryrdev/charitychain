@@ -55,6 +55,18 @@ export function createMoneyDonationsService({
       assertCanReadDonation(auth, donation);
       return toMoneyDonation(donation);
     },
+    async receiptDocument(auth, donationId) {
+      const donation = requireDonation(await repository.findById(donationId));
+      assertCanReadDonation(auth, donation);
+      if (!donation.receipt) throw new DonationStateError('A receipt is available only after reconciliation.');
+      return receipts.document(donation);
+    },
+    async verifyReceipt(auth, donationId) {
+      const donation = requireDonation(await repository.findById(donationId));
+      assertCanReadDonation(auth, donation);
+      if (!donation.receipt) throw new DonationStateError('A receipt is available only after reconciliation.');
+      return receipts.verify(donation);
+    },
     async listMine(auth, query) {
       const donor = await repository.findDonorProfile(auth.user.id);
       if (!donor) throw new DonationNotFoundError();

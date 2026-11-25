@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import { PERMISSIONS } from '../../constants/permissions.js';
 import { authorize } from '../../middleware/authorize.js';
-import { requireMfa } from '../../middleware/requireMfa.js';
 import { validateRequest } from '../../middleware/validateRequest.js';
 import { usersController } from './users.controller.js';
 import {
+  closeOwnAccountSchema,
+  createStaffAccountSchema,
   createUserSchema,
   listUsersQuerySchema,
   updateProfileSchema,
@@ -16,6 +17,11 @@ import {
 export function createUsersRouter(controller = usersController) {
   const router = Router();
   router.get('/me', controller.me);
+  router.post(
+    '/me/close-account',
+    validateRequest({ body: closeOwnAccountSchema }),
+    controller.closeOwnAccount
+  );
   router.get(
     '/',
     authorize(PERMISSIONS.USER_MANAGE),
@@ -27,6 +33,12 @@ export function createUsersRouter(controller = usersController) {
     authorize(PERMISSIONS.USER_MANAGE),
     validateRequest({ body: createUserSchema }),
     controller.create
+  );
+  router.post(
+    '/staff',
+    authorize(PERMISSIONS.USER_MANAGE),
+    validateRequest({ body: createStaffAccountSchema }),
+    controller.createStaffAccount
   );
   router.get('/:userId', validateRequest({ params: userIdParamsSchema }), controller.get);
   router.patch(
@@ -43,9 +55,14 @@ export function createUsersRouter(controller = usersController) {
   router.patch(
     '/:userId/status',
     authorize(PERMISSIONS.USER_MANAGE),
-    requireMfa,
     validateRequest({ params: userIdParamsSchema, body: updateUserStatusSchema }),
     controller.updateStatus
+  );
+  router.delete(
+    '/:userId',
+    authorize(PERMISSIONS.USER_MANAGE),
+    validateRequest({ params: userIdParamsSchema }),
+    controller.deleteManagedAccount
   );
   return router;
 }

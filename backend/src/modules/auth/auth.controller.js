@@ -1,4 +1,7 @@
 import { accountVerificationService } from './accountVerification.service.js';
+import { randomBytes } from 'node:crypto';
+import { authenticationConfig } from '../../config/authentication.js';
+import { env } from '../../config/environment.js';
 import { authService } from './auth.service.js';
 import { mfaService } from './mfa.service.js';
 import { passwordResetService } from './passwordReset.service.js';
@@ -21,6 +24,15 @@ function applyHeaders(response, headers) {
   });
 }
 
+function issueCsrfCookie(response) {
+  response.cookie('charitychain_csrf', randomBytes(32).toString('base64url'), {
+    httpOnly: false,
+    secure: authenticationConfig.session.cookie.secure,
+    sameSite: authenticationConfig.session.cookie.sameSite,
+    path: '/'
+  });
+}
+
 export function createAuthController({
   service = authService,
   verificationService = accountVerificationService,
@@ -32,24 +44,18 @@ export function createAuthController({
     register: async (request, response, next) => {
       try {
         const result = await service.register(request.body);
-        if (result.token) {
-          response.cookie('charitychain_session', result.token, {
-            httpOnly: true,
-            sameSite: 'lax',
-            path: '/',
-            maxAge: 30 * 24 * 60 * 60 * 1000,
-          });
-        }
         response.status(201).json({
           user: result.user,
-          token: result.token,
-          role: result.role || 'DONOR',
-          requiresVerification: false
+          requiresVerification: true,
+          ...(result.developmentVerificationToken
+            ? { developmentVerificationToken: result.developmentVerificationToken }
+            : {})
         });
       } catch (error) {
         next(error);
       }
     },
+    registerStudent: async (request, response, next) => { try { const result = await service.registerStudent(request.body); response.status(201).json({ user: result.user, requiresVerification: true, ...(result.developmentVerificationToken ? { developmentVerificationToken: result.developmentVerificationToken } : {}) }); } catch (error) { next(error); } },
     verifyAccount: async (request, response, next) => {
       try {
         await verificationService.verify(request.body.email, request.body.token);
@@ -62,6 +68,7 @@ export function createAuthController({
       try {
         const result = await service.login(request.body, requestHeaders(request));
         applyHeaders(response, result.headers);
+        issueCsrfCookie(response);
         response.status(200).json(result.response);
       } catch (error) {
         next(error);
@@ -80,7 +87,12 @@ export function createAuthController({
       try {
         const reset = await resetService.issue(request.body.email);
         if (reset) await sendPasswordReset({ email: request.body.email, ...reset });
-        response.status(202).json({ accepted: true });
+        response.status(202).json({
+          accepted: true,
+          ...(env.NODE_ENV !== 'production' && reset
+            ? { developmentResetToken: reset.token, userId: reset.userId }
+            : {})
+        });
       } catch (error) {
         next(error);
       }

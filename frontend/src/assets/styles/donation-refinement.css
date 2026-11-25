@@ -1,0 +1,110 @@
+.portal-page.donor-page.donation-page { width: 100%; max-width: none; }
+
+.portal-page.donor-page > h1,
+.physical-donation-page .portal-page__header h1 {
+  max-width: 18ch;
+  font-size: clamp(2.15rem, 3.3vw, 3.45rem);
+  line-height: 1.04;
+  letter-spacing: -.045em;
+}
+
+.physical-donation-page .portal-page__header h1 { max-width: none; }
+.portal-page.donor-page.donation-history-page > h1 { max-width: none; }
+.portal-page.donor-page.donor-identity-page > h1 { max-width: none; }
+.portal-page.donor-page.donor-notifications-page > h1 { max-width: none; }
+.portal-page.donor-page.donor-account-page { width: 100%; max-width: none; }
+.portal-page.donor-page.donor-identity-page { width: 100%; max-width: none; }
+
+.donor-account-page .donor-account-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.donor-identity-page .identity-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.portal-page.donor-page > .portal-page__lead,
+.physical-donation-page .portal-page__header > p {
+  font-size: 1.05rem;
+  line-height: 1.65;
+}
+
+.portal-page.donor-page .section-kicker { font-size: .78rem; }
+
+/* Descriptive donor copy uses one readable scale across every donor view. */
+.portal-page.donor-page p:not(.section-kicker),
+.physical-donation-page p:not(.section-kicker),
+.portal-page.donor-page .muted,
+.physical-donation-page .muted {
+  font-size: 1.05rem;
+}
+
+.donation-page__intro h1 {
+  max-width: none;
+  font-size: clamp(2.15rem, 3.3vw, 3.45rem);
+  line-height: 1.04;
+  letter-spacing: -.045em;
+}
+
+.donation-page__intro { display: block; }
+.donation-page__copy .portal-page__lead { margin-bottom: 0; }
+
+.donation-flow__trust {
+  display: grid;
+  gap: .45rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.1rem;
+  border-bottom: 1px solid #dce9e0;
+}
+
+.donation-flow__trust span {
+  color: #456a51;
+  font-size: .76rem;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.donation-flow__trust strong { line-height: 1.45; }
+
+.donation-page__intro .portal-page__lead { font-size: 1.05rem; line-height: 1.65; }
+
+.donation-flow { grid-template-columns: minmax(0, 1fr) 300px; }
+
+.donation-flow__aside {
+  background: #f4f9f5;
+  border: 1px solid #cfe0d6;
+  color: #12251c;
+}
+
+.donation-flow__aside .section-kicker,
+.donation-flow__aside strong,
+.donation-flow__note strong { color: #12251c; }
+
+.donation-flow__aside p { color: #627067; font-size: .94rem; }
+.donation-flow__aside li > span { color: #12251c; font-size: .85rem; }
+.donation-flow__note { border-top-color: #dce9e0; }
+
+.donation-form__heading { grid-template-columns: 1.2rem 1fr; }
+.donation-form__heading > span {
+  display: block;
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: transparent;
+  color: #12251c;
+  font-size: .85rem;
+  line-height: 1.4;
+}
+
+@media (max-width: 900px) {
+  .donation-flow { grid-template-columns: 1fr; }
+  .donor-account-page .donor-account-grid { grid-template-columns: 1fr; }
+  .donor-identity-page .identity-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 700px) {
+  .donation-page__intro { display: block; }
+}

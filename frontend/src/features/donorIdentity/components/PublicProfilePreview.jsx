@@ -1,3 +1,2 @@
-'use strict';
-
-// PublicProfilePreview: implementation pending.
+import { TierBadge } from '../../recognitionTiers/components/TierBadge.jsx';
+export function PublicProfilePreview({ profile, userName }) { const name = profile?.displayNameMode === 'REAL_NAME' ? userName : profile?.publicAlias; return <aside className="public-profile-preview"><p className="section-kicker">Public preview</p><strong>{profile?.publicListed ? (name || 'Your public identity') : 'Not publicly listed'}</strong>{profile?.showRecognitionTier && <TierBadge tier={profile?.recognitionTier} />}<p>{profile?.publicListed ? 'This is the information that may appear in public recognition.' : 'Your profile is hidden from public recognition.'}</p></aside>; }

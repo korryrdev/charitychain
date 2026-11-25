@@ -1,3 +1,3 @@
-'use strict';
-
-// usePermissions: implementation pending.
+import { useSession } from '../../authentication/hooks/useSession.js';
+import { defaultAuthorizedPath, hasAnyPermission, hasEveryPermission, hasPermission, hasRole } from '../permissions.js';
+export function usePermissions() { const { session } = useSession(); return { permissions: session?.permissions ?? [], roles: session?.roles ?? [], hasPermission: (permission) => hasPermission(session, permission), hasAnyPermission: (permissions) => hasAnyPermission(session, permissions), hasEveryPermission: (permissions) => hasEveryPermission(session, permissions), hasRole: (roles) => hasRole(session, roles), homePath: defaultAuthorizedPath(session) }; }

@@ -1,3 +1,2 @@
-'use strict';
-
-// ContactPage: implementation pending.
+import { PublicPage, InformationGrid } from './PublicPage.jsx';
+export function ContactPage() { return <PublicPage title="Contact CharityChain" lead="Use the supported organisation channels for general questions, contribution support, or account assistance. Never share a password, tracking secret, or MFA code with another person."><InformationGrid items={[{ title: 'Donation support', body: 'Keep the provider reference and your private tracking credentials available when seeking help with a donation.' }, { title: 'Student support', body: 'Students should use their authenticated student portal for applications and collection matters.' }, { title: 'Security concern', body: 'Use the fraud-reporting route for suspected misuse, impersonation, or false records.' }]} /></PublicPage>; }

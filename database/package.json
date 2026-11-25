@@ -4,16 +4,21 @@
   "private": true,
   "type": "module",
   "main": "client/index.js",
-  "exports": { ".": "./client/index.js" },
+  "exports": {
+    ".": "./client/index.js"
+  },
   "scripts": {
-    "generate": "prisma generate --schema prisma/schema.prisma",
-    "validate": "prisma validate --schema prisma/schema.prisma",
-    "format": "prisma format --schema prisma/schema.prisma",
-    "migrate:dev": "prisma migrate dev --schema prisma/schema.prisma",
-    "migrate:deploy": "prisma migrate deploy --schema prisma/schema.prisma",
+    "generate": "node scripts/prisma.js generate --schema prisma/schema.prisma",
+    "validate": "node scripts/prisma.js validate --schema prisma/schema.prisma",
+    "format": "node scripts/prisma.js format --schema prisma/schema.prisma",
+    "migrate:dev": "node scripts/prisma.js migrate dev --schema prisma/schema.prisma",
+    "migrate:deploy": "node scripts/prisma.js migrate deploy --schema prisma/schema.prisma",
     "seed": "node prisma/seed.js",
     "seed:university": "node prisma/seedUniversityRecords.js",
-    "studio": "prisma studio --schema prisma/schema.prisma",
+    "seed:inventory": "node prisma/seedInventory.js",
+    "seed:admin": "node prisma/seedAdmin.js",
+    "seed:all": "node prisma/seed.js && node prisma/seedUniversityRecords.js && node prisma/seedInventory.js && node prisma/seedAdmin.js",
+    "studio": "node scripts/prisma.js studio --schema prisma/schema.prisma",
     "test": "vitest run"
   },
   "dependencies": {

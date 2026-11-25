@@ -1,3 +1,2 @@
-'use strict';
-
-// TierProgress: implementation pending.
+import { TierBadge } from './TierBadge.jsx';
+export function TierProgress({ currentValue = 0, currentTier, nextTier }) { if (!nextTier) return <div className="tier-progress"><TierBadge tier={currentTier} /><span>You have reached the highest configured recognition tier.</span></div>; const target = Number(nextTier.minimumValue ?? nextTier.remainingValue ?? 0); const value = Number(currentValue); const percentage = target > 0 ? Math.min(100, value / target * 100) : 0; return <div className="tier-progress"><div><TierBadge tier={currentTier} /><span>{nextTier.code} is the next tier</span></div><div className="tier-progress__bar"><i style={{ width: `${percentage}%` }} /></div><small>KES {Math.max(0, target - value).toLocaleString()} remaining</small></div>; }

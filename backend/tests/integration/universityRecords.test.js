@@ -11,7 +11,7 @@ let studentUser;
 let otherUser;
 let claimed;
 const selfAuth = () => ({ user: studentUser, permissions: [PERMISSIONS.STUDENT_RECORD_READ_SELF] });
-const otherAuth = () => ({ user: otherUser, permissions: [PERMISSIONS.STUDENT_RECORD_READ_SELF] });
+const otherAuth = () => ({ user: otherUser, permissions: [] });
 const adminAuth = () => ({ user: otherUser, permissions: [PERMISSIONS.STUDENT_RECORD_READ_ALL, PERMISSIONS.STUDENT_RECORD_MANAGE] });
 
 afterAll(async () => {
@@ -59,6 +59,7 @@ describe('Section 14 students and simulated university records', () => {
     expect(await studentsService.claim(selfAuth(), 'MUST/SIM/2026/001')).toEqual(claimed);
     await expect(studentsService.claim(otherAuth(), 'MUST/SIM/2026/001')).rejects.toMatchObject({ code: 'CONFLICT' });
     expect((await studentsService.mine(selfAuth())).id).toBe(claimed.id);
+    expect(await prisma.userRole.count({ where: { userId: studentUser.id, role: { code: 'STUDENT' } } })).toBe(1);
   }, 30_000);
 
   it('returns a complete self record while enforcing cross-student privacy', async () => {

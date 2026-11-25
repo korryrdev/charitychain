@@ -1,3 +1,2 @@
-'use strict';
-
-// StockMovementForm: implementation pending.
+import { useState } from 'react';
+export function StockMovementForm({ batch, onSubmit, pending }) { const [quantity, setQuantity] = useState(''); const [reason, setReason] = useState(''); const [referenceId, setReferenceId] = useState(''); if (!batch) return null; return <form className="stock-movement-form" onSubmit={(event) => { event.preventDefault(); onSubmit({ quantity: Number(quantity), reason, referenceId }); }}><h3>Record a variance adjustment</h3><p>Adjustments are auditable and never replace a confirmed donor receipt or student collection record.</p><label>Quantity change<input type="number" value={quantity} onChange={(event) => setQuantity(event.target.value)} placeholder="Use a negative number to reduce stock" required /></label><label>Reason<textarea value={reason} onChange={(event) => setReason(event.target.value)} minLength="5" required /></label><label>Reference<input value={referenceId} onChange={(event) => setReferenceId(event.target.value)} minLength="4" required /></label><button className="secondary-button" disabled={pending}>Record adjustment</button></form>; }

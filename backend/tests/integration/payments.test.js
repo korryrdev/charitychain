@@ -19,20 +19,37 @@ const providers = createPaymentProviderFactory({
     MPESA: {
       async initiate() {
         adapterCalls += 1;
-        return { providerRequestId: 'MPESA-REQUEST-SECTION10', status: 'PENDING', responseCode: '0', responseMessage: 'Accepted' };
+        return {
+          providerRequestId: `MPESA-REQUEST-SECTION10-${adapterCalls}`,
+          status: 'PENDING',
+          responseCode: '0',
+          responseMessage: 'Accepted'
+        };
       }
     },
     BANK: null
   }
 });
-const service = createPaymentsService({ providers, secretFor: () => secret });
+const service = createPaymentsService({
+  providers,
+  secretFor: () => secret,
+  stkQuery: { query: async () => ({ resultCode: '0' }) }
+});
 
 afterAll(async () => {
   if (!user?.id) return;
-  const donations = await prisma.moneyDonation.findMany({ where: { donorProfile: { userId: user.id } }, select: { id: true } });
+  const donations = await prisma.moneyDonation.findMany({
+    where: { donorProfile: { userId: user.id } },
+    select: { id: true }
+  });
   const ids = donations.map(({ id }) => id);
-  const attempts = await prisma.paymentAttempt.findMany({ where: { donationId: { in: ids } }, select: { id: true } });
-  await prisma.paymentProviderEvent.deleteMany({ where: { paymentAttemptId: { in: attempts.map(({ id }) => id) } } });
+  const attempts = await prisma.paymentAttempt.findMany({
+    where: { donationId: { in: ids } },
+    select: { id: true }
+  });
+  await prisma.paymentProviderEvent.deleteMany({
+    where: { paymentAttemptId: { in: attempts.map(({ id }) => id) } }
+  });
   await prisma.paymentAttempt.deleteMany({ where: { donationId: { in: ids } } });
   await prisma.donationReceipt.deleteMany({ where: { donationId: { in: ids } } });
   await prisma.donationAllocation.deleteMany({ where: { donationId: { in: ids } } });
@@ -42,8 +59,20 @@ afterAll(async () => {
 
 describe('Section 10 payment orchestration and provider ingestion', () => {
   it('initiates M-Pesa once and safely replays the same idempotency key', async () => {
-    user = (await authService.register({ name: 'Section Ten Donor', email, password: 'Section10-Strong-Password-42!' })).user;
-    donation = (await moneyDonationsService.create(auth(), { amount: '12500.00', channel: 'MPESA_STK', purpose: 'UNRESTRICTED' }, 'section10-donation')).donation;
+    user = (
+      await authService.register({
+        name: 'Section Ten Donor',
+        email,
+        password: 'Section10-Strong-Password-42!'
+      })
+    ).user;
+    donation = (
+      await moneyDonationsService.create(
+        auth(),
+        { amount: '12500.00', channel: 'MPESA_STK', purpose: 'UNRESTRICTED' },
+        'section10-donation'
+      )
+    ).donation;
     const input = { donationId: donation.id, phoneNumber: '254712345678' };
     payment = await service.initiate(auth(), input, 'section10-payment');
     const replay = await service.initiate(auth(), input, 'section10-payment');
@@ -56,39 +85,330 @@ describe('Section 10 payment orchestration and provider ingestion', () => {
   }, 30_000);
 
   it('rejects unauthenticated and amount-mismatched callbacks before financial recognition', async () => {
-    const mismatch = { eventId: 'event-section10-mismatch', eventType: 'PAYMENT_RESULT', providerRequestId: payment.providerRequestId, providerTransactionId: 'TX-SECTION10-WRONG', status: 'SUCCEEDED', amount: 12499, currency: 'KES' };
-    await expect(service.processProviderEvent('mpesa', mismatch, '0'.repeat(64))).rejects.toMatchObject({ code: 'CALLBACK_INVALID' });
-    expect(await prisma.paymentProviderEvent.count({ where: { providerEventId: mismatch.eventId } })).toBe(0);
-    await expect(service.processProviderEvent('mpesa', mismatch, signProviderEvent(mismatch, secret))).rejects.toMatchObject({ code: 'RECONCILIATION_MISMATCH' });
-    expect((await prisma.paymentProviderEvent.findUniqueOrThrow({ where: { provider_providerEventId: { provider: 'MPESA', providerEventId: mismatch.eventId } } })).processingStatus).toBe('REJECTED');
-    expect(await prisma.recognizedContribution.count({ where: { sourceType: 'MONEY', sourceId: donation.id } })).toBe(0);
+    const mismatch = {
+      eventId: 'event-section10-mismatch',
+      eventType: 'PAYMENT_RESULT',
+      providerRequestId: payment.providerRequestId,
+      providerTransactionId: 'TX-SECTION10-WRONG',
+      status: 'SUCCEEDED',
+      amount: 12499,
+      currency: 'KES'
+    };
+    await expect(
+      service.processProviderEvent('mpesa', mismatch, '0'.repeat(64))
+    ).rejects.toMatchObject({ code: 'CALLBACK_INVALID' });
+    expect(
+      await prisma.paymentProviderEvent.count({ where: { providerEventId: mismatch.eventId } })
+    ).toBe(0);
+    await expect(
+      service.processProviderEvent('mpesa', mismatch, signProviderEvent(mismatch, secret))
+    ).rejects.toMatchObject({ code: 'RECONCILIATION_MISMATCH' });
+    expect(
+      (
+        await prisma.paymentProviderEvent.findUniqueOrThrow({
+          where: {
+            provider_providerEventId: { provider: 'MPESA', providerEventId: mismatch.eventId }
+          }
+        })
+      ).processingStatus
+    ).toBe('REJECTED');
+    expect(
+      await prisma.recognizedContribution.count({
+        where: { sourceType: 'MONEY', sourceId: donation.id }
+      })
+    ).toBe(0);
   });
 
   it('processes a successful callback once and reconciles the donation end to end', async () => {
-    const success = { eventId: 'event-section10-success', eventType: 'PAYMENT_RESULT', providerRequestId: payment.providerRequestId, providerTransactionId: 'TX-SECTION10-SUCCESS', status: 'SUCCEEDED', amount: 12500, currency: 'KES', occurredAt: new Date('2026-11-08T15:00:00.000Z') };
-    const signature = signProviderEvent(success, secret);
-    expect(await service.processProviderEvent('mpesa', success, signature)).toEqual({ accepted: true, duplicate: false });
-    expect(await service.processProviderEvent('mpesa', success, signature)).toEqual({ accepted: true, duplicate: true });
-    const storedPayment = await prisma.paymentAttempt.findUniqueOrThrow({ where: { id: payment.id } });
-    const storedDonation = await prisma.moneyDonation.findUniqueOrThrow({ where: { id: donation.id } });
+    const success = {
+      eventId: `${payment.providerRequestId}:0`,
+      eventType: 'STK_RESULT',
+      providerRequestId: payment.providerRequestId,
+      providerTransactionId: 'TX-SECTION10-SUCCESS',
+      status: 'SUCCEEDED',
+      amount: 12500,
+      currency: 'KES',
+      resultCode: '0',
+      occurredAt: new Date('2026-11-08T15:00:00.000Z')
+    };
+    expect(await service.processMpesaCallback(success)).toEqual({
+      accepted: true,
+      duplicate: false
+    });
+    expect(await service.processMpesaCallback(success)).toEqual({
+      accepted: true,
+      duplicate: true
+    });
+    const storedPayment = await prisma.paymentAttempt.findUniqueOrThrow({
+      where: { id: payment.id }
+    });
+    const storedDonation = await prisma.moneyDonation.findUniqueOrThrow({
+      where: { id: donation.id }
+    });
     expect(storedPayment.status).toBe('SUCCEEDED');
     expect(storedDonation.status).toBe('RECONCILED');
-    expect(await prisma.paymentProviderEvent.count({ where: { providerEventId: success.eventId } })).toBe(1);
-    expect(await prisma.recognizedContribution.count({ where: { sourceType: 'MONEY', sourceId: donation.id } })).toBe(1);
+    expect(
+      await prisma.paymentProviderEvent.count({ where: { providerEventId: success.eventId } })
+    ).toBe(1);
+    expect(
+      await prisma.recognizedContribution.count({
+        where: { sourceType: 'MONEY', sourceId: donation.id }
+      })
+    ).toBe(1);
   }, 30_000);
 
   it('rejects event-id reuse with altered callback content', async () => {
-    const altered = { eventId: 'event-section10-success', eventType: 'PAYMENT_RESULT', providerRequestId: payment.providerRequestId, providerTransactionId: 'TX-ALTERED', status: 'SUCCEEDED', amount: 12500, currency: 'KES' };
-    await expect(service.processProviderEvent('mpesa', altered, signProviderEvent(altered, secret))).rejects.toMatchObject({ code: 'CALLBACK_DUPLICATE' });
+    const altered = {
+      eventId: `${payment.providerRequestId}:0`,
+      eventType: 'STK_RESULT',
+      providerRequestId: payment.providerRequestId,
+      providerTransactionId: 'TX-ALTERED',
+      status: 'SUCCEEDED',
+      amount: 12500,
+      currency: 'KES',
+      resultCode: '0'
+    };
+    await expect(
+      service.processProviderEvent('mpesa', altered, signProviderEvent(altered, secret))
+    ).rejects.toMatchObject({ code: 'CALLBACK_DUPLICATE' });
   });
 
+  it('refreshes STK status from Daraja and records success or user cancellation', async () => {
+    const successDonation = (
+      await moneyDonationsService.create(
+        auth(),
+        { amount: '1000.00', channel: 'MPESA_STK', purpose: 'UNRESTRICTED' },
+        'section10-refresh-success'
+      )
+    ).donation;
+    const successPayment = await service.initiate(
+      auth(),
+      { donationId: successDonation.id, phoneNumber: '254712345678' },
+      'section10-refresh-success-payment'
+    );
+    const refreshedSuccess = await service.refresh(auth(), successPayment.id);
+    expect(refreshedSuccess.status).toBe('SUCCEEDED');
+    expect(
+      await prisma.moneyDonation.findUniqueOrThrow({ where: { id: successDonation.id } })
+    ).toMatchObject({ status: 'RECONCILED', providerReference: successPayment.providerRequestId });
+
+    await expect(
+      service.processMpesaCallback({
+        eventId: `${successPayment.providerRequestId}:0`,
+        eventType: 'STK_RESULT',
+        providerRequestId: successPayment.providerRequestId,
+        providerTransactionId: 'TX-SECTION10-LATE-CALLBACK',
+        status: 'SUCCEEDED',
+        amount: 1000,
+        currency: 'KES',
+        resultCode: '0'
+      })
+    ).resolves.toMatchObject({ accepted: true, duplicate: false });
+
+    const cancelledDonation = (
+      await moneyDonationsService.create(
+        auth(),
+        { amount: '1000.00', channel: 'MPESA_STK', purpose: 'UNRESTRICTED' },
+        'section10-refresh-cancelled'
+      )
+    ).donation;
+    const cancelledPayment = await service.initiate(
+      auth(),
+      { donationId: cancelledDonation.id, phoneNumber: '254712345678' },
+      'section10-refresh-cancelled-payment'
+    );
+    const cancelledService = createPaymentsService({
+      providers,
+      secretFor: () => secret,
+      stkQuery: {
+        query: async () => ({
+          resultCode: '1032',
+          resultMessage: 'Request cancelled by user.'
+        })
+      }
+    });
+    const refreshedCancellation = await cancelledService.refresh(auth(), cancelledPayment.id);
+    expect(refreshedCancellation).toMatchObject({
+      status: 'CANCELLED',
+      responseCode: '1032',
+      responseMessage: 'Request cancelled by user.'
+    });
+    expect(
+      await prisma.moneyDonation.findUniqueOrThrow({ where: { id: cancelledDonation.id } })
+    ).toMatchObject({ status: 'FAILED', failureCode: '1032' });
+  }, 30_000);
+
   it('ingests a direct Paybill credit using the private donation reference', async () => {
-    directDonation = (await moneyDonationsService.create(auth(), { amount: '2500.00', channel: 'MPESA_PAYBILL', purpose: 'UPKEEP' }, 'section10-paybill-donation')).donation;
-    const event = { eventId: 'event-section10-paybill', eventType: 'C2B_CREDIT', providerRequestId: directDonation.trackingId, providerTransactionId: 'PAYBILL-SECTION10-1', status: 'SUCCEEDED', amount: 2500, currency: 'KES' };
+    directDonation = (
+      await moneyDonationsService.create(
+        auth(),
+        { amount: '2500.00', channel: 'MPESA_PAYBILL', purpose: 'UPKEEP' },
+        'section10-paybill-donation'
+      )
+    ).donation;
+    const event = {
+      eventId: 'event-section10-paybill',
+      eventType: 'C2B_CREDIT',
+      providerRequestId: directDonation.trackingId,
+      providerTransactionId: 'PAYBILL-SECTION10-1',
+      status: 'SUCCEEDED',
+      amount: 2500,
+      currency: 'KES'
+    };
     await service.processProviderEvent('mpesa', event, signProviderEvent(event, secret));
-    const stored = await prisma.moneyDonation.findUniqueOrThrow({ where: { id: directDonation.id } });
-    const attempt = await prisma.paymentAttempt.findFirstOrThrow({ where: { donationId: directDonation.id } });
+    const stored = await prisma.moneyDonation.findUniqueOrThrow({
+      where: { id: directDonation.id }
+    });
+    const attempt = await prisma.paymentAttempt.findFirstOrThrow({
+      where: { donationId: directDonation.id }
+    });
     expect(stored.status).toBe('RECONCILED');
     expect(attempt).toMatchObject({ flow: 'C2B', status: 'SUCCEEDED' });
+  }, 30_000);
+
+  it('keeps payment pending on 4999, retries spike-arrest on callback, and succeeds when confirmed', async () => {
+    const pendingDonation = (
+      await moneyDonationsService.create(
+        auth(),
+        { amount: '500.00', channel: 'MPESA_STK', purpose: 'UNRESTRICTED' },
+        'section10-pending-4999'
+      )
+    ).donation;
+    const pendingPayment = await service.initiate(
+      auth(),
+      { donationId: pendingDonation.id, phoneNumber: '254712345678' },
+      'section10-pending-4999-payment'
+    );
+
+    const pendingService = createPaymentsService({
+      providers,
+      secretFor: () => secret,
+      stkQuery: {
+        query: async () => ({
+          resultCode: null,
+          resultMessage: 'The transaction is still under processing'
+        })
+      }
+    });
+    const refreshedPending = await pendingService.refresh(auth(), pendingPayment.id);
+    expect(refreshedPending.status).toBe('PENDING');
+    expect(
+      await prisma.moneyDonation.findUniqueOrThrow({ where: { id: pendingDonation.id } })
+    ).toMatchObject({ status: 'PAYMENT_REQUESTED' });
+
+    let queryCalls = 0;
+    const retryCallbackService = createPaymentsService({
+      providers,
+      secretFor: () => secret,
+      verifyMaxAttempts: 3,
+      verifyRetryDelayMs: 5,
+      stkQuery: {
+        query: async () => {
+          queryCalls += 1;
+          if (queryCalls === 1) {
+            const error = new Error('Spike arrest');
+            error.retryable = true;
+            throw error;
+          }
+          return { resultCode: '0', resultMessage: 'The service request is processed successfully.' };
+        }
+      }
+    });
+
+    await expect(
+      retryCallbackService.processMpesaCallback({
+        eventId: `${pendingPayment.providerRequestId}:0`,
+        eventType: 'STK_RESULT',
+        providerRequestId: pendingPayment.providerRequestId,
+        providerTransactionId: 'TX-SECTION10-RETRY-OK',
+        status: 'SUCCEEDED',
+        amount: 500,
+        currency: 'KES',
+        resultCode: '0'
+      })
+    ).resolves.toEqual({ accepted: true, duplicate: false });
+
+    expect(queryCalls).toBe(2);
+    expect(
+      await prisma.moneyDonation.findUniqueOrThrow({ where: { id: pendingDonation.id } })
+    ).toMatchObject({ status: 'RECONCILED' });
+  }, 30_000);
+
+  it('classifies M-Pesa 2001 (wrong PIN) and 1 (insufficient funds) with clear donor reasons', async () => {
+    const wrongPinDonation = (
+      await moneyDonationsService.create(
+        auth(),
+        { amount: '250.00', channel: 'MPESA_STK', purpose: 'UNRESTRICTED' },
+        'section10-wrong-pin'
+      )
+    ).donation;
+    const wrongPinPayment = await service.initiate(
+      auth(),
+      { donationId: wrongPinDonation.id, phoneNumber: '254712345678' },
+      'section10-wrong-pin-payment'
+    );
+    const wrongPinService = createPaymentsService({
+      providers,
+      secretFor: () => secret,
+      stkQuery: {
+        query: async () => ({
+          resultCode: '2001',
+          resultMessage: 'The initiator information is invalid.'
+        })
+      }
+    });
+    const refreshedWrongPin = await wrongPinService.refresh(auth(), wrongPinPayment.id);
+    expect(refreshedWrongPin).toMatchObject({
+      status: 'FAILED',
+      responseCode: '2001',
+      failureCategory: 'WRONG_PIN',
+      failureTitle: 'Wrong M-Pesa PIN',
+      responseMessage: expect.stringContaining('incorrect M-Pesa PIN')
+    });
+    expect(await moneyDonationsService.get(auth(), wrongPinDonation.id)).toMatchObject({
+      status: 'FAILED',
+      failureCode: '2001',
+      failureCategory: 'WRONG_PIN',
+      failureTitle: 'Wrong M-Pesa PIN',
+      failureReason: expect.stringContaining('incorrect M-Pesa PIN')
+    });
+
+    const insufficientDonation = (
+      await moneyDonationsService.create(
+        auth(),
+        { amount: '9000.00', channel: 'MPESA_STK', purpose: 'UNRESTRICTED' },
+        'section10-insufficient-funds'
+      )
+    ).donation;
+    const insufficientPayment = await service.initiate(
+      auth(),
+      { donationId: insufficientDonation.id, phoneNumber: '254712345678' },
+      'section10-insufficient-funds-payment'
+    );
+    const insufficientService = createPaymentsService({
+      providers,
+      secretFor: () => secret,
+      stkQuery: {
+        query: async () => ({
+          resultCode: '1',
+          resultMessage: 'The balance is insufficient for the transaction'
+        })
+      }
+    });
+    const refreshedInsufficient = await insufficientService.refresh(auth(), insufficientPayment.id);
+    expect(refreshedInsufficient).toMatchObject({
+      status: 'FAILED',
+      responseCode: '1',
+      failureCategory: 'INSUFFICIENT_FUNDS',
+      failureTitle: 'Insufficient M-Pesa balance',
+      responseMessage: expect.stringContaining('Insufficient M-Pesa balance')
+    });
+    expect(await moneyDonationsService.get(auth(), insufficientDonation.id)).toMatchObject({
+      status: 'FAILED',
+      failureCode: '1',
+      failureCategory: 'INSUFFICIENT_FUNDS',
+      failureTitle: 'Insufficient M-Pesa balance',
+      failureReason: expect.stringContaining('Insufficient M-Pesa balance')
+    });
   }, 30_000);
 });
