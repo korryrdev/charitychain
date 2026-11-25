@@ -1,30 +1,51 @@
 # CharityChain: Setup and Running Guide
 
-This guide describes how to run CharityChain from a fresh clone. It covers the full local stack, the source-code development workflow, Prisma migrations, PostgreSQL, IPFS, and the simulated university student records.
+This guide describes how to run CharityChain from a fresh clone. It covers the full local stack, the source-code development workflow, Prisma migrations, PostgreSQL, IPFS, database seeding, the simulated university records, and how the Super Administrator provisions access to all role-based dashboards.
 
-## What runs in the project
+---
+
+## 1. What runs in the project
 
 | Component | Technology | Local endpoint |
 | --- | --- | --- |
-| Web application | React 19.3, React Router 7.18, Vite 8.3 | `http://localhost:5173` |
-| API | Node.js 22.12+, Express 5.3 | `http://localhost:3000` |
-| Database | PostgreSQL 17 | host port `5433` |
-| ORM and migrations | Prisma Client and Prisma CLI 6.19 | database workspace |
-| Evidence storage | IPFS Kubo 0.39 | API `http://localhost:5001`, gateway `http://localhost:8080` |
-| Smart contracts | Solidity, Hardhat 3.21, OpenZeppelin 5.4, Web3.js 4.16 | `blockchain/` |
+| **Web Application** | React 19.3, React Router 7.18, Vite 8.3, Tailwind CSS | `http://localhost:5173` |
+| **Backend REST API** | Node.js 22.12+, Express 5.3, Better-Auth | `http://localhost:3000` |
+| **Database** | PostgreSQL 17 | host port `5433` |
+| **ORM & Migrations** | Prisma Client & CLI 6.19 | `database/` workspace |
+| **Evidence Storage** | IPFS Kubo 0.39 | API: `http://localhost:5001`, Gateway: `http://localhost:8080` |
+| **Smart Contracts** | Solidity, Hardhat 3.21, OpenZeppelin 5.4, Viem | `blockchain/` workspace |
 
-The repository is an npm-workspace monorepo containing `frontend`, `backend`, `database`, `blockchain`, `shared`, simulations, infrastructure, and documentation.
+The repository is an npm-workspace monorepo containing `frontend`, `backend`, `database`, `blockchain`, `shared`, simulators, infrastructure, and documentation.
 
-## Prerequisites
+---
 
-- Git 2.x.
-- Node.js **22.12.0 or newer** (the required version is recorded in `.nvmrc`).
-- npm 10 or newer, supplied with supported Node.js releases.
-- Docker Desktop with Docker Engine and Docker Compose v2 enabled.
-- Ports `5173`, `3000`, `5433`, `4001`, `5001`, and `8080` available when using Docker.
+## 2. System Dashboards & Role Matrix
 
-Verify the installed tooling:
+CharityChain enforces strict **Role-Based Access Control (RBAC)**. The application consists of 9 integrated dashboards and portals:
 
+| Dashboard / Portal | URL Path | Required Role / Permission | Key Capabilities |
+| --- | --- | --- | --- |
+| **Public Website** | `/` | *None (Public)* | View public transparency metrics, donor recognition board, track donations, browse goods catalog, view governance policies. |
+| **Donor Dashboard** | `/donor` | `DONOR` | Make monetary donations, declare physical goods, view donation history & tax receipts, manage public identity/alias. |
+| **Student Dashboard** | `/student` | `STUDENT` | View university records, submit aid applications, track vetting status & committee decisions, request physical goods, manage appeals. |
+| **Clerk Dashboard** | `/clerk` | `CLERK` | Intake physical donations, inspect delivered goods, record student pickups/collections, run daily intake reconciliation. |
+| **Inventory Supervisor** | `/inventory` | `INVENTORY_SUPERVISOR` | Oversee warehouse stock, manage inventory batches & SKUs, inspect storage locations, monitor low-stock alerts. |
+| **Committee Dashboard** | `/committee` | `COMMITTEE_MEMBER` | Review student aid applications, evaluate need-index metrics, participate in 2-of-3 quorum approvals, commit funding. |
+| **Finance Dashboard** | `/finance` | `FINANCE_OPERATOR` | Execute approved tuition/upkeep disbursements, manage payout exceptions, perform bank/M-Pesa daily reconciliation. |
+| **Auditor Dashboard** | `/auditor` | `AUDITOR` | Inspect immutable audit logs, investigate financial/goods anomalies, verify blockchain proof anchors. |
+| **Super Admin Dashboard** | `/admin` | `ADMINISTRATOR` | System health, policy configuration, simulated student data, inventory settings, and **provisioning/inviting all other roles & dashboards**. |
+
+---
+
+## 3. Prerequisites
+
+* **Git 2.x**
+* **Node.js 22.12.0 or newer** (see `.nvmrc`)
+* **npm 10 or newer** (included with supported Node releases)
+* **Docker Desktop** with Docker Engine and Docker Compose v2 enabled
+* The following ports must be free: `5173`, `3000`, `5433`, `4001`, `5001`, `8080`
+
+Verify your tools:
 ```powershell
 node --version
 npm --version
@@ -32,7 +53,9 @@ docker --version
 docker compose version
 ```
 
-## Environment configuration
+---
+
+## 4. Environment Configuration
 
 Never commit a real `.env` file. Start from the versioned template:
 
@@ -40,188 +63,206 @@ Never commit a real `.env` file. Start from the versioned template:
 Copy-Item .env.example .env
 ```
 
-For local development, set `POSTGRES_PASSWORD`, `SESSION_SECRET`, and `ENCRYPTION_KEY` to private values. Keep external payment and SMS feature flags disabled unless valid sandbox credentials are configured. The defaults use normal fiat integrations (M-Pesa, Paybill/bank, and SMS); no cryptocurrency wallet is required for users.
+Key configuration notes:
+* **Database URL**:
+  * For local Node.js processes: `DATABASE_URL=postgresql://charitychain:charitychain-local-only@localhost:5433/charitychain?schema=public`
+  * For Docker Compose: automatically points to `postgres:5432`.
+* **Secrets**: For production, ensure `SESSION_SECRET` and `ENCRYPTION_KEY` are cryptographically random strings.
+* **Email & Integrations**: Keep `FEATURE_EMAIL_ENABLED=false` unless you provide a valid `RESEND_API_KEY`. In development mode, authentication verification tokens are auto-approved.
 
-`DATABASE_URL` is different depending on where the API runs:
+---
 
-- Local Node.js process: use `localhost:5433`.
-- Docker API container: Compose overrides it to `postgres:5432` automatically.
+## 5. Step-by-Step Local Development Workflow
 
-Use either the Docker workflow or the local-development workflow below; do not run both frontend/API modes on the same ports at the same time.
+Follow these steps sequentially to set up and run the project from a fresh clone:
 
-## Recommended: full Docker stack
+### Step 1: Install Dependencies
+```powershell
+npm ci
+```
 
-From the repository root:
+### Step 2: Start Infrastructure (PostgreSQL & IPFS)
+Start the database and IPFS daemon using Docker Compose:
+```powershell
+docker compose up -d postgres ipfs
+```
+Wait a few seconds until both containers report healthy:
+```powershell
+docker compose ps
+```
+
+### Step 3: Run Database Migrations
+Generate the Prisma client and apply committed migrations:
+```powershell
+npm run db:generate
+npm run migrate:deploy -w @charitychain/database
+```
+
+### Step 4: Seed the Database
+CharityChain provides modular seed scripts. You can run all of them at once or individually:
+
+#### Option A: Seed Everything in One Command (Recommended)
+```powershell
+npm run db:seed:all
+```
+
+#### Option B: Run Seeds Individually
+1. **Core Roles & Permissions Seed:**
+   ```powershell
+   npm run db:seed
+   ```
+   *Creates the 8 system roles, 39 assignable permissions, role-permission matrices, and recognition tiers (Silver, Gold, Diamond, Platinum).*
+
+2. **Simulated University Records Seed:**
+   ```powershell
+   npm run db:seed:university
+   ```
+   *Creates 30 deterministic university student records (`MUST/SIM/2026/001` through `030`), academic semesters, fee balances, HELB loan disbursements, exam blocks, and payment plans required for student vetting workflows.*
+
+3. **Inventory & Goods Seed:**
+   ```powershell
+   npm run db:seed:inventory
+   ```
+   *Creates initial inventory categories (Sanitary Care, Personal Hygiene), stock batches (soap, pads, toothpaste, tissue), demonstration desk location, active goods collection policy, and a demo clerk account.*
+
+4. **Super Administrator Seed:**
+   ```powershell
+   npm run db:seed:admin
+   ```
+   *Provisions an initial Super Administrator account:*
+   * **Email:** `admin@charitychain.org`
+   * **Password:** `Admin12345!`
+   * **Role:** `ADMINISTRATOR`
+
+### Step 5: Start the Development Servers
+Start both the Express API and Vite React frontend concurrently:
+```powershell
+npm run dev
+```
+
+* **Frontend:** `http://localhost:5173`
+* **API:** `http://localhost:3000`
+* **API Health Check:** `http://localhost:3000/api/v1/health/ready`
+
+---
+
+## 6. Super Admin: How Other Dashboards are Created & Managed
+
+In CharityChain, staff members do **not** self-register into operational roles (Clerk, Finance, Auditor, Committee, Inventory Supervisor). Instead, **all staff accounts and dashboard permissions are provisioned and managed directly from the Super Admin Console**.
+
+### How to Access the Super Admin Console
+1. Open `http://localhost:5173/auth/login`.
+2. Sign in with the seeded Administrator credentials:
+   * **Email:** `admin@charitychain.org`
+   * **Password:** `Admin12345!`
+3. Navigate to **Users & Roles** (`http://localhost:5173/admin/users`).
+
+### Creating Staff Users & Granting Dashboard Access
+From the **Users & Roles** directory:
+1. Click **"Create Staff Account"** or **"Invite User"**.
+2. Enter the staff member's **Full Name** and **Email Address**.
+3. A secure temporary password is generated (or you can specify credentials).
+4. **Select Role(s)** to grant specific dashboard access:
+   * Select `CLERK` &rarr; Unlocks the **Clerk Dashboard** (`/clerk`).
+   * Select `INVENTORY_SUPERVISOR` &rarr; Unlocks the **Inventory Supervisor Dashboard** (`/inventory`).
+   * Select `COMMITTEE_MEMBER` &rarr; Unlocks the **Committee Dashboard** (`/committee`).
+   * Select `FINANCE_OPERATOR` &rarr; Unlocks the **Finance Dashboard** (`/finance`).
+   * Select `AUDITOR` &rarr; Unlocks the **Auditor Dashboard** (`/auditor`).
+   * Select `ADMINISTRATOR` &rarr; Grants co-administrator privileges over `/admin`.
+5. **Assign Granular Permissions**:
+   * Administrators can click on any user to view their assignable permission matrix (from the 39-permission catalog) and grant or revoke individual permissions (such as `disbursement:execute`, `goods-collection:release`, or `forensics:investigate`).
+6. Click **Save / Create User**. The staff member can now log in at `http://localhost:5173/auth/login` and will be routed directly to their designated dashboard.
+
+---
+
+## 7. How Students and Donors Onboard
+
+### Donor Onboarding
+1. Anyone can visit `http://localhost:5173/auth/register` to create a Donor account.
+2. The `DONOR` role is automatically assigned upon registration.
+3. Donors can immediately donate funds or declare physical items from `/donor`.
+
+### Student Onboarding
+1. Students register at `http://localhost:5173/student/auth/register`.
+2. The registration automatically assigns the `STUDENT` role.
+3. To link their student profile, the student supplies their university registration number matching one of the seeded records (e.g. `MUST/SIM/2026/001` through `MUST/SIM/2026/030`).
+4. Once linked, their academic semester, fee balance, and eligibility data populate automatically on `/student`.
+
+---
+
+## 8. Full Docker Stack Workflow (Alternative)
+
+If you prefer running the entire stack (including Frontend and Backend) in Docker containers:
 
 ```powershell
 docker compose up --build -d
 docker compose ps
 ```
 
-Compose builds and runs these services:
+This starts:
+* `postgres`: Database on port `5433`
+* `ipfs`: Kubo node on ports `5001` and `8080`
+* `bootstrap`: Automatically executes migrations and seeds roles/permissions
+* `backend`: Express API on port `3000`
+* `frontend`: Nginx serving production build on port `5173`
 
-- `postgres`: PostgreSQL 17 with a persistent named volume.
-- `ipfs`: local Kubo node with a persistent named volume.
-- `bootstrap`: one-time Prisma migration and core role/permission/recognition seed.
-- `backend`: the Express API, available on port `3000`.
-- `frontend`: Nginx serving the production React build, available on port `5173`.
-
-Wait until `backend`, `postgres`, and `ipfs` are healthy. Then open:
-
-- Application: `http://localhost:5173`
-- API readiness: `http://localhost:3000/api/v1/health/ready`
-- IPFS gateway: `http://localhost:8080`
-
-View logs when diagnosing startup:
-
-```powershell
-docker compose logs --follow bootstrap backend frontend
-```
-
-Stop services without deleting data:
-
-```powershell
-docker compose down
-```
-
-Do not use `docker compose down --volumes` unless you intentionally want to remove the local PostgreSQL and IPFS data.
-
-## Simulated university records
-
-The application uses simulated university data locally. It contains deterministic student records, semesters, fee balances, micro-payment patterns, HELB/scholarship records, and finance-block scenarios used by the vetting engine.
-
-After the Docker stack is healthy, seed or refresh 30 simulated students with:
-
+To seed simulated university students inside Docker:
 ```powershell
 docker compose --profile tools run --rm simulator
 ```
 
-To choose a count from 6 to 500:
-
+To stop containers:
 ```powershell
-docker compose --profile tools run --rm -e SIMULATED_STUDENT_COUNT=60 simulator
+docker compose down
 ```
 
-The simulator updates its known data set and should be run only in local/demo environments. It is not a connection to a real university system.
+---
 
-## Local source-code development
+## 9. Verification & Testing
 
-Use this mode when editing React or Node.js code.
-
-1. Install the pinned dependency tree:
-
-   ```powershell
-   npm ci
-   ```
-
-2. Start infrastructure only:
-
-   ```powershell
-   docker compose up -d postgres ipfs
-   ```
-
-3. Generate Prisma Client, apply migrations, and seed required roles and permissions:
-
-   ```powershell
-   npm run db:generate
-   npm run migrate:deploy -w @charitychain/database
-   npm run db:seed
-   ```
-
-4. Seed the simulated university records:
-
-   ```powershell
-   npm run db:seed:university
-   ```
-
-5. Start both source services:
-
-   ```powershell
-   npm run dev
-   ```
-
-The frontend runs at `http://127.0.0.1:5173` in development and proxies `/api` to the API at port `3000`. Start individual services when needed:
+Run tests and code quality checks across all workspaces:
 
 ```powershell
-npm run dev -w @charitychain/backend
-npm run dev -w @charitychain/frontend
+npm run lint                  # Run ESLint across frontend and backend
+npm run db:validate           # Validate Prisma schema
+npm run contracts:compile     # Compile Hardhat smart contracts
+npm test                      # Run unit & integration test suites
+npm run verify                # Full CI verification suite
 ```
 
-## Database operations
-
-Prisma schema: `database/prisma/schema.prisma`.
-
-| Task | Command |
-| --- | --- |
-| Generate Prisma Client | `npm run db:generate` |
-| Validate Prisma schema | `npm run db:validate` |
-| Create a new local migration during schema development | `npm run db:migrate` |
-| Apply committed migrations in a deployment | `npm run migrate:deploy -w @charitychain/database` |
-| Seed roles, permissions, and recognition tiers | `npm run db:seed` |
-| Seed simulated university records | `npm run db:seed:university` |
-| Check migration state | `npx prisma migrate status --schema database/prisma/schema.prisma` |
-
-Fresh databases must receive both migrations and the core seed before accounts can be created because registration assigns the `DONOR` role. Student-support workflows also need the simulated university-record seed.
-
-## Authentication in local development
-
-The local environment does not use a real email/SMS delivery provider. A development registration is verified and signed in automatically so the donor dashboard can be tested. Production does not expose verification tokens: it requires a configured delivery provider and the normal verification process.
-
-Accounts can hold both donor and verified student capability in one identity. Student linkage is based on a registration number matched to the local simulated university record; it does not create a second account.
-
-## Verification and tests
-
-Run focused checks while developing:
-
-```powershell
-npm run lint
-npm run db:validate
-npm run build
-npm test
-npm run contracts:compile
-```
-
-Run the full verification suite:
-
-```powershell
-npm run verify
-```
-
-For Docker readiness:
-
-```powershell
-docker compose ps
-curl http://localhost:3000/api/v1/health/ready
-```
-
-In PowerShell, use this alternative if `curl` resolves differently on the machine:
-
+Check API readiness:
 ```powershell
 Invoke-WebRequest http://localhost:3000/api/v1/health/ready
 ```
 
-## Troubleshooting
+---
+
+## 10. Troubleshooting
 
 ### Port already in use
-
-Stop the local dev server or the matching Docker service before starting the alternative workflow. Check listeners with:
-
+Check which process is listening on project ports:
 ```powershell
 netstat -ano | Select-String ':5173|:3000|:5433'
 ```
+Stop existing processes or Docker containers before running `npm run dev`.
 
-### Prisma cannot authenticate or connect
+### Database connection failed
+Ensure PostgreSQL container is running:
+```powershell
+docker compose ps postgres
+```
+Verify `DATABASE_URL` in `.env` uses port `5433` for local Node.js execution.
 
-Confirm `docker compose ps` shows PostgreSQL healthy, confirm `DATABASE_URL` has the matching password and port, then run `npm run migrate:deploy -w @charitychain/database` again. Local processes use port `5433`; containers use `postgres:5432`.
+### Cannot log in as Super Admin
+Ensure you ran the admin seed command:
+```powershell
+npm run db:seed:admin
+```
+Log in at `http://localhost:5173/auth/login` with `admin@charitychain.org` / `Admin12345!`.
 
-### Registration cannot create an account
-
-Apply migrations and seed core data: `npm run migrate:deploy -w @charitychain/database; npm run db:seed`. The `DONOR` role must exist before account provisioning can complete.
-
-### Frontend shows an API or CSRF error
-
-Use exactly one host consistently (`http://localhost:5173` for Docker or `http://127.0.0.1:5173` for Vite development), refresh once after an API restart, and check the API readiness endpoint. The development configuration explicitly supports both local hosts.
-
-## Production note
-
-This Compose file is for reproducible local/demo use. Before deployment, use managed secrets, HTTPS, a production database backup plan, real provider credentials, a hosted IPFS strategy, strict allowed origins, and an external process supervisor or container platform. Do not expose local Docker ports or development secrets to the public internet.
+### Student record not found
+Ensure you ran the university simulation seed:
+```powershell
+npm run db:seed:university
+```
+Valid test registration numbers range from `MUST/SIM/2026/001` to `MUST/SIM/2026/030`.
