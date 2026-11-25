@@ -8,6 +8,7 @@ import { validateOracleResult } from '../../src/integrations/chainlink/oracleRes
 import { createMpesaCallbackController } from '../../src/integrations/mpesa/callback.controller.js';
 import { mapStkCallback } from '../../src/integrations/mpesa/callback.validation.js';
 import { createMpesaConfig } from '../../src/integrations/mpesa/mpesa.config.js';
+import { classifyMpesaResult } from '../../src/integrations/mpesa/mpesaResultCodes.js';
 import { createB2bAdapter } from '../../src/integrations/mpesa/b2b.adapter.js';
 import { createB2cAdapter } from '../../src/integrations/mpesa/b2c.adapter.js';
 import { createMpesaReconciliationAdapter } from '../../src/integrations/mpesa/reconciliation.adapter.js';
@@ -106,6 +107,75 @@ describe('Section 32 external integrations', () => {
         }
       })
     ).toMatchObject({ status: 'CANCELLED', resultCode: '1032' });
+
+    const pending4999Adapter = createStkPushQueryAdapter({
+      client: {
+        post: vi.fn().mockResolvedValue({
+          ResponseCode: '0',
+          ResultCode: 4999,
+          ResultDesc: 'The transaction is still under processing'
+        })
+      },
+      config: { shortcode: '174379', passkey: 'passkey', stkPushQueryPath: '/stk-query' }
+    });
+    await expect(pending4999Adapter.query({ checkoutRequestId: 'ws_CO_4999' })).resolves.toEqual({
+      resultCode: null,
+      resultMessage: 'The transaction is still under processing'
+    });
+
+    const pendingHttpErrorAdapter = createStkPushQueryAdapter({
+      client: {
+        post: vi.fn().mockRejectedValue({
+          message: 'The transaction is being processed',
+          retryable: true,
+          details: { providerStatus: 500, providerErrorCode: '500.001.1001' }
+        })
+      },
+      config: { shortcode: '174379', passkey: 'passkey', stkPushQueryPath: '/stk-query' }
+    });
+    await expect(
+      pendingHttpErrorAdapter.query({ checkoutRequestId: 'ws_CO_500_PENDING' })
+    ).resolves.toEqual({
+      resultCode: null,
+      resultMessage: 'The transaction is still under processing.'
+    });
+
+    expect(classifyMpesaResult('1', 'The balance is insufficient for the transaction')).toMatchObject(
+      { status: 'FAILED', category: 'INSUFFICIENT_FUNDS', title: 'Insufficient M-Pesa balance' }
+    );
+    expect(classifyMpesaResult('2001', 'The initiator information is invalid.')).toMatchObject({
+      status: 'FAILED',
+      category: 'WRONG_PIN',
+      title: 'Wrong M-Pesa PIN'
+    });
+    expect(classifyMpesaResult('1032', 'Request cancelled by user.')).toMatchObject({
+      status: 'CANCELLED',
+      category: 'USER_CANCELLED'
+    });
+    expect(classifyMpesaResult('1037', 'DS timeout user cannot be reached')).toMatchObject({
+      status: 'FAILED',
+      category: 'STK_TIMEOUT'
+    });
+    expect(classifyMpesaResult('4999', 'The transaction is still under processing')).toMatchObject({
+      status: 'PENDING',
+      category: 'PROCESSING'
+    });
+    expect(
+      mapStkCallback({
+        Body: {
+          stkCallback: {
+            MerchantRequestID: 'merchant-2',
+            CheckoutRequestID: 'ws_CO_WRONG_PIN',
+            ResultCode: 2001,
+            ResultDesc: 'The initiator information is invalid.'
+          }
+        }
+      })
+    ).toMatchObject({
+      status: 'FAILED',
+      resultCode: '2001',
+      resultMessage: expect.stringContaining('incorrect M-Pesa PIN')
+    });
   });
 
   it('fails closed when optional M-Pesa disbursement credentials are missing', async () => {

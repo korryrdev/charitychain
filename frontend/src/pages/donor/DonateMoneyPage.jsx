@@ -8,8 +8,13 @@ import { DonationTimeline } from '../../features/moneyDonations/components/Donat
 import { useDonation } from '../../features/moneyDonations/hooks/useDonation.js';
 
 const pendingPaymentStatuses = new Set(['INITIATED', 'SUBMITTED', 'PENDING']);
-const automaticStatusChecks = 24;
-const statusCheckIntervalMs = 5_000;
+const automaticStatusChecks = 12;
+const statusCheckIntervalMs = 15_000;
+
+function formatFailureDetail(payment, fallbackMessage) {
+  const message = payment?.responseMessage || fallbackMessage;
+  return payment?.responseCode ? `${message} (M-Pesa code: ${payment.responseCode})` : message;
+}
 
 export function DonateMoneyPage() {
   const donation = useDonation();
@@ -53,15 +58,17 @@ export function DonateMoneyPage() {
     },
     FAILED: {
       tone: 'danger',
-      title: 'Payment failed',
-      message: donation.payment?.responseMessage || 'M-Pesa did not complete the payment.'
+      title: donation.payment?.failureTitle || 'Payment failed',
+      message: formatFailureDetail(donation.payment, 'M-Pesa did not complete the payment.')
     },
     CANCELLED: {
       tone: 'danger',
-      title: 'Payment cancelled',
-      message: donation.payment?.responseMessage || 'The STK request was cancelled.'
+      title: donation.payment?.failureTitle || 'Payment cancelled',
+      message: formatFailureDetail(donation.payment, 'The STK request was cancelled.')
     }
   }[donation.payment?.status];
+  const canRetryPayment =
+    donation.payment?.status === 'FAILED' || donation.payment?.status === 'CANCELLED';
 
   if (donation.donation) {
     return (
@@ -99,6 +106,13 @@ export function DonateMoneyPage() {
               )}
               <Button type="button" loading={donation.checkingStatus} onClick={donation.refreshStatus}>
                 Check payment status
+              </Button>
+            </div>
+          )}
+          {canRetryPayment && (
+            <div>
+              <Button type="button" onClick={donation.reset}>
+                Try payment again
               </Button>
             </div>
           )}

@@ -97,5 +97,16 @@ export function useDonation(api = moneyDonationsApi, payments = paymentsApi) {
       );
     }
   }, [api, donationId, paymentId, payments]);
-  return { ...state, create, refreshStatus };
+  const reset = useCallback(() => {
+    setState({
+      pending: false,
+      donation: null,
+      trackingSecret: null,
+      payment: null,
+      checkingStatus: false,
+      statusError: null,
+      error: null
+    });
+  }, []);
+  return { ...state, create, refreshStatus, reset };
 }

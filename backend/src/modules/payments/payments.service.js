@@ -15,9 +15,14 @@ import {
   verifyProviderEvent
 } from './providerEvent.service.js';
 import { stkPushQueryAdapter } from '../../integrations/mpesa/stkPushQuery.adapter.js';
+import { classifyMpesaResult } from '../../integrations/mpesa/mpesaResultCodes.js';
 
 function notFound(message = 'Payment not found.') {
   return new AppError({ message, code: ERROR_CODES.RESOURCE_NOT_FOUND, statusCode: 404 });
+}
+
+function wait(ms) {
+  return ms > 0 ? new Promise((resolve) => setTimeout(resolve, ms)) : Promise.resolve();
 }
 
 const terminalPaymentStatuses = new Set(['SUCCEEDED', 'FAILED', 'CANCELLED']);
@@ -27,7 +32,9 @@ export function createPaymentsService({
   providers = paymentProviderFactory,
   donations = moneyDonationsService,
   secretFor = providerEventSecret,
-  stkQuery = stkPushQueryAdapter
+  stkQuery = stkPushQueryAdapter,
+  verifyMaxAttempts = 3,
+  verifyRetryDelayMs = 2_000
 } = {}) {
   return {
     async initiate(auth, input, idempotencyKey) {
@@ -119,20 +126,21 @@ export function createPaymentsService({
         throw new ConflictError('Only M-Pesa STK payments can be refreshed.');
 
       const query = await stkQuery.query({ checkoutRequestId: attempt.providerRequestId });
-      if (!query.resultCode) return toPaymentAttempt(attempt);
+      const classification = classifyMpesaResult(query.resultCode, query.resultMessage);
+      if (!query.resultCode || classification.status === 'PENDING') {
+        return toPaymentAttempt(attempt);
+      }
 
-      const status =
-        query.resultCode === '0' ? 'SUCCEEDED' : query.resultCode === '1032' ? 'CANCELLED' : 'FAILED';
       const payload = {
-        eventId: `${attempt.providerRequestId}:QUERY:${query.resultCode}`,
+        eventId: `${attempt.providerRequestId}:QUERY:${classification.code}`,
         eventType: 'STK_QUERY_RESULT',
         providerRequestId: attempt.providerRequestId,
-        status,
-        ...(status === 'SUCCEEDED'
+        status: classification.status,
+        ...(classification.status === 'SUCCEEDED'
           ? { amount: attempt.amount.toNumber(), currency: attempt.currency }
           : {}),
-        resultCode: query.resultCode,
-        resultMessage: query.resultMessage ?? 'M-Pesa returned a final STK result.',
+        resultCode: classification.code,
+        resultMessage: classification.message,
         occurredAt: new Date()
       };
       await this.processProviderEvent(
@@ -153,8 +161,19 @@ export function createPaymentsService({
       if (!attempt || attempt.provider !== 'MPESA' || attempt.flow !== 'STK_PUSH') {
         throw notFound('M-Pesa checkout reference was not found.');
       }
-      const query = await stkQuery.query({ checkoutRequestId: payload.providerRequestId });
-      if (query.resultCode !== payload.resultCode) {
+
+      let query;
+      for (let attemptNumber = 1; attemptNumber <= verifyMaxAttempts; attemptNumber += 1) {
+        try {
+          query = await stkQuery.query({ checkoutRequestId: payload.providerRequestId });
+          if (query.resultCode !== null || attemptNumber >= verifyMaxAttempts) break;
+        } catch (error) {
+          if (!error?.retryable || attemptNumber >= verifyMaxAttempts) throw error;
+        }
+        await wait(verifyRetryDelayMs);
+      }
+
+      if (!query || query.resultCode !== payload.resultCode) {
         throw new AppError({
           message: 'M-Pesa could not confirm the STK Push callback.',
           code: ERROR_CODES.INTEGRATION_RESPONSE_INVALID,
@@ -163,10 +182,17 @@ export function createPaymentsService({
           retryable: true
         });
       }
+
+      const classification = classifyMpesaResult(payload.resultCode, payload.resultMessage);
+      const normalizedPayload = {
+        ...payload,
+        status: classification.status,
+        resultMessage: classification.message
+      };
       return this.processProviderEvent(
         'MPESA',
-        payload,
-        signProviderEvent(payload, secretFor('MPESA'))
+        normalizedPayload,
+        signProviderEvent(normalizedPayload, secretFor('MPESA'))
       );
     },
     async processProviderEvent(providerName, payload, signature) {
