@@ -4,7 +4,7 @@
 **You provide:** The rule engine and alerts, the fund flow graph, the daily digest and Merkle tooling, the quarterly report builder, the fraud simulator and the evaluation numbers
 **You consume:** Domain events and the `forensics_read` views from Track B, hashing from `shared/`, contract access from Track A
 
-Read first: `ARCHITECTURE.md` sections 4.4, 4.5, 5.3, 5.4, 5.5 and PRD sections 7.5, 7.6, 7.7, 12.
+Read first: [Architecture Overview](../../architecture/overview.md) sections 4.4, 4.5, 5.3, 5.4, 5.5, [Reconciliation & Forensics Operations](../../operations/reconciliation.md), and [PRD](../../requirements/product-requirements-document.md) sections 7.5, 7.6, 7.7, 12.
 
 ---
 
@@ -139,7 +139,7 @@ Build nodes (donation lots, cases, disbursements, users) and edges (allocation l
 - `loader.ts` applies events through the real services so audit chains, hashes and outbox rows are real.
 - Each injected fraud writes a label to `ground_truth.json`.
 - `evaluate.ts` compares alerts to labels and prints precision and recall per rule and overall, plus a time to detect.
-**Done when:** `pnpm sim --seed 42 --months 12 && pnpm sim:eval` prints a table, and results are saved under `docs/thesis/evaluation/`.
+**Done when:** running the 12-month seeded simulator (`backend/src/simulator/fraudSimulator.js`) outputs precision and recall metrics recorded against [Acceptance Criteria](../../requirements/acceptance-criteria.md) and [Test Strategy](../../testing/strategy.md).
 
 ### C7. Integrity
 - `digest.ts` builds the daily Merkle root with the spec in `ARCHITECTURE.md` 5.5. Leaves are audit entry hashes ordered by `seq`.

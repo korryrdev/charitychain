@@ -8,13 +8,18 @@ The simulated university dataset provides deterministic, explainable records for
 
 From the project root:
 
-```powershell
+```bash
 npm run db:seed:university
 ```
 
 The default command creates 30 students. A controlled size may be supplied without changing the rules:
 
+```bash
+# Linux / macOS
+SIMULATED_STUDENT_COUNT=60 npm run db:seed:university
+```
 ```powershell
+# Windows PowerShell
 $env:SIMULATED_STUDENT_COUNT = "60"
 npm run db:seed:university
 ```

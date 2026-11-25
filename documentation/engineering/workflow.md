@@ -42,11 +42,11 @@ If the team is smaller than five, merge tracks using this table. The tasks stay 
 /backend/src/integrity/         @track-c
 /backend/src/reports/           @track-c
 /backend/src/simulator/         @track-c
-/backend/prisma/                @track-b
+/database/                      @track-b
 /backend/                       @track-b
 /frontend/                      @track-d
 /shared/                        @tech-lead
-/infra/ /.github/ /docs/        @track-e
+/infrastructure/ /documentation/ @track-e
 ```
 
 ---
@@ -125,20 +125,25 @@ Written updates go in the team channel using this format: `Track X, done: ..., n
 
 ## 7. Local setup (everyone)
 
-```
+```bash
 git clone <repo> && cd charitychain
-cp .env.example .env            # fill in local values from the team vault
-pnpm install
-pnpm dev:infra                  # postgres, mock-daraja (docker)
-pnpm dev:chain                  # hardhat node and local deploy
-pnpm --filter backend prisma migrate dev
-pnpm dev:api                    # terminal 1
-pnpm dev:worker                 # terminal 2
-pnpm dev:web                    # terminal 3
-pnpm seed                       # small demo dataset
+cp .env.example .env            # configure local values
+npm ci
+docker compose up -d postgres ipfs
+npm run db:generate
+npm run migrate:deploy -w @charitychain/database
+npm run db:seed:all
+npm run contracts:compile
+npm run dev                     # starts API (3000) and frontend (5173) concurrently
 ```
 
-Run the checks before pushing: `pnpm lint && pnpm typecheck && pnpm test`.
+Run checks before committing or pushing:
+
+```bash
+npm run lint && npm run db:validate && npm run build && npm test
+```
+
+See [Setup and Running Guide](../setup-and-running.md) for full Windows/Linux setup details and seeded credentials.
 
 ---
 

@@ -289,8 +289,10 @@ charitychain/
 │   └── pull_request_template.md
 │
 └── documentation/
-    ├── system dashboards.md
-    ├── project structure.md
+    ├── README.md
+    ├── setup-and-running.md
+    ├── system-dashboards.md
+    ├── project-structure.md
     ├── requirements/
     ├── architecture/
     ├── api/
@@ -301,6 +303,7 @@ charitychain/
     ├── deployment/
     ├── operations/
     ├── user-guides/
+    ├── engineering/
     └── decisions/
 ```
 
@@ -810,24 +813,24 @@ Each environment has separate databases, secrets, provider credentials, contract
 
 ## 15. Documentation Set
 
-The final `documentation/` directory should contain:
+The consolidated `documentation/` directory contains:
 
-- `system dashboards.md`
-- `project structure.md`
-- Requirements and acceptance criteria
-- Architecture overview and data-flow diagrams
-- API specification
-- Database entity and migration guide
-- Smart-contract specification
-- Threat model and security controls
-- Privacy and data-retention policy
-- Vetting-policy explanation
-- Money and goods reconciliation rules
-- Test strategy and traceability matrix
-- Deployment and rollback guide
-- Incident-response and recovery runbooks
-- User guides for every role
-- Architecture decision records
+- `README.md` — master engineering documentation index
+- `setup-and-running.md` — local setup, Docker/Prisma workflows, and Super Admin provisioning
+- `system-dashboards.md` — all 9 role portals, public trace, recognition rules, and `.tsx` governance screens
+- `project-structure.md` — repository layout and module inventory
+- `requirements/` — `product-requirements-document.md` (full PRD), `functional-requirements.md`, `non-functional-requirements.md`, `acceptance-criteria.md`
+- `architecture/` — `overview.md`, `hashing-specification.md`, `system-context.md`, `containers.md`, `money-flow.md`, `goods-flow.md`, `trust-boundaries.md`
+- `api/` — `endpoints.md`, `authentication.md`, `webhooks.md`, `error-codes.md`
+- `database/` — `data-model.md`, `migrations.md`, `ledger.md`, `retention.md`, `university-simulation-rules.md`
+- `blockchain/` — `contracts.md`, `deployments.md`, `audit-anchoring.md`
+- `security/` — `threat-model.md`, `access-control.md`, `secrets.md`, `privacy.md`, `incident-response.md`
+- `testing/` — `strategy.md`, `test-cases.md`, `traceability-matrix.md`
+- `deployment/` — `environments.md`, `deployment-guide.md`, `rollback.md`
+- `operations/` — `reconciliation.md`, `monitoring.md`, `backup-and-restore.md`
+- `user-guides/` — `donor.md`, `student.md`, `clerk.md`, `committee.md`, `finance.md`, `auditor.md`, `administrator.md`
+- `engineering/` — `workflow.md`, `backend-breakdown.md`, `frontend-breakdown.md`, and `tracks/track-{a..e}-*.md`
+- `decisions/` — `README.md` (ADRs 0001–0010) and `unification-ledger.md`
 
 ## 16. Expanded Implementation-Ready File Map
 
@@ -1955,13 +1958,18 @@ scripts/
 └── verifyRelease.js
 
 documentation/
-├── system dashboards.md
-├── project structure.md
+├── README.md
+├── setup-and-running.md
+├── system-dashboards.md
+├── project-structure.md
 ├── requirements/
+│   ├── product-requirements-document.md
 │   ├── functional-requirements.md
 │   ├── non-functional-requirements.md
 │   └── acceptance-criteria.md
 ├── architecture/
+│   ├── overview.md
+│   ├── hashing-specification.md
 │   ├── system-context.md
 │   ├── containers.md
 │   ├── money-flow.md
@@ -1976,7 +1984,8 @@ documentation/
 │   ├── data-model.md
 │   ├── migrations.md
 │   ├── ledger.md
-│   └── retention.md
+│   ├── retention.md
+│   └── university-simulation-rules.md
 ├── blockchain/
 │   ├── contracts.md
 │   ├── deployments.md
@@ -2007,10 +2016,25 @@ documentation/
 │   ├── finance.md
 │   ├── auditor.md
 │   └── administrator.md
+├── engineering/
+│   ├── workflow.md
+│   ├── backend-breakdown.md
+│   ├── frontend-breakdown.md
+│   └── tracks/
+│       ├── track-a-blockchain.md
+│       ├── track-b-backend-core.md
+│       ├── track-c-forensics-integrity.md
+│       ├── track-d-frontend.md
+│       └── track-e-platform-qa.md
 └── decisions/
-    └── architecture decision records
+    ├── README.md
+    └── unification-ledger.md
 ```
 
-## 17. Implementation Boundaries
+## 17. As-Built Unified Architectural Boundaries
 
-This document proposes the eventual repository. At the current planning stage, only this Markdown document is created. The root folders and implementation files shown in the tree must be created only after the structure, naming, technologies, and delivery sequence are approved.
+The unified CharityChain monorepo implements the full specification across five npm workspaces (`frontend/`, `backend/`, `database/`, `blockchain/`, `shared/`). Specifically:
+- **`frontend/` (`tsconfig.json`, `vite.config.ts`, `src/main.tsx`):** Supports `.tsx` and `.jsx` coexistence inside a single React 19 router (`src/app/routeConfig.js`), preserving all 9 `kip` portals alongside `aldo` `Web3.js` EIP-712 signing, Sankey tracing, 5-column DAG visualization, and `/app/*`.
+- **`backend/` (`Express 5.3`, 40 modules, `src/simulator/`):** Unifies RBAC across 14 roles and 55 permissions (`backend/src/constants/{roles,permissions}.js`) with `Better-Auth`, CSRF protection, Daraja C2B/STK/B2C/B2B intake, Resend notifications, FIFO lots, R01–R20 forensics, and daily Merkle proofs.
+- **`database/` (`PostgreSQL 17`, `Prisma 6.19`):** Houses 86 models, 26 committed migrations, PostgreSQL `BEFORE UPDATE OR DELETE` append-only triggers on `case_events`, `allocations`, and `donation_raw_callbacks`, and modular seed scripts (`db:seed:all`).
+- **`blockchain/` (`Solidity 0.8.28`, `Hardhat 3.21`):** Deploys 7 notary and governance contracts (`CharityChainAccess`, `DonationLedger`, `CaseWorkflow`, `SignatoryRegistry`, `PeriodAnchor`, `EvidenceRegistry`, `ChainlinkFxAndAutomation`) targeting `localhost` (`31337`) and `polygonAmoy` (`80002`), exporting ABIs to `shared/abis/`.

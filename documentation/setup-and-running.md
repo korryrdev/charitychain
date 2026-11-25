@@ -25,15 +25,15 @@ CharityChain enforces strict **Role-Based Access Control (RBAC)**. The applicati
 
 | Dashboard / Portal | URL Path | Required Role / Permission | Key Capabilities |
 | --- | --- | --- | --- |
-| **Public Website** | `/` | *None (Public)* | View public transparency metrics, donor recognition board, track donations, browse goods catalog, view governance policies. |
-| **Donor Dashboard** | `/donor` | `DONOR` | Make monetary donations, declare physical goods, view donation history & tax receipts, manage public identity/alias. |
+| **Public Website & DApp Trace** | `/`, `/trace`, `/wall`, `/claim`, `/reports` | *None (Public)* | View public transparency metrics, Sankey donation trace & on-chain Web3.js verifier, anonymous-by-default donor recognition wall, receipt claiming, browse goods catalog, view governance policies. |
+| **Donor Portal & DApp** | `/donor`, `/donor/dapp` | `DONOR` | Make monetary donations (M-Pesa/Bank/Testnet Crypto), declare physical goods, claim receipts, view impact badges & SVG certificates, manage public display preferences. |
 | **Student Dashboard** | `/student` | `STUDENT` | View university records, submit aid applications, track vetting status & committee decisions, request physical goods, manage appeals. |
-| **Clerk Dashboard** | `/clerk` | `CLERK` | Intake physical donations, inspect delivered goods, record student pickups/collections, run daily intake reconciliation. |
-| **Inventory Supervisor** | `/inventory` | `INVENTORY_SUPERVISOR` | Oversee warehouse stock, manage inventory batches & SKUs, inspect storage locations, monitor low-stock alerts. |
-| **Committee Dashboard** | `/committee` | `COMMITTEE_MEMBER` | Review student aid applications, evaluate need-index metrics, participate in 2-of-3 quorum approvals, commit funding. |
-| **Finance Dashboard** | `/finance` | `FINANCE_OPERATOR` | Execute approved tuition/upkeep disbursements, manage payout exceptions, perform bank/M-Pesa daily reconciliation. |
-| **Auditor Dashboard** | `/auditor` | `AUDITOR` | Inspect immutable audit logs, investigate financial/goods anomalies, verify blockchain proof anchors. |
-| **Super Admin Dashboard** | `/admin` | `ADMINISTRATOR` | System health, policy configuration, simulated student data, inventory settings, and **provisioning/inviting all other roles & dashboards**. |
+| **Clerk & Pharmacy Intake** | `/clerk`, `/inventory/pharmacy` | `CLERK`, `PHARMACY_CUSTODIAN` | Intake physical donations, mobile-first pharmacy item logging, inspect delivered goods, record student pickups/collections, run daily intake reconciliation. |
+| **Inventory Supervisor** | `/inventory` | `INVENTORY_SUPERVISOR` | Oversee warehouse stock, manage inventory batches & SKUs, inspect storage locations, monitor low-stock & shrinkage alerts. |
+| **Committee & Signing Queue** | `/committee`, `/committee/cases`, `/committee/signing` | `COMMITTEE_MEMBER`, `SUBGROUP_REP`, `SIGNATORY` | Review student aid applications, manage sub-group cases, execute 2-of-3 quorum approvals and Web3.js + MetaMask EIP-712 release signing. |
+| **Finance Dashboard** | `/finance` | `FINANCE_OPERATOR`, `TREASURER` | Execute approved tuition/upkeep disbursements, enter & verify bank deposits (maker-checker), perform bank CSV / M-Pesa reconciliation. |
+| **Auditor & Forensics** | `/auditor`, `/auditor/fund-flow-dag`, `/auditor/forensic-rules`, `/auditor/quarterly-reports` | `AUDITOR`, `MEMBER_AUDITOR` | Inspect immutable audit logs, explore 5-column PostgreSQL Fund-Flow DAG, triage R01–R20 anomalies, verify blockchain anchors & Merkle proofs. |
+| **Super Admin Dashboard & `/app`** | `/admin`, `/admin/users`, `/app/*` | `ADMINISTRATOR`, `SYSTEM_ADMIN` | System health, policy configuration, simulated student data, inventory settings, standalone governance console (`/app/*`), and **provisioning/inviting all other roles & dashboards**. |
 
 ---
 
@@ -59,7 +59,12 @@ docker compose version
 
 Never commit a real `.env` file. Start from the versioned template:
 
+```bash
+# Linux / macOS
+cp .env.example .env
+```
 ```powershell
+# Windows PowerShell
 Copy-Item .env.example .env
 ```
 
@@ -110,10 +115,10 @@ npm run db:seed:all
 
 #### Option B: Run Seeds Individually
 1. **Core Roles & Permissions Seed:**
-   ```powershell
+   ```bash
    npm run db:seed
    ```
-   *Creates the 8 system roles, 39 assignable permissions, role-permission matrices, and recognition tiers (Silver, Gold, Diamond, Platinum).*
+   *Creates all **14** system & PRD roles, **55** assignable permissions, role-permission matrices, Malkia demo governance accounts/sub-groups, and recognition tiers.*
 
 2. **Simulated University Records Seed:**
    ```powershell
@@ -165,15 +170,15 @@ From the **Users & Roles** directory:
 2. Enter the staff member's **Full Name** and **Email Address**.
 3. A secure temporary password is generated (or you can specify credentials).
 4. **Select Role(s)** to grant specific dashboard access:
-   * Select `CLERK` &rarr; Unlocks the **Clerk Dashboard** (`/clerk`).
+   * Select `CLERK` or `PHARMACY_CUSTODIAN` &rarr; Unlocks the **Clerk & Pharmacy Intake Dashboards** (`/clerk`, `/inventory/pharmacy`).
    * Select `INVENTORY_SUPERVISOR` &rarr; Unlocks the **Inventory Supervisor Dashboard** (`/inventory`).
-   * Select `COMMITTEE_MEMBER` &rarr; Unlocks the **Committee Dashboard** (`/committee`).
-   * Select `FINANCE_OPERATOR` &rarr; Unlocks the **Finance Dashboard** (`/finance`).
-   * Select `AUDITOR` &rarr; Unlocks the **Auditor Dashboard** (`/auditor`).
-   * Select `ADMINISTRATOR` &rarr; Grants co-administrator privileges over `/admin`.
+   * Select `SUBGROUP_REP`, `COMMITTEE_MEMBER`, or `SIGNATORY` &rarr; Unlocks the **Committee & EIP-712 Signing Portal** (`/committee`, `/committee/cases`, `/committee/signing`).
+   * Select `FINANCE_OPERATOR` or `TREASURER` &rarr; Unlocks the **Finance & Bank Portal** (`/finance`, `/app/donations`).
+   * Select `AUDITOR` or `MEMBER_AUDITOR` &rarr; Unlocks the **Auditor & Forensics Portal** (`/auditor`, `/auditor/fund-flow-dag`, `/auditor/forensic-rules`, `/auditor/quarterly-reports`).
+   * Select `ADMINISTRATOR` or `SYSTEM_ADMIN` &rarr; Grants non-financial co-administrator privileges over `/admin` (barred from unilateral fund approvals per PRD FR-AUTH-03).
 5. **Assign Granular Permissions**:
-   * Administrators can click on any user to view their assignable permission matrix (from the 39-permission catalog) and grant or revoke individual permissions (such as `disbursement:execute`, `goods-collection:release`, or `forensics:investigate`).
-6. Click **Save / Create User**. The staff member can now log in at `http://localhost:5173/auth/login` and will be routed directly to their designated dashboard.
+   * Administrators can click on any user to view their assignable permission matrix (from the **55-permission catalog**) and grant or revoke individual permissions (such as `disbursement:execute`, `goods-collection:release`, `release:authorize`, or `forensics:investigate`).
+6. Click **Save / Create User**. The staff member can now log in at `http://localhost:5173/auth/login` (or use seeded Malkia governance accounts via `http://localhost:5173/login`) and will be routed directly to their designated dashboard. Notice `COMMITTEE_MEMBER`, `TREASURER`, and `SIGNATORY` accounts also sign `CaseWorkflow` 2-of-3 releases in `/committee/signing` using MetaMask `Web3.js` EIP-712 (or the built-in Demo Signatory fallback locally).
 
 ---
 

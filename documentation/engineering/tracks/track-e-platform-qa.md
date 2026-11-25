@@ -1,10 +1,10 @@
 # Track E: Platform, QA and Docs
 
-**Folders you own:** `infra/`, `.github/`, `docs/`, the root tooling (`pnpm-workspace.yaml`, lint and format config, scripts), the cross-track test harness
+**Folders you own:** `infrastructure/`, `.github/`, `documentation/`, the root tooling (`package.json`, ESLint/Prettier config, scripts), the cross-track test harness
 **You provide:** One command local stack, CI and quality gates, deployments, test strategy, security review, evaluation protocol, thesis ready documentation
 **You consume:** Everything. You are the glue and the safety net
 
-Read first: `ARCHITECTURE.md` sections 7, 8, 9, 10 and `WORKFLOW.md`.
+Read first: [Architecture Overview](../../architecture/overview.md) sections 7, 8, 9, 10 and [Team Workflow](../workflow.md).
 
 ---
 
@@ -44,9 +44,13 @@ infra/
   CODEOWNERS
   pull_request_template.md
   ISSUE_TEMPLATE/
-docs/
-  fullPRD.md  ARCHITECTURE.md  WORKFLOW.md  guide-track-*.md  README.md
-  adr/  runbooks/  thesis/  evaluation/
+documentation/
+  README.md                  master engineering hub
+  requirements/              product-requirements-document.md, acceptance-criteria.md
+  architecture/              overview.md, hashing-specification.md, C4 & flows
+  decisions/                 README.md (ADRs), unification-ledger.md
+  engineering/               workflow.md, breakdowns, tracks/track-*.md
+  security/  testing/  deployment/  operations/  user-guides/
 ```
 
 ---
@@ -66,7 +70,7 @@ Workflows from the layout above with path filters so a docs change does not run 
 **Done when:** `pnpm dev` starts everything and a mock payment appears in the database (after Track B6).
 
 ### E4. Repo governance
-CODEOWNERS with real handles, PR template, issue templates (bug, task, interface change), labels (`track-a`..`track-e`, `interface-change`, `blocked`, `security`), branch protection instructions in `docs/runbooks/branch-protection.md`.
+CODEOWNERS with real handles, PR template, issue templates (bug, task, interface change), labels (`track-a`..`track-e`, `interface-change`, `blocked`, `security`), branch protection instructions documented under [Team Workflow](../workflow.md).
 **Done when:** a PR touching `shared/` automatically requests the tech lead.
 
 ### E5. Contract quality gates
@@ -78,21 +82,20 @@ Playwright plus Docker based flow that boots the stack, loads a minimal seed, an
 **Done when:** the three flows pass headless in CI in under ten minutes.
 
 ### E7. Deployments and runbooks
-- Staging: Vercel project, backend and worker on Render or Railway, managed Postgres with backups, env management, Amoy RPC provider, Pinata keys, funded relayer with a small balance.
-- Runbooks in `docs/runbooks/`: deploy contracts and update manifests, rotate relayer key, change signatories, recover a stuck outbox, restore the database, add an env var.
-- Health checks and a simple uptime check on the public trace endpoint.
-**Done when:** a tagged release deploys to the demo environment by pipeline, and a teammate can follow a runbook cold.
+- Staging: frontend/API deployment, managed Postgres with backups, env management, Amoy RPC provider, Pinata/IPFS keys, funded relayer with a small balance.
+- Runbooks in [Deployment Guide](../../deployment/deployment-guide.md), [Rollback](../../deployment/rollback.md), [Incident Response](../../security/incident-response.md), and [Backup and Restore](../../operations/backup-and-restore.md): deploy contracts and update manifests, rotate relayer key, change signatories, recover a stuck outbox, restore the database, add an env var.
+- Health checks and uptime checks on `/api/v1/health/ready` and public trace endpoints.
+**Done when:** staging/demo deploys cleanly and a teammate can follow a runbook cold.
 
 ### E8. Security review
-Walk the PRD threat table (section 14.2) and `blockchain/docs/threat-model.md`. Run dependency audit, secret scan, a basic OWASP ZAP baseline scan on staging, test the authorization matrix, try replaying Daraja callbacks, try guessing receipt codes, try to read beneficiary data without permission. Try to infer an anonymous donor from the recognition wall, the trace page and the dashboard (timing, amounts, counts), and try to publish an offensive or impersonating name. Record findings and fixes in `docs/security-review.md`.
+Walk the PRD threat table (section 14.2) and [Threat Model](../../security/threat-model.md). Run dependency audit, secret scan, test the authorization matrix, try replaying Daraja callbacks, try guessing receipt codes, try to read beneficiary data without permission. Try to infer an anonymous donor from the recognition wall, the trace page and the dashboard (timing, amounts, counts), and try to publish an offensive or impersonating name. Record findings and fixes in [Threat Model](../../security/threat-model.md) and [Access Control](../../security/access-control.md).
 **Done when:** no open critical or high findings and every medium has an owner and date.
 
 ### E9. Documentation and thesis support
-- Keep `README.md` (root) and `docs/README.md` current.
-- ADRs from `ARCHITECTURE.md` section 11, written at IC0 and updated after.
-- Export diagrams to `docs/thesis/diagrams/` for the report.
-- Collect results into `docs/thesis/`: test coverage, Slither summary, forensic evaluation tables from Track C, performance numbers, usability results.
-- Demo script for the lecturer: step by step with expected outcomes and a recorded backup video.
+- Keep [Root README](../../../README.md) and [Documentation Hub](../../README.md) current.
+- ADRs from [Architecture Overview](../../architecture/overview.md) section 11 recorded under [Architecture Decisions](../../decisions/README.md).
+- Collect results into [Testing Strategy](../../testing/strategy.md), [Test Cases](../../testing/test-cases.md), and [Traceability Matrix](../../testing/traceability-matrix.md): test coverage, Slither summary, forensic evaluation metrics, and performance numbers.
+- Demo script for the lecturer: step by step with expected outcomes.
 
 ### E10. Usability evaluation (Objective v)
 - Plan: five to eight Malkia committee members and eight to ten donors, 20 to 30 minute sessions.
@@ -100,7 +103,7 @@ Walk the PRD threat table (section 14.2) and `blockchain/docs/threat-model.md`. 
 - Seed data only, never real beneficiary information.
 - Analyze task success, time on task, SUS score, quotes. Feed back into backlog.
 - Confirm consent and data handling with the supervisor before sessions.
-**Done when:** results are in `docs/thesis/evaluation/usability.md` with raw anonymized data attached.
+**Done when:** usability metrics align with PRD §3.3 targets in [Acceptance Criteria](../../requirements/acceptance-criteria.md).
 
 ---
 
@@ -146,4 +149,4 @@ Walk the PRD threat table (section 14.2) and `blockchain/docs/threat-model.md`. 
 
 ## 8. Definition of done for the track
 
-One command local stack works on a clean machine, CI gates are enforced, staging and demo deploy by pipeline, runbooks exist and have been followed once by someone else, the security review is complete, usability results and evaluation tables are in `docs/thesis/`.
+One command local stack works on a clean machine, CI gates are enforced, staging and demo deploy cleanly, runbooks exist and have been verified, the security review is complete, and usability/evaluation results meet targets in [Acceptance Criteria](../../requirements/acceptance-criteria.md).

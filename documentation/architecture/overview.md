@@ -1,8 +1,11 @@
 # CharityChain: Architecture and Integration Guide
 
-This is the technical map every developer follows. The PRD (`fullPRD.md`) says what we build. This document says how the pieces fit together and what each track must provide to the others.
+This is the technical map every developer follows. The [Product Requirements Document](../requirements/product-requirements-document.md) says what we build. This document says how the pieces fit together and what each track must provide to the others.
 
-Read order for a new developer: this file, then `WORKFLOW.md`, then your own track guide (`guide-track-*.md`).
+Read order for a new developer: this file, then [Team Workflow](../engineering/workflow.md), then your own track guide under [Engineering Tracks](../engineering/tracks/track-a-blockchain.md).
+
+> [!NOTE]
+> **As-Built Unified Monorepo Mapping:** The repository uses npm workspaces (`frontend`, `backend`, `database`, `blockchain`, `shared`) running **Express 5.3** + Better-Auth on `http://localhost:3000`, **Vite 8.3 / React 19.3** (`.tsx` + `.jsx`) on `http://localhost:5173`, **PostgreSQL 17 / Prisma 6.19** (`database/prisma/schema.prisma`) on host port `5435`, **IPFS Kubo 0.39** on `5001`/`8080`, and **Hardhat 3.21 / Solidity 0.8.28 / Web3.js 4.16**. Start local dev with `npm run dev` (see [Setup and Running](../setup-and-running.md)).
 
 ---
 
@@ -65,8 +68,9 @@ charitychain/
       errors.ts             Error code catalog
       money.ts              toMinor, fromMinor, formatKES
     vectors/                Golden test vectors (JSON) used by TS and Solidity tests
-  infra/                    Track E: docker-compose, mock-daraja, scripts
-  docs/                     Track E curates, everyone contributes
+  infrastructure/           Track E: Dockerfiles, Nginx reverse-proxy, compose
+  database/                 Prisma schema, 26 migrations, seeders, immutability triggers
+  documentation/            Track E curates, everyone contributes (unified hub)
   .github/                  Track E: workflows, CODEOWNERS, templates
 ```
 
@@ -408,9 +412,9 @@ This is the one place where four tracks must agree to the byte. Implemented once
 - **Report hash:** `keccak256(utf8(canonicalJson(reportData)))`. The PDF is a rendering of that data and prints the hash.
 - **Time:** unix seconds, UTC, `uint64`.
 - **Money:** `uint64` minor units. KES 1.00 = 100. Items use currency `ITM` and quantity as the amount.
-- **EIP-712 release authorization:** domain `{ name: "CharityChainCaseWorkflow", version: "1", chainId, verifyingContract }`, type `ReleaseAuthorization(bytes32 caseId,uint64 amountMinor,uint64 nonce,uint64 deadline)`.
+- **EIP-712 release authorization:** domain `{ name: "CharityChain CaseWorkflow", version: "1", chainId, verifyingContract }` (matching `CaseWorkflow.sol` and `SigningQueuePage.tsx`), type `ReleaseAuthorization(bytes32 caseId,uint64 amountMinor,uint64 nonce,uint64 deadline)`.
 
-Changing any line above is an interface change that needs a version bump (`v2`), new vectors, and a note in `docs/adr/`.
+Changing any line above is an interface change that needs a version bump (`v2`), new vectors, and an ADR entry in [Architecture Decisions](../decisions/README.md). See also [Canonical Hashing Specification](./hashing-specification.md).
 
 ### 5.6 Roles and permissions (B and D)
 
@@ -571,7 +575,7 @@ Every two weeks the whole team merges to `main`, runs the end to end scenario, a
 
 ## 11. Architecture decision records
 
-Decisions that need discussion go in `docs/adr/NNNN-title.md` using this template:
+Decisions that need discussion are recorded in [Architecture Decisions](../decisions/README.md) (`documentation/decisions/`) using this template:
 
 ```
 # NNNN Title

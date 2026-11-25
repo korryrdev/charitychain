@@ -3,9 +3,12 @@
 **Project:** CharityChain, a blockchain-based donation tracking system with forensic fund flow analysis
 **Client organization:** Malkia (registered campus charity group, students and staff)
 **Course:** CCS 3353, Group 2
-**Repo:** `charitychain/` (monorepo: `frontend/`, `backend/`, `blockchain/`, `shared/`, `docs/`)
-**Status:** Draft v0.2 (adds team tracks in section 24, see also `docs/ARCHITECTURE.md`)
+**Repo:** `charitychain/` (monorepo: `frontend/`, `backend/`, `database/`, `blockchain/`, `shared/`, `documentation/`)
+**Status:** Unified v1.0 (adds team tracks in section 24; see [Architecture Overview](../architecture/overview.md))
 **Owners:** Team leads (Group 2)
+
+> [!NOTE]
+> **As-Built Unified Monorepo Alignment:** This PRD remains the authoritative functional specification. In the unified CharityChain codebase (`feat/unified-charitychain`), the monorepo uses npm workspaces (`frontend`, `backend`, `database`, `blockchain`, `shared`), **Node.js 22.12+ / Express 5.3 / Better-Auth / Zod 4.6** (`port 3000`), **PostgreSQL 17 / Prisma 6.19** (`database/prisma/schema.prisma`, host port `5435`), **IPFS Kubo 0.39** (`ports 5001/8080`), **Solidity 0.8.28 / Hardhat 3.21 / OpenZeppelin 5.4 / Web3.js 4.16** (`DonationLedger`, `CaseWorkflow`, `SignatoryRegistry`, `PeriodAnchor`, `EvidenceRegistry`, `CharityChainAccess`, and `ChainlinkFxAndAutomation`), and **React 19.3 / Vite 8.3** (`port 5173`) combining all 9 role-based portals (`.jsx`) and Web3.js / forensic views (`.tsx`). See [Acceptance Criteria & Gap Verification](./acceptance-criteria.md) and [ADR-0010 Unification Ledger](../decisions/unification-ledger.md).
 
 ---
 
@@ -287,7 +290,7 @@ See section 12 for the rule catalog.
 
 Phase 1 stores the donor reference and consent data. Phase 2 adds claiming, display choices and badges.
 
-- **FR-DON-01** Every donation is linked to a pseudonymous donor reference (keyed hash of phone, bank reference or email, see `docs/ARCHITECTURE.md` 5.5). No donor name or phone number appears on any public page by default.
+- **FR-DON-01** Every donation is linked to a pseudonymous donor reference (keyed hash of phone, bank reference or email, see [Architecture Overview §5.5](../architecture/overview.md#55-canonical-hashing-spec-v1-a-b-c-d-all-depend-on-this)). No donor name or phone number appears on any public page by default.
 - **FR-DON-02** Each donor has a display mode: `ANONYMOUS` (default), `ALIAS` or `NAMED`.
 - **FR-DON-03** M-Pesa donors set their mode on a public claim page by entering a receipt code. Bank donors give consent to the treasurer, who records it with the consent text version when entering the deposit. Donations from the same donor reference share one preference.
 - **FR-DON-04** Claiming a receipt code links it to the donor profile, so a donor can link several receipts (for example one by M-Pesa and one by bank). Optional one time code by SMS or email for stronger proof of control (Phase 2 stretch).
@@ -399,24 +402,21 @@ sequenceDiagram
 
 ```
 charitychain/
-  frontend/              React app (public portal, dashboards, admin)
-  backend/               Fastify API, workers, Daraja, forensics, simulator
-  blockchain/            Hardhat project, Solidity, deploy scripts, Chainlink Functions sources
-  shared/                Contract between all tracks: ABIs, deployments, OpenAPI, hashing, roles, events
-  infra/                 docker-compose, mock Daraja, scripts
-  docs/
-    fullPRD.md           This document
-    ARCHITECTURE.md      Technical architecture, flows, integration contracts
-    WORKFLOW.md          Git, review, definition of done, cadence
-    guide-track-*.md     One guide per developer track (A to E)
-    adr/                 Architecture decision records
-    thesis/              Chapter drafts and diagrams
-  .github/               CI workflows, CODEOWNERS, PR template
-  .env.example
-  pnpm-workspace.yaml
+  frontend/              React app (public portal, dashboards, admin, Web3.js DApp)
+  backend/               Express 5 API, workers, Daraja, forensics, simulator
+  database/              Prisma schema, 26 migrations, seeders, immutability triggers
+  blockchain/            Hardhat project, Solidity contracts, Chainlink, deploy scripts
+  shared/                Contract between all tracks: ABIs, deployments, hashing helpers
+  infrastructure/        Dockerfiles, Nginx reverse-proxy config
+  documentation/
+    requirements/        This PRD, functional/non-functional specs, acceptance criteria
+    architecture/        Overview, hashing spec, C4 context/containers, fund & goods flows
+    decisions/           Architecture Decision Records (ADRs) and unification ledger
+    engineering/         Workflow, breakdowns, and track guides (A to E)
+  package.json           npm workspaces root configuration
 ```
 
-Rule of thumb: `shared/` has no framework imports, so the same code runs in the API, the web app, the simulator and tests. Full detail and ownership live in `docs/ARCHITECTURE.md`.
+Rule of thumb: `shared/` has no framework imports, so the same code runs in the API, the web app, the simulator and tests. Full detail and ownership live in [Architecture Overview](../architecture/overview.md).
 
 ---
 
@@ -501,7 +501,7 @@ Adds or removes signatories. Changing the signatory set needs two existing signa
 
 ### 9.6 Contract security checklist
 
-Reentrancy not applicable (no value transfer), but we still use checks-effects-interactions. Access control tested for every external function. Custom errors for gas and clarity. No loops over unbounded arrays. Events for every state change. Slither and Solhint in CI. A short written threat model lives in `docs/adr/contracts-threat-model.md`.
+Reentrancy not applicable (no value transfer), but we still use checks-effects-interactions. Access control tested for every external function. Custom errors for gas and clarity. No loops over unbounded arrays. Events for every state change. Slither and Solhint in CI. A summary of contract threats lives in [Threat Model](../security/threat-model.md) and [Architecture Decisions](../decisions/README.md).
 
 ---
 
@@ -793,7 +793,7 @@ Definition of done for any feature: acceptance criteria met, tests written, no n
 - **CD:** main deploys to staging (Vercel preview, Render service, Amoy contracts at the staging manifest). A tagged release deploys the demo environment.
 - **Environments:** local (Hardhat node), staging (Amoy), demo (Amoy, seeded data, Daraja sandbox).
 - **Migrations:** Prisma migrations reviewed in PRs. Seed scripts for demo data.
-- **Runbooks in `docs/`:** rotate relayer key, change signatories, recover a stuck outbox, redeploy contracts and update the manifest.
+- **Runbooks in `documentation/`:** rotate relayer key and change signatories ([Incident Response](../security/incident-response.md)), deploy contracts and update manifests ([Deployments](../blockchain/deployments.md)), recover a stuck outbox and restore the database ([Backup and Restore](../operations/backup-and-restore.md)).
 
 ---
 
@@ -888,7 +888,7 @@ Cut line if time runs short: keep Blocks 0 to 4 and the quarterly report from Bl
 
 | Objective | Delivered by |
 |---|---|
-| i. Analyze Malkia's current process | Section 2.1, stakeholder sessions, process diagrams in `docs/thesis` |
+| i. Analyze Malkia's current process | Section 2.1, stakeholder sessions, process diagrams in [Money Flow](../architecture/money-flow.md) and [Goods Flow](../architecture/goods-flow.md) |
 | ii. Design architecture capturing M-Pesa, bank and items in one tamper-evident ledger | Sections 5, 8, 9 |
 | iii. Develop donor-facing interface to trace a donation | FR-TRACE, screens 1 to 4 |
 | iv. Create administrative interface reflecting sub-group to committee workflow | FR-CASE, screens 5 to 13 |
@@ -925,12 +925,12 @@ The build is split into five tracks so several developers can work in parallel w
 
 | Track | Owns | Guide |
 |---|---|---|
-| A. Blockchain | `blockchain/` | `docs/guide-track-a-blockchain.md` |
-| B. Backend core | `backend/src` except forensics, simulator and integrity | `docs/guide-track-b-backend-core.md` |
-| C. Forensics and integrity | `backend/src/forensics`, `simulator`, `integrity`, `reports`, `blockchain/functions` | `docs/guide-track-c-forensics-integrity.md` |
-| D. Frontend | `frontend/` | `docs/guide-track-d-frontend.md` |
-| E. Platform, QA and docs | `infra/`, `.github/`, `docs/`, test harness | `docs/guide-track-e-platform-qa.md` |
+| A. Blockchain | `blockchain/` | [Track A: Blockchain](../engineering/tracks/track-a-blockchain.md) |
+| B. Backend core | `backend/src` except forensics, simulator and integrity | [Track B: Backend Core](../engineering/tracks/track-b-backend-core.md) |
+| C. Forensics and integrity | `backend/src/forensics`, `simulator`, `integrity`, `reports`, `blockchain/` Chainlink | [Track C: Forensics and Integrity](../engineering/tracks/track-c-forensics-integrity.md) |
+| D. Frontend | `frontend/` | [Track D: Frontend](../engineering/tracks/track-d-frontend.md) |
+| E. Platform, QA and docs | `infrastructure/`, `documentation/`, test harness | [Track E: Platform, QA and Docs](../engineering/tracks/track-e-platform-qa.md) |
 
-`shared/` belongs to the tech lead. Any change to it is an interface change and follows the protocol in `docs/WORKFLOW.md`.
+`shared/` belongs to the tech lead. Any change to it is an interface change and follows the protocol in [Team Workflow](../engineering/workflow.md).
 
-The rules that keep parallel work safe: contract-first interfaces frozen at Integration Checkpoint 0, stubs so nobody waits for another track, one integration checkpoint every two weeks, and a single canonical hashing spec shared by backend, contracts and browser. All of these are specified in `docs/ARCHITECTURE.md`.
+The rules that keep parallel work safe: contract-first interfaces frozen at Integration Checkpoint 0, stubs so nobody waits for another track, one integration checkpoint every two weeks, and a single canonical hashing spec shared by backend, contracts and browser. All of these are specified in [Architecture Overview](../architecture/overview.md).

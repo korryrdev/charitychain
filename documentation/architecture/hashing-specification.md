@@ -2,7 +2,7 @@
 
 > **Status:** Frozen at Integration Checkpoint 0 (IC0)  
 > **Applies to:** Track A (Blockchain), Track B (Backend Core), Track C (Forensics & Integrity), Track D (Frontend)  
-> **Source of Truth:** `docs/ARCHITECTURE.md` §5.5
+> **Source of Truth:** [Architecture Overview §5.5](./overview.md#55-canonical-hashing-spec-v1-a-b-c-d-all-depend-on-this)
 
 ---
 
@@ -260,9 +260,9 @@ export function computeDailyMerkleRoot(web3: Web3, entryHashes: string[], yyyymm
 Used by committee members to cryptographically co-sign disbursements (2-of-3 threshold).
 
 * **Domain Data:**
-  - `name`: `"CharityChainCaseWorkflow"`
+  - `name`: `"CharityChain CaseWorkflow"` (exact match with `EIP712("CharityChain CaseWorkflow", "1")` in [CaseWorkflow.sol](../../blockchain/contracts/CaseWorkflow.sol) and `SigningQueuePage.tsx`)
   - `version`: `"1"`
-  - `chainId`: `80002` (Polygon Amoy)
+  - `chainId`: `80002` (Polygon Amoy) or `31337` (Hardhat localhost)
   - `verifyingContract`: Address of deployed `CaseWorkflow`
 * **Typed Struct:**
   ```

@@ -4,7 +4,7 @@
 **You provide:** Solidity contracts, ABIs, deployment manifests, contract tests, security evidence
 **You consume:** The hashing spec and vectors in `shared/`, the case and donation field lists from the PRD
 
-Read first: `ARCHITECTURE.md` sections 1, 5.1, 5.5 and PRD section 9.
+Read first: [Architecture Overview](../../architecture/overview.md) sections 1, 5.1, 5.5, [Canonical Hashing Specification](../../architecture/hashing-specification.md), and [PRD Section 9](../../requirements/product-requirements-document.md#9-smart-contracts). See also [Smart Contracts Spec](../../blockchain/contracts.md).
 
 ---
 

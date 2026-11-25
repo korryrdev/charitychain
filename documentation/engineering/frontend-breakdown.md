@@ -8,30 +8,36 @@ This is the implementation checklist for the React frontend. It follows the appr
 frontend/
 ├── .env.example
 ├── package.json
-├── vite.config.js
+├── tsconfig.json
+├── vite.config.ts
 ├── index.html
 ├── public/
 └── src/
 ```
 
-Responsibilities: Vite build configuration, environment-safe API URL configuration, package scripts, public metadata, production build, and frontend test commands.
+Responsibilities: TypeScript (`allowJs: true` supporting `.tsx` + `.jsx` coexistence), Vite 8 + `@tailwindcss/vite` build configuration, `@/*` path aliasing, environment-safe API URL configuration, Vitest `jsdom` tests, and production bundle verification (`tsc --noEmit && vite build`).
 
-## 2. Application Bootstrap
+## 2. Application Bootstrap & Theme Isolation
 
 ```text
 src/
-├── main.jsx
+├── main.tsx
 ├── App.jsx
+├── index.css                 CSS Cascade Layers (@layer) without Tailwind Preflight reset
 └── app/
-    ├── providers.jsx
+    ├── providers.jsx         Portal session & auth store bootstrap
+    ├── Providers.tsx         React Query, I18nProvider, AuthProvider wrapper
     ├── router.jsx
-    ├── routeConfig.js
+    ├── routeConfig.js        Unified routes across 9 portals + .tsx DApp + /app/*
     ├── queryClient.js
     ├── StartupGate.jsx
-    └── ErrorBoundary.jsx
+    ├── ErrorBoundary.jsx
+    ├── auth/AuthContext.tsx
+    ├── guards/RequireAuth.tsx
+    └── theme/ThemeContext.tsx (syncs data-theme attribute and .dark class)
 ```
 
-Responsibilities: mount React, compose providers, restore a session safely, configure routes, initialize API caching, catch rendering errors, and present startup/recovery states.
+Responsibilities: mount React 19 with `Plus Jakarta Sans` and `Inter` typography, compose unified providers without CSS Preflight collisions, synchronize `data-theme` and `.dark` theme tokens, restore sessions safely, configure unified routes, and catch rendering errors.
 
 ## 3. Global Styling, Accessibility, and Utilities
 
@@ -284,20 +290,25 @@ pages/errors/
 
 Responsibilities: complaints and appeals, restricted case status, notification preferences/listing, account/profile/security pages, forbidden/not-found/unavailable/unexpected-error states, pending transaction guidance, and confirmation-expired recovery.
 
-## 20. Frontend Testing and Verification
+## 20. Unified Malkia DApp & `Web3.js` Features (`.tsx`)
+
+Coexisting seamlessly under the unified router (`src/app/routeConfig.js`):
+* `features/trace/` (`TracePage.tsx`, `SankeyFlow.tsx`): Public receipt lookup (`MLK-XXXX-XXXX`), allocation Sankey flow, and direct browser `Web3.js` verification against `DonationLedger.sol`.
+* `features/signing/` (`SigningQueuePage.tsx`, `signing.test.tsx`): Live `Web3.js` + MetaMask `eth_signTypedData_v4` 2-of-3 EIP-712 signatory signing (`"CharityChain CaseWorkflow"` v1) with Demo Signatory fallback.
+* `features/cases/`, `features/donations/`, `features/inventory/` (`PharmacyItemPage.tsx`), `features/graph/` (`FundFlowGraphPage.tsx`), `features/alerts/` (`AlertsPage.tsx`), `features/reports/` (`ReportsPage.tsx`), `features/donor/` (`ClaimPreferencesPage.tsx`, `DonorPortalPage.tsx`), `features/recognition/` (`RecognitionWallPage.tsx`), and `app/layouts/AppLayout.tsx` (`/app/*`).
+
+## 21. Frontend Testing and Verification
 
 ```text
-src/tests/
-features/*/tests/
-App.test.jsx
+src/**/*.test.{js,jsx,tsx}
 ```
 
-Verification must cover route protection, portal navigation, API error states, form validation, privacy masking, public-data safety, responsive/keyboard behavior, each donor/student/clerk/committee/finance/auditor/admin workflow, and production build success.
+Verification covers route protection, portal navigation, dual theme parity, API error states, form validation, privacy masking, public-data safety, `Web3.js` EIP-712 signing queue (`signing.test.tsx`), `tsc --noEmit`, `eslint --max-warnings=0`, and Vite production builds (52 passing tests across 22 test files).
 
 ## Implementation Order
 
-1. Sections 1–7: foundation, auth, authorization, layouts, and shared components.
-2. Sections 8–11: public pages and donor money/goods flows.
-3. Sections 12–14: student, vetting, goods, clerk, and inventory workflows.
-4. Sections 15–18: committee, finance, forensic, and admin portals.
-5. Sections 19–20: shared recovery/notifications and complete frontend verification.
+1. Sections 1–7: foundation, auth, authorization, layouts, dual theme, and shared components.
+2. Sections 8–11: public pages, `/trace` Sankey verifier, `/claim` & `/wall`, and donor money/goods flows.
+3. Sections 12–14: student, vetting, goods, clerk, inventory, and `/inventory/pharmacy` workflows.
+4. Sections 15–18: committee, `Web3.js` 2-of-3 signing, finance, 5-col DAG / forensic rules, and admin portals.
+5. Sections 19–21: shared recovery/notifications and full frontend verification.

@@ -839,7 +839,17 @@ backend/tests/
 
 Testing must cover unit rules, repositories, APIs, authentication and authorization, integrations, callbacks, idempotency, reconciliation, security, state transitions, background jobs, and complete money and goods workflows.
 
-## 39. Agreed Implementation Order
+## 39. Unified Malkia PRD Modules & Fraud Simulator
+
+In addition to Sections 7–37 above, the unified backend integrates the Malkia PRD domains (all verified in `backend/tests/`):
+
+* **Sub-Group Case Workflow (`modules/cases/`)**: Sub-group directory (`GET /api/v1/cases/subgroups`), case creation/submission (`MalkiaCase`), segregated committee decisions, incremental + batch 2-of-3 EIP-712 signatory release (`/cases/:id/authorize`), and ceiling-checked disbursements (`cases.service.js`, `cases.routes.js`, `cases.validation.js`).
+* **FIFO Lots (`modules/lots/`)**: Lot provisioning (`DonationLot`), earmark-prioritized FIFO consumption (`LotAllocation`), and pool-balance drift checks (`R16`).
+* **Tokenized Daraja C2B, Bank & In-Kind Intake (`modules/daraja/`, `modules/bank/`, `modules/items/`)**: Tokenized C2B validation/confirmation (`MLK-XXXX-XXXX` receipt codes in `utils/receiptCode.js`, immutable `DonationRawCallback`), maker-checker bank deposits (`BankDeposit`), 2-way CSV statement reconciliation (`BankStatementLine`), FX conversion, and pharmacy in-kind item logging (`ITM`).
+* **Testnet Crypto & Donor Claiming (`modules/crypto/`, `modules/donors/{donorClaim,donorPortal,badges,recognitionWall}.service.js`, `security/donorReference.js`, `security/nameScreening.js`)**: Stablecoin channel (`POST /api/v1/public/crypto/stablecoin`), server-keyed HMAC `donorRef`, receipt claiming, English/Swahili/leetspeak screening, Bronze/Silver/Gold/Patron/Consistent-Giver badges, k-anonymous recognition wall, and SVG certificates (`modules/public/certificate.service.js`).
+* **Forensics, Digest & Simulator (`modules/alerts/`, `modules/public/{public,auditor}.service.js`, `modules/auditLogs/dailyDigest.service.js`, `src/simulator/fraudSimulator.js`)**: R01–R20 rule engine, Benford's Law analysis, 5-column Fund-Flow DAG (`GET /api/v1/alerts/graph`), daily UTC Merkle roots & proofs, Chainlink automation status, and 12-month 10-scenario fraud simulator.
+
+## 40. Agreed Implementation Order
 
 - [x] 1. Application entry, configuration, bootstrap, errors, middleware, health, and test harness
 - [x] 2. Authentication
@@ -862,9 +872,9 @@ Testing must cover unit rules, repositories, APIs, authentication and authorizat
 - [x] 19. Audit logs and blockchain anchoring
 - [x] 20. Forensic analytics
 - [x] 21. Transparency APIs
-- [ ] 22. Notifications and reports
-- [ ] 23. Complaints, appeals, and configurable policies
-- [ ] 24. Events, background jobs, security, and observability hardening
-- [ ] 25. Complete unit, integration, security, reconciliation, and end-to-end backend verification
+- [x] 22. Notifications (Resend + receipt notifications) and deterministic quarterly reports
+- [x] 23. Complaints, student appeals, and configurable policies
+- [x] 24. Events, transactional outbox, Chainlink hooks, and security/observability hardening
+- [x] 25. Complete unit, integration, security, reconciliation, and end-to-end backend verification (216 passing tests across 46 test files)
 
 Each checkbox may be marked complete only after its implementation, database behavior, authorization rules, failure paths, and automated tests have been verified.

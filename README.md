@@ -131,10 +131,14 @@ npm test                      # Run all workspace test suites (shared, database,
 
 ---
 
-## 6. Documentation & Unification Reference
+## 6. Documentation Reference
 
-* [`docs/UNIFICATION_LEDGER.md`](docs/UNIFICATION_LEDGER.md) — Complete zero-loss asset checklist unifying `aldo` and `kip`/`main`
-* [`docs/fullPRD.md`](docs/fullPRD.md) & [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — Product requirements, architecture, and hashing specifications
-* [`documentation/setup-and-running.md`](documentation/setup-and-running.md) — Comprehensive setup, seeding, and provisioning guide
-* [`documentation/super admin setup.md`](documentation/super%20admin%20setup.md) — Super Administrator oversight and governance controls
-* [`documentation/system dashboards.md`](documentation/system%20dashboards.md) — Functional specifications for the 9 dashboards
+All architecture specifications, requirements, API references, security runbooks, and role user guides live in a single unified directory: **[`documentation/`](documentation/README.md)**.
+
+* **[`documentation/README.md`](documentation/README.md)** — Master engineering documentation index
+* **[`documentation/requirements/product-requirements-document.md`](documentation/requirements/product-requirements-document.md)** — Full 24-section Product Requirements Document (Malkia & CharityChain)
+* **[`documentation/architecture/overview.md`](documentation/architecture/overview.md)** & **[`documentation/architecture/hashing-specification.md`](documentation/architecture/hashing-specification.md)** — System architecture, runtime flows, canonical hashing & EIP-712 vectors
+* **[`documentation/setup-and-running.md`](documentation/setup-and-running.md)** — Step-by-step Docker Compose, PostgreSQL migrations, `db:seed:all`, and local startup guide
+* **[`documentation/system-dashboards.md`](documentation/system-dashboards.md)** — Functional specifications across all 9 role-based portals and `.tsx` governance views
+* **[`documentation/decisions/unification-ledger.md`](documentation/decisions/unification-ledger.md)** — Zero-loss branch & codebase unification record (`aldo` + `kip`/`main`)
+* **[`documentation/user-guides/administrator.md`](documentation/user-guides/administrator.md)** & **[`documentation/security/access-control.md`](documentation/security/access-control.md)** — Super Admin provisioning across 14 roles and 55 permissions

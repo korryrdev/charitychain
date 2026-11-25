@@ -4,7 +4,7 @@
 **You provide:** The public portal (trace, dashboard, reports), the committee and treasurer screens, the signatory signing flow, the forensic inbox and graph, the pharmacy quick log
 **You consume:** `shared/openapi.json`, ABIs and deployments from Track A (through `shared/`), hashing, roles and money helpers from `shared/`
 
-Read first: `ARCHITECTURE.md` sections 1, 3.3, 4, 5.2, 5.5, 8 and PRD sections 4, 7.4, 13.
+Read first: [Architecture Overview](../../architecture/overview.md) sections 1, 3.3, 4, 5.2, 5.5, 8, [Frontend Breakdown](../frontend-breakdown.md), and [PRD](../../requirements/product-requirements-document.md) sections 4, 7.4, 13.
 
 ---
 

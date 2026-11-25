@@ -63,40 +63,29 @@ The dashboard must never expose student names, registration numbers, phone numbe
 
 Displayed information may include:
 
-- Donor-selected public identity
-- Recognition tier
-- Optional contribution category
-- Optional cumulative contribution
-- Contribution date or period
+- Donor-selected public identity (`ALIAS` or `NAMED`, only after opt-in confirmation)
+- Recognition tier and month awarded
 - Monetary, goods, or combined-contributor badge
 
-Privacy rules:
+Privacy rules (aligned with PRD D9 & `FR-DON-01..16`):
 
-- Every donor receives a unique generated alias at registration.
-- The alias is displayed by default.
-- Donors may edit their alias, subject to uniqueness and moderation.
-- Donors may explicitly choose to show their real name.
-- Donors may hide their name, totals, tier, or entire public listing.
-- Public preference changes do not alter historical audit records.
+- **Anonymous by default:** Every donation binds to a server-keyed HMAC `donorRef`, and the donor's public display mode defaults to `ANONYMOUS` (`NO` public alias or name is published until the donor explicitly opts in).
+- Donors opt in on `/claim` (`/donor/claim`) by proving control of a receipt code (`MLK-XXXX-XXXX`), choosing `ANONYMOUS`, `ALIAS`, or `NAMED`, previewing the exact public card, and confirming consent (with consent version stored in append-only `DonorPreferenceEvent`).
+- Chosen aliases/names undergo automatic screening against an English/Swahili blocklist, reserved words (`Malkia`, `committee`, `admin`, `Safaricom`), and leetspeak lookalikes before going live; committee members can execute a logged takedown (`FR-DON-16`) and visitors can report abusive names.
+- Withdrawing consent removes the donor from `/wall` and `/api/v1/public/recognition` immediately without mutating historical financial audit logs.
+- **Inference protection & k-anonymity:** The public recognition wall never exposes donation amounts, exact dates, or a live feed of recent donations, and displays `anonymousDonorsCount` only when at least 5 anonymous donors exist.
+- Deterministic recognition badges use **Bronze** (`KES 2,000`), **Silver** (`KES 10,000`), **Gold** (`KES 30,000`), **Patron** (lifetime), and **Consistent Giver** (3 consecutive months) after a 7-day cooling period (`BadgeTier`, `DonorBadgeAward`), alongside configurable institutional tiers (`Silver`, `Gold`, `Diamond`, `Platinum`) for registered portal donors. Physical goods count toward tiers only when committee-approved valuation rules apply.
 
-Recognition tiers are Silver, Gold, Diamond, and Platinum. Thresholds must be configurable. Physical goods count toward tiers only under an approved valuation policy; separate money and goods badges may be used.
+### 1.5 Track My Donation (`/trace` & `/track`)
 
-### 1.5 Track My Donation
+The donor enters a human-friendly receipt code (`MLK-XXXX-XXXX`, or M-Pesa transaction code) with rate limiting to prevent receipt enumeration, **with no login or wallet required**:
 
-The donor supplies a private tracking ID and an additional verification value where required.
+- Public donation timeline (received, pooled into `DonationLot`, FIFO allocation slices, disbursed case categories without student PII)
+- Interactive Sankey fund-flow visualization on `/trace`
+- On-chain proof details (tx hash, block number, explorer link) and a **1-click "Verify Direct on Chain"** button powered by browser `Web3.js`, reading `DonationLedger.recordHashOf(donationId)` directly from the RPC and verifying hash parity independently of the backend
+- Thank-you cryptographic SVG certificate download (`GET /api/v1/public/certificate/:receipt`)
 
-The result may show:
-
-- Donation type, date, and status
-- Confirmed amount or item summary
-- Campaign or assistance pool
-- Allocation status
-- Anonymized supported category
-- Disbursement or distribution status
-- Reconciliation evidence
-- Audit timeline
-
-A guessed or leaked tracking ID must not reveal protected donor or student information.
+A guessed or leaked tracking ID must never reveal protected donor contact data or beneficiary student identity.
 
 ### 1.6 Available Goods Catalogue
 
@@ -333,6 +322,15 @@ The first distinct approval produces `1_OF_2_APPROVALS`; the second produces `AP
 
 Members see decision timestamps, approval count, recusals, renewed-approval requirements, expired approvals, payout results, available balance, committed funds, pending disbursements, failed payouts, and restricted campaign balances.
 
+### 5.5 Sub-Group Case Management & Browser EIP-712 Signing
+
+Unified Malkia governance screens extend the Committee portal with:
+- `/committee/cases` & `/committee/cases/new`: Sub-group representatives and committee members manage `MalkiaCase` lifecycles (`DRAFT -> SUBMITTED -> UNDER_REVIEW -> APPROVED -> AUTHORIZED -> DISBURSED -> CLOSED`).
+- `/committee/signing`: Executive Signatories (`SIGNATORY`, 2-of-3 quorum) connect MetaMask via `Web3.js` (`eth_signTypedData_v4`) to co-sign `ReleaseAuthorization` typed messages under domain `"CharityChain CaseWorkflow"` v1 (with a Demo Signatory fallback when no browser wallet extension is attached).
+- `/inventory/pharmacy`: Mobile-first pharmacy custody quick-log (`PharmacyItemPage`).
+- `/auditor/fund-flow-dag`, `/auditor/forensic-rules`, `/auditor/quarterly-reports`: Interactive 5-column PostgreSQL Fund-Flow DAG, R01–R20 rule tuning/triage, and deterministic quarterly PDF/JSON anchoring.
+- `/app/*`: Standalone governance console sharing all live case, signing, bank deposit, pharmacy, forensic, and reporting components.
+
 ## 6. Payment Operations Dashboard
 
 This dashboard is restricted to authorized finance or payment operators.
@@ -436,9 +434,9 @@ Administrators define goods categories, units, limits, inspection rules, expiry 
 
 ## 10. Portal Organization
 
-1. **Public Portal:** Home, transparency, recognition, tracking, and policies.
-2. **Community Portal:** Donor and student dashboards.
-3. **Operations Portal:** Clerk, inventory, and payment operations.
-4. **Governance Portal:** Committee, auditor, and administrator dashboards.
+1. **Public Portal:** Home (`/`), transparency (`/transparency`), Sankey trace (`/trace`), public DApp stats (`/dashboard`), recognition wall (`/wall`, `/recognition`), claim & preferences (`/claim`), quarterly reports (`/reports`), goods catalog (`/goods`), and policies.
+2. **Community Portal:** Donor (`/donor`, `/donor/dapp`) and Student (`/student`) dashboards.
+3. **Operations Portal:** Clerk (`/clerk`), Inventory & Pharmacy Quick Log (`/inventory`, `/inventory/pharmacy`), and Finance/Bank (`/finance`) workflows.
+4. **Governance Portal & Standalone Console:** Committee (`/committee`, `/committee/cases`, `/committee/signing` with browser `Web3.js` + MetaMask EIP-712 signing), Forensic Auditor (`/auditor`, `/auditor/fund-flow-dag`, `/auditor/forensic-rules`, `/auditor/quarterly-reports`), Super Administrator (`/admin`, `/admin/users`), and standalone Malkia workspace (`/app/*`).
 
-The portals may be delivered through one React application with role-based navigation. All permissions must also be enforced by the backend because hiding a menu item in React is not sufficient security.
+All portals are delivered inside one unified React application (`frontend/src/app/routeConfig.js`) with role and permission-based navigation; every permission is strictly enforced server-side because client navigation hiding is never treated as a security boundary.

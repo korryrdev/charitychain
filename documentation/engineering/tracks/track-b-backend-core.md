@@ -4,7 +4,7 @@
 **You provide:** The REST API, the database, Daraja intake, the outbox and chain client, auth, evidence handling, the OpenAPI spec
 **You consume:** ABIs and deployments from Track A, hashing and roles from `shared/`, events consumed by Track C
 
-Read first: `ARCHITECTURE.md` sections 1, 3.2, 4, 5, 6, 8 and PRD sections 7, 10, 11, 14.
+Read first: [Architecture Overview](../../architecture/overview.md) sections 1, 3.2, 4, 5, 6, 8, [Backend Breakdown](../backend-breakdown.md), and [PRD](../../requirements/product-requirements-document.md) sections 7, 10, 11, 14.
 
 ---
 
