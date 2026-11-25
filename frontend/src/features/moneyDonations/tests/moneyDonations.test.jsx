@@ -133,5 +133,10 @@ describe('money donation validation', () => {
     expect(result.current.payment.status).toBe('SUCCEEDED');
     expect(result.current.donation.status).toBe('RECONCILED');
     expect(result.current.checkingStatus).toBe(false);
+
+    act(() => result.current.reset());
+    expect(result.current.donation).toBeNull();
+    expect(result.current.payment).toBeNull();
+    expect(result.current.error).toBeNull();
   });
 });

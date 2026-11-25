@@ -3,6 +3,7 @@ import { ERROR_CODES } from '../../errors/errorCodes.js';
 import { mpesaClient } from './mpesa.client.js';
 import { mpesaConfig } from './mpesa.config.js';
 import { mpesaTimestamp } from './mpesa.mapper.js';
+import { classifyMpesaResult, isPendingMpesaError } from './mpesaResultCodes.js';
 
 export function createStkPushQueryAdapter({
   client = mpesaClient,
@@ -12,14 +13,25 @@ export function createStkPushQueryAdapter({
   return {
     async query({ checkoutRequestId }) {
       const timestamp = mpesaTimestamp(now());
-      const response = await client.post(config.stkPushQueryPath, {
-        BusinessShortCode: config.shortcode,
-        Password: Buffer.from(`${config.shortcode}${config.passkey}${timestamp}`).toString(
-          'base64'
-        ),
-        Timestamp: timestamp,
-        CheckoutRequestID: checkoutRequestId
-      });
+      let response;
+      try {
+        response = await client.post(config.stkPushQueryPath, {
+          BusinessShortCode: config.shortcode,
+          Password: Buffer.from(`${config.shortcode}${config.passkey}${timestamp}`).toString(
+            'base64'
+          ),
+          Timestamp: timestamp,
+          CheckoutRequestID: checkoutRequestId
+        });
+      } catch (error) {
+        if (isPendingMpesaError(error)) {
+          return {
+            resultCode: null,
+            resultMessage: 'The transaction is still under processing.'
+          };
+        }
+        throw error;
+      }
 
       if (String(response.ResponseCode) !== '0') {
         throw new AppError({
@@ -31,12 +43,18 @@ export function createStkPushQueryAdapter({
         });
       }
 
+      const rawMessage = response.ResultDesc ?? response.ResponseDescription ?? null;
+      const classification = classifyMpesaResult(response.ResultCode, rawMessage);
+      if (classification.status === 'PENDING') {
+        return {
+          resultCode: null,
+          resultMessage: rawMessage
+        };
+      }
+
       return {
-        resultCode:
-          response.ResultCode === undefined || response.ResultCode === null
-            ? null
-            : String(response.ResultCode),
-        resultMessage: response.ResultDesc ?? response.ResponseDescription ?? null
+        resultCode: String(response.ResultCode),
+        resultMessage: rawMessage
       };
     }
   };
