@@ -1,0 +1,1 @@
+.app-sidebar a { display: flex; align-items: center; gap: .7rem; }.app-sidebar a i { width: 1rem; color: #12251c; font-size: .9rem; text-align: center; }.app-sidebar a.is-active i { color: #12251c; }

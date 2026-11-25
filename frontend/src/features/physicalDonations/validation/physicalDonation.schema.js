@@ -7,7 +7,6 @@ export function createDonationLine(type = 'GOODS') {
     id: globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`,
     type,
     name: '',
-    category: '',
     quantity: '1',
     unit: 'item',
     declaredValue: ''
@@ -50,7 +49,6 @@ export function normalisePhysicalDonation(values) {
     lines: values.lines.map((line) => ({
       type: clean(line.type).toUpperCase(),
       name: clean(line.name) || 'Cash donation',
-      category: clean(line.category) || undefined,
       quantity: Number(line.quantity),
       unit: clean(line.unit) || 'KES',
       declaredValue: line.declaredValue === '' ? undefined : Number(line.declaredValue)

@@ -1,3 +1,5 @@
-'use strict';
+import { httpClient } from '../../../services/httpClient.js';
 
-// notifications api: implementation pending.
+export const notificationsApi = Object.freeze({
+  mine: () => httpClient.get('/notifications/mine')
+});

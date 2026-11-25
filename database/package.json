@@ -13,6 +13,7 @@
     "migrate:deploy": "prisma migrate deploy --schema prisma/schema.prisma",
     "seed": "node prisma/seed.js",
     "seed:university": "node prisma/seedUniversityRecords.js",
+    "seed:inventory": "node prisma/seedInventory.js",
     "test": "vitest run"
   },
   "dependencies": {

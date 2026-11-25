@@ -1,0 +1,15 @@
+/* Plain step numbers keep the process guide understated and easy to scan. */
+.physical-process > div { padding-left: 1.65rem; }
+
+.physical-process span {
+  display: block;
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  background: transparent;
+  color: #12251c;
+  font-size: .85rem;
+  font-weight: 800;
+  line-height: 1.4;
+  letter-spacing: 0;
+}

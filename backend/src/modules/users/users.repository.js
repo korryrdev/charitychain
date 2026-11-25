@@ -44,6 +44,35 @@ export function createUsersRepository(database = prisma) {
         if (status !== 'ACTIVE') await transaction.session.deleteMany({ where: { userId: id } });
         return user;
       });
+    },
+    async assignRoles(id, roleCodes) {
+      return database.$transaction(async (transaction) => {
+        const roles = await transaction.role.findMany({ where: { code: { in: roleCodes } } });
+        if (roles.length !== roleCodes.length) throw new Error('ROLE_NOT_FOUND');
+        await transaction.userRole.createMany({
+          data: roles.map((role) => ({ userId: id, roleId: role.id })),
+          skipDuplicates: true
+        });
+        return transaction.user.findUniqueOrThrow({ where: { id }, include: includeRoles });
+      });
+    },
+    closeDonorAccount(id) {
+      return database.$transaction(async (transaction) => {
+        await transaction.donorProfile.updateMany({
+          where: { userId: id },
+          data: {
+            publicListed: false,
+            showContributionTotal: false,
+            showRecognitionTier: false
+          }
+        });
+        await transaction.session.deleteMany({ where: { userId: id } });
+        return transaction.user.update({
+          where: { id },
+          data: { status: 'DISABLED' },
+          include: includeRoles
+        });
+      });
     }
   };
 }

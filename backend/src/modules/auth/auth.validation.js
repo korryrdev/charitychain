@@ -8,6 +8,7 @@ export const registerSchema = z.object({
   email,
   password
 });
+export const studentRegisterSchema = registerSchema.extend({ registrationNumber: z.string().trim().min(4).max(80).transform((value) => value.toUpperCase()) });
 export const loginSchema = z.object({ email, password });
 export const emailSchema = z.object({ email });
 export const tokenSchema = z.object({ token: z.string().min(32).max(512) });

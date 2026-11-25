@@ -1,5 +1,7 @@
 import { timingSafeEqual } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
 import { AuthorizationError } from '../errors/AuthorizationError.js';
+import { authenticationConfig } from '../config/authentication.js';
 
 const safeMethods = new Set(['GET', 'HEAD', 'OPTIONS']);
 const unauthenticatedAuthPaths = new Set([
@@ -24,8 +26,19 @@ export function createCsrfProtection({
   sessionCookieName = 'charitychain_session',
   headerName = 'x-csrf-token'
 } = {}) {
-  return function csrfProtection(request, _response, next) {
+  return function csrfProtection(request, response, next) {
     const requestPath = request.originalUrl?.split('?')[0];
+    // A persisted session can outlive a browser's non-HttpOnly CSRF cookie.
+    // Reissue it during a safe authenticated request so the next mutation can
+    // satisfy the double-submit check without weakening it.
+    if (safeMethods.has(request.method) && request.cookies?.[sessionCookieName] && !request.cookies?.[cookieName]) {
+      response.cookie(cookieName, randomBytes(32).toString('base64url'), {
+        httpOnly: false,
+        secure: authenticationConfig.session.cookie.secure,
+        sameSite: authenticationConfig.session.cookie.sameSite,
+        path: '/'
+      });
+    }
     if (
       safeMethods.has(request.method) ||
       unauthenticatedAuthPaths.has(requestPath) ||

@@ -18,6 +18,14 @@ export function createAuthService({
   sendVerification = async () => {}
 } = {}) {
   return {
+    async registerStaff(input) {
+      const result = unwrap(await engine.api.signUpEmail({ body: input }));
+      return result.user;
+    },
+    async registerStudent(input) {
+      const result = unwrap(await engine.api.signUpEmail({ body: { name: input.name, email: input.email, password: input.password } }));
+      try { await repository.assignDefaultRole(result.user.id, 'STUDENT'); const token = await verificationService.issue(input.email); await sendVerification({ email: input.email, token, user: result.user }); return { ...result, ...(env.NODE_ENV === 'production' ? {} : { developmentVerificationToken: token }) }; } catch (error) { await repository.deleteUser(result.user.id).catch(() => {}); throw error; }
+    },
     async register(input) {
       const result = unwrap(
         await engine.api.signUpEmail({
@@ -70,6 +78,9 @@ export function createAuthService({
     },
     getSession(headers) {
       return engine.api.getSession({ headers });
+    },
+    verifyCurrentPassword(password, headers) {
+      return engine.api.verifyPassword({ body: { password }, headers });
     },
     async resolveSession(token) {
       const session = await repository.findSessionByToken(token);

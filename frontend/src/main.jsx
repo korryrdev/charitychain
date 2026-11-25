@@ -11,8 +11,20 @@ import './assets/styles/homepage-refresh.css';
 import './assets/styles/public-pages.css';
 import './assets/styles/section9.css';
 import './assets/styles/donor.css';
+import './assets/styles/donor-refresh.css';
+import './assets/styles/donation-refinement.css';
+import './assets/styles/donation-history.css';
+import './assets/styles/donation-detail.css';
+import './assets/styles/donation-detail-minimal.css';
+import './assets/styles/donor-settings.css';
+import './assets/styles/donor-dashboard.css';
+import './assets/styles/donor-amber-accents.css';
+import './assets/styles/student-refresh.css';
+import './assets/styles/student-auth.css';
+import './assets/styles/sidebar-icons.css';
 import './assets/styles/student-support.css';
 import './assets/styles/physical-donations.css';
+import './assets/styles/physical-donations-refinement.css';
 import './assets/styles/student-vetting.css';
 import './assets/styles/goods-collection.css';
 import './assets/styles/clerk.css';
@@ -20,6 +32,7 @@ import './assets/styles/committee.css';
 import './assets/styles/finance.css';
 import './assets/styles/auditor.css';
 import './assets/styles/admin.css';
+import './assets/styles/access-workspace.css';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

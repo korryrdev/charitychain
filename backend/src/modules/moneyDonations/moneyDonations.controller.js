@@ -17,6 +17,12 @@ export function createMoneyDonationsController(service = moneyDonationsService) 
     get: handle(async (req, res) =>
       res.json({ donation: await service.get(req.auth, req.params.donationId) })
     ),
+    receiptDocument: handle(async (req, res) =>
+      res.json({ receipt: await service.receiptDocument(req.auth, req.params.donationId) })
+    ),
+    verifyReceipt: handle(async (req, res) =>
+      res.json({ verification: await service.verifyReceipt(req.auth, req.params.donationId) })
+    ),
     listMine: handle(async (req, res) => res.json(await service.listMine(req.auth, req.query))),
     track: handle(async (req, res) =>
       res.json({ donation: await service.track(req.body.trackingId, req.body.verificationSecret) })

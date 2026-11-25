@@ -27,7 +27,18 @@ export function validateRequest(schemas = {}) {
             formatIssues(result.error.issues)
           );
         }
-        request[segment] = result.data;
+        // Express 5 exposes req.query through a getter with no setter. Defining
+        // an own property preserves the parsed, type-safe query for downstream
+        // controllers instead of throwing a 500 on every validated query route.
+        if (segment === 'query') {
+          Object.defineProperty(request, 'query', {
+            configurable: true,
+            enumerable: true,
+            value: result.data
+          });
+        } else {
+          request[segment] = result.data;
+        }
       }
       next();
     } catch (error) {
