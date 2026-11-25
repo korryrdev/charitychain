@@ -4,7 +4,7 @@ import { hashPassword } from 'better-auth/crypto';
 export async function seedAdmin({
   email = process.env.ADMIN_EMAIL || 'admin@charitychain.org',
   name = 'System Administrator',
-  password = process.env.ADMIN_PASSWORD || 'Admin12345!'
+  password = process.env.ADMIN_PASSWORD || 'Admin123456!'
 } = {}) {
   const normalizedEmail = email.trim().toLowerCase();
   const hashedPassword = await hashPassword(password);

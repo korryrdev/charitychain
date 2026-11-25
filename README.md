@@ -133,7 +133,7 @@ npm run db:seed:all
 * **Physical Goods Inventory** (Sanitary pads, soap, toothpaste, tissue, batches, and policies)
 * **Super Administrator Account**:
   * **Email:** `admin@charitychain.org`
-  * **Password:** `Admin12345!`
+  * **Password:** `Admin123456!`
   * **Login:** `http://localhost:5173/auth/login`
 
 ### 4. Run Development Servers

@@ -131,7 +131,7 @@ npm run db:seed:all
    ```
    *Provisions an initial Super Administrator account:*
    * **Email:** `admin@charitychain.org`
-   * **Password:** `Admin12345!`
+   * **Password:** `Admin123456!`
    * **Role:** `ADMINISTRATOR`
 
 ### Step 5: Start the Development Servers
@@ -154,7 +154,7 @@ In CharityChain, staff members do **not** self-register into operational roles (
 1. Open `http://localhost:5173/auth/login`.
 2. Sign in with the seeded Administrator credentials:
    * **Email:** `admin@charitychain.org`
-   * **Password:** `Admin12345!`
+   * **Password:** `Admin123456!`
 3. Navigate to **Users & Roles** (`http://localhost:5173/admin/users`).
 
 ### Creating Staff Users & Granting Dashboard Access
@@ -258,7 +258,7 @@ Ensure you ran the admin seed command:
 ```powershell
 npm run db:seed:admin
 ```
-Log in at `http://localhost:5173/auth/login` with `admin@charitychain.org` / `Admin12345!`.
+Log in at `http://localhost:5173/auth/login` with `admin@charitychain.org` / `Admin123456!`.
 
 ### Student record not found
 Ensure you ran the university simulation seed:
