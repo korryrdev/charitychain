@@ -1,7 +1,5 @@
 'use strict';
 
-import { BENFORD_PROBABILITIES } from '../modules/alerts/alerts.service.js';
-
 export const SCENARIOS = Object.freeze([
   { id: 1, name: 'Missing evidence on a payout', ruleId: 'R01', target: 'PAYOUT_NO_EVIDENCE' },
   { id: 2, name: 'Self-approval attempt', ruleId: 'R03', target: 'SELF_APPROVAL' },
@@ -16,7 +14,7 @@ export const SCENARIOS = Object.freeze([
 ]);
 
 export class FraudSimulator {
-  generateYearActivity({ baselineCount = 200, injectedFraudCount = 10 } = {}) {
+  generateYearActivity({ baselineCount = 200, injectedFraudCount: _injectedFraudCount = 10 } = {}) {
     const dataset = [];
 
     for (let i = 0; i < baselineCount; i++) {

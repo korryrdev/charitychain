@@ -16,7 +16,6 @@ const at = (date, days = 0) => new Date(new Date(`${date}T09:00:00.000Z`).getTim
 function paymentPlan(profile, semester, index) {
   const start = semester.startsAt;
   const exam = semester.examStartsAt;
-  const suffix = `${index}-${semester.code}`;
   if (profile === 'STABLE_LUMP_SUM_CONTROL') return { payments: [{ amount: 27000, source: 'FAMILY', paidAt: at(start, 1) }], aids: [], blocks: [] };
   if (profile === 'MICRO_PAYMENT_HARDSHIP') return { payments: [{ amount: 1500, source: 'FAMILY', paidAt: at(start, 12) },{ amount: 3000, source: 'SELF', paidAt: at(start, 47) },{ amount: 1200, source: 'FAMILY', paidAt: at(start, 78) },{ amount: 8000, source: 'HELB', paidAt: at(start, 60) }], aids: [{ aidType: 'HELB', providerName: 'Higher Education Loans Board', awardedAmount: 8000, disbursedAmount: 8000, status: 'DISBURSED', disbursedAt: at(start, 60) }], blocks: [{ blockType: 'EXAM_CLEARANCE', reason: 'Outstanding fee balance before examinations', blockedAt: at(exam, -7), resolvedAt: null }] };
   if (profile === 'EXAM_PERIOD_DISTRESS') return { payments: [{ amount: 4000, source: 'FAMILY', paidAt: at(start, 35) },{ amount: 12000, source: 'FAMILY', paidAt: at(exam, -2) }], aids: [], blocks: [{ blockType: 'EXAM_CLEARANCE', reason: 'Emergency clearance required', blockedAt: at(exam, -8), resolvedAt: at(exam, -1) }] };

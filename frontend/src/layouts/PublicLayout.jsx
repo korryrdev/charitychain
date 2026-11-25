@@ -12,6 +12,7 @@ import { MobileMenu } from './components/MobileMenu.jsx';
 const primaryLinks = [
   { to: '/how-it-works', label: 'How it works' },
   { to: '/transparency', label: 'Transparency' },
+  { to: '/trace', label: 'Fund-flow trace' },
   { to: '/track', label: 'Track donation' },
   { to: '/goods', label: 'Goods' }
 ];

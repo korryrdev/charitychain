@@ -67,7 +67,7 @@ export function createRolesController(service = rolesService) {
       let delivery = { delivery: 'NOT_SENT' };
       try {
         delivery = await resendEmailService.sendAccessUpdate({ recipientName: user.name, email: user.email, addedRoles, removedRoles, permissions });
-      } catch (error) {
+      } catch {
         delivery = { delivery: 'FAILED' };
       }
       await auditLogsService.recordFromContext(auditContext(req), { action: 'USER_ACCESS_UPDATED', entityType: 'USER', entityId: user.id, after: { addedRoles, removedRoles, permissions, emailDelivery: delivery.delivery }, reason: 'Administrator changed assigned access roles' });

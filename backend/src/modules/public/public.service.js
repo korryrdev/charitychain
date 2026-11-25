@@ -1,7 +1,7 @@
 'use strict';
 
 import { prisma } from '@charitychain/database';
-import { computeSourceRefHash, normalizeIdentity } from '../../security/donorReference.js';
+import { computeSourceRefHash } from '../../security/donorReference.js';
 import { normalizeReceiptCode } from '../../utils/receiptCode.js';
 
 export class PublicService {
@@ -41,10 +41,6 @@ export class PublicService {
     } else if (lot.remainingAmountMinor < lot.totalAmountMinor) {
       status = 'PARTIALLY_ALLOCATED';
     }
-
-    const outbox = await prisma.outboxEvent.findFirst({
-      where: { aggregateId: lot.id },
-    });
 
     return {
       receiptCode: lot.receiptCode,

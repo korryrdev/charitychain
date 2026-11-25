@@ -2,7 +2,6 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { createBankReconciliationService } from '../../src/modules/bank/bankReconciliation.service.js';
-import { BankService } from '../../src/modules/bank/bank.service.js';
 
 describe('G26 & G27: Bank Statement Import, Reconciliation, and Foreign Currency (FR-INT-07, FR-INT-09, R07)', () => {
   it('imports CSV statement lines into minor units and ignores duplicates', async () => {

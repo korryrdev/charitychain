@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { DarajaService } from '../../src/modules/daraja/daraja.service.js';
 import { AuthorizationError } from '../../src/errors/AuthorizationError.js';
 import { prisma } from '@charitychain/database';

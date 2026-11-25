@@ -15,6 +15,15 @@ import { PERMISSIONS } from '../../constants/permissions.js';
 export function createCasesRouter(service = casesService) {
   const router = Router();
 
+  router.get('/subgroups', async (_req, res, next) => {
+    try {
+      const items = await service.listSubgroups();
+      res.status(200).json({ items });
+    } catch (err) {
+      next(err);
+    }
+  });
+
   router.get('/', async (req, res, next) => {
     try {
       const cases = await service.listCases({

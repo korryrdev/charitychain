@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createHttpClient } from './httpClient.js';
-import { ApiError } from './errorMapper.js';
 import { createAuthStore } from '../store/auth.store.js';
 import { createNotificationStore } from '../store/notification.store.js';
 

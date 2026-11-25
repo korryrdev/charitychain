@@ -452,7 +452,6 @@ export class AlertsService {
 
     const disbursedCases = selectedCases.filter((c) => c.state === 'DISBURSED');
     for (const c of disbursedCases) {
-      const caseNodeId = caseNodeMap.get(c.id);
       const disbEvent = c.events.find((e) => e.toState === 'DISBURSED');
       const payload = disbEvent?.payload || {};
       const method = payload.method || 'MPESA';

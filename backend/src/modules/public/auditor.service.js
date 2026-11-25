@@ -5,7 +5,7 @@ import { verifyMerkleProof } from '../../utils/merkle.js';
 import { dailyDigestService } from '../auditLogs/dailyDigest.service.js';
 import { formatYyyyMmDd } from '../../utils/dates.js';
 
-export function createAuditorService({ database = prisma, digest = dailyDigestService } = {}) {
+export function createAuditorService({ database = prisma, digest: _digest = dailyDigestService } = {}) {
   return {
     async exportAuditStream({ fromDate, toDate, page = 1, pageSize = 100 } = {}) {
       const where = {

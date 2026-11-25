@@ -1,10 +1,23 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { createQueryClient } from './queryClient.js';
 import { authStore } from '../store/auth.store.js';
 import { httpClient } from '../services/httpClient.js';
-import { ThemeProvider } from './theme/ThemeContext.jsx';
+import { ThemeProvider } from './theme/ThemeContext.tsx';
+import { I18nProvider } from './i18n/I18nContext.tsx';
+import { AuthProvider } from './auth/AuthContext.tsx';
+
+const reactQueryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 2,
+      retry: 1
+    }
+  }
+});
 
 const AppContext = createContext(null);
+
 const defaultSessionLoader = async () => {
   try {
     const { user } = await httpClient.get('/users/me');
@@ -21,24 +34,43 @@ const defaultSessionLoader = async () => {
     throw error;
   }
 };
+
 export function AppProviders({ children, sessionLoader = defaultSessionLoader }) {
   const [authState, setAuthState] = useState(() => authStore.get());
   const [queryClient] = useState(() => createQueryClient());
+
   useEffect(() => authStore.subscribe(setAuthState), []);
+
   const setSession = useCallback((session) => authStore.setSession(session), []);
   const clearSession = useCallback(() => authStore.clear(), []);
-  const value = useMemo(() => ({
-    queryClient,
-    session: authState.session,
-    authReady: authState.ready,
-    setSession,
-    clearSession,
-    sessionLoader,
-  }), [authState, clearSession, queryClient, sessionLoader, setSession]);
+
+  const value = useMemo(
+    () => ({
+      queryClient,
+      session: authState.session,
+      authReady: authState.ready,
+      setSession,
+      clearSession,
+      sessionLoader
+    }),
+    [authState, clearSession, queryClient, sessionLoader, setSession]
+  );
+
   return (
-    <ThemeProvider>
-      <AppContext.Provider value={value}>{children}</AppContext.Provider>
-    </ThemeProvider>
+    <QueryClientProvider client={reactQueryClient}>
+      <ThemeProvider>
+        <I18nProvider>
+          <AuthProvider>
+            <AppContext.Provider value={value}>{children}</AppContext.Provider>
+          </AuthProvider>
+        </I18nProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }
-export function useAppContext() { const value = useContext(AppContext); if (!value) throw new Error('useAppContext must be used within AppProviders.'); return value; }
+
+export function useAppContext() {
+  const value = useContext(AppContext);
+  if (!value) throw new Error('useAppContext must be used within AppProviders.');
+  return value;
+}

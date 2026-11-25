@@ -7,7 +7,7 @@ import { ConflictError } from '../../errors/ConflictError.js';
 import { logger } from '../../observability/logger.js';
 
 export class ReportsService {
-  async generateQuarterlyReport({ year, quarter, generatedByUserId }) {
+  async generateQuarterlyReport({ year, quarter, generatedByUserId: _generatedByUserId }) {
     const q = parseInt(quarter, 10);
     const y = parseInt(year, 10);
 

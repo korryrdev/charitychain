@@ -1,40 +1,50 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/Card';
+import { Card, CardContent, CardFooter } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { CheckSquare, ArrowLeft, ShieldCheck } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import type { NeedCategory } from '@/types';
 
 export const NewCasePage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const [subGroup, setSubGroup] = useState('sub-eng');
+  const { data: subgroups = [] } = useQuery({
+    queryKey: ['case-subgroups'],
+    queryFn: () => api.getSubgroups(),
+  });
+
+  const [subGroup, setSubGroup] = useState('');
+  const [studentName, setStudentName] = useState('');
+  const [studentRegNo, setStudentRegNo] = useState('');
   const [needCategory, setNeedCategory] = useState<NeedCategory>('FEES');
-  const [amountMajor, setAmountMajor] = useState('3500'); // KES 3,500
+  const [amountMajor, setAmountMajor] = useState('3500');
   const [justification, setJustification] = useState('');
   const [hasConsent, setHasConsent] = useState(false);
 
-  const subGroupNames: Record<string, string> = {
-    'sub-eng': 'Engineering Students Sub-group',
-    'sub-med': 'Health Sciences Sub-group',
-    'sub-bus': 'Business Students Sub-group',
-    'sub-sci': 'Applied Sciences Sub-group',
-    'sub-art': 'Humanities & Social Sciences Sub-group',
-  };
+  useEffect(() => {
+    if (!subGroup && subgroups.length > 0) {
+      setSubGroup(subgroups[0].id);
+    }
+  }, [subGroup, subgroups]);
+
+  const selectedSubgroupObj = subgroups.find((s) => s.id === subGroup);
 
   const createMutation = useMutation({
     mutationFn: async () => {
       const amountMinor = Math.round(parseFloat(amountMajor || '0') * 100);
       return api.createCase({
-        subGroupId: subGroup,
-        subGroupName: subGroupNames[subGroup] || 'Campus Sub-group',
+        subGroupId: subGroup || undefined,
+        subGroupName: selectedSubgroupObj?.name || 'Campus Sub-group',
+        studentName: studentName.trim(),
+        studentRegNo: studentRegNo.trim(),
         needCategory,
         requestedAmountMinor: amountMinor,
         justification,
+        hasConsent,
       });
     },
     onSuccess: () => {
@@ -52,6 +62,7 @@ export const NewCasePage: React.FC = () => {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <button
+        type="button"
         onClick={() => navigate('/app/cases')}
         className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
       >
@@ -67,7 +78,12 @@ export const NewCasePage: React.FC = () => {
       <Card>
         <form onSubmit={handleSubmit}>
           <CardContent className="p-6 space-y-5">
-            {/* Sub-group Picker */}
+            {createMutation.error && (
+              <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-xs text-red-700 dark:text-red-300">
+                {(createMutation.error as Error).message}
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
                 Sub-group Origin
@@ -76,16 +92,37 @@ export const NewCasePage: React.FC = () => {
                 value={subGroup}
                 onChange={(e) => setSubGroup(e.target.value)}
                 className="w-full text-sm rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 py-2.5 px-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
+                required
               >
-                {Object.entries(subGroupNames).map(([id, name]) => (
-                  <option key={id} value={id}>
-                    {name}
-                  </option>
-                ))}
+                {subgroups.length === 0 ? (
+                  <option value="">No sub-groups seeded yet</option>
+                ) : (
+                  subgroups.map((sg) => (
+                    <option key={sg.id} value={sg.id}>
+                      {sg.name} ({sg.code})
+                    </option>
+                  ))
+                )}
               </select>
             </div>
 
-            {/* Need Category Picker */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input
+                label="Beneficiary Name (Off-Chain Encrypted)"
+                placeholder="e.g. Alice Muthoni"
+                value={studentName}
+                onChange={(e) => setStudentName(e.target.value)}
+                required
+              />
+              <Input
+                label="Student Registration No."
+                placeholder="e.g. MUST/SIM/2026/001"
+                value={studentRegNo}
+                onChange={(e) => setStudentRegNo(e.target.value)}
+                required
+              />
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
                 Need Category
@@ -108,7 +145,6 @@ export const NewCasePage: React.FC = () => {
               </div>
             </div>
 
-            {/* Requested Amount in KES */}
             <div>
               <Input
                 label="Requested Support Amount (KES)"
@@ -121,26 +157,26 @@ export const NewCasePage: React.FC = () => {
                 required
               />
               <span className="text-[11px] text-zinc-500 mt-1 block">
-                Stored in database and contracts as integer minor units (e.g. KES {amountMajor || '0'} = {Math.round(parseFloat(amountMajor || '0') * 100)} minor units).
+                Stored in database and contracts as integer minor units (e.g. KES {amountMajor || '0'} ={' '}
+                {Math.round(parseFloat(amountMajor || '0') * 100)} minor units).
               </span>
             </div>
 
-            {/* Justification Text */}
             <div>
               <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1.5">
-                Case Summary & Justification
+                Case Summary &amp; Justification
               </label>
               <textarea
                 value={justification}
                 onChange={(e) => setJustification(e.target.value)}
                 rows={4}
                 required
+                minLength={10}
                 placeholder="Describe the student need and urgency. Do not include raw national ID or phone numbers."
                 className="w-full text-sm rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
               />
             </div>
 
-            {/* Consent Box */}
             <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-800 flex items-start gap-3">
               <input
                 id="consent-check"
@@ -177,4 +213,3 @@ export const NewCasePage: React.FC = () => {
     </div>
   );
 };
-

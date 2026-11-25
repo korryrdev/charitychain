@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { UserRole, UserSession } from '@/types';
 import { api } from '@/lib/api';
+import { authStore } from '../../store/auth.store.js';
 
 interface AuthContextType {
   user: UserSession | null;
@@ -32,46 +33,86 @@ const roleEmails: Record<UserRole, string> = {
   AUDITOR: 'auditor@malkia.charity',
 };
 
-const defaultSession: UserSession = {
-  id: 'usr-pharmacy-1',
-  email: 'pharmacy@malkia.charity',
-  name: 'Jane Atieno',
-  role: 'CUSTODIAN',
-  token: toHexToken('pharmacy@malkia.charity'),
-  walletAddress: '0x90F79bf6EB2c4f870365E785982E1f101E93b906',
-};
+function mapBackendRoleToUiRole(roles: string[] = []): UserRole {
+  if (roles.includes('SIGNATORY')) return 'SIGNATORY';
+  if (roles.includes('TREASURER') || roles.includes('FINANCE_OPERATOR')) return 'TREASURER';
+  if (roles.includes('COMMITTEE_MEMBER')) return 'COMMITTEE';
+  if (roles.includes('PHARMACY_CUSTODIAN') || roles.includes('INVENTORY_SUPERVISOR') || roles.includes('CLERK')) {
+    return 'CUSTODIAN';
+  }
+  if (roles.includes('AUDITOR') || roles.includes('MEMBER_AUDITOR')) return 'AUDITOR';
+  if (roles.includes('ADMINISTRATOR') || roles.includes('SYSTEM_ADMIN')) return 'ADMIN';
+  if (roles.includes('SUBGROUP_REP')) return 'SUBGROUP_REP';
+  return 'DONOR';
+}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserSession | null>(() => {
-    const saved = localStorage.getItem('charitychain_session');
-    if (saved) {
-      try {
+    try {
+      const saved = localStorage.getItem('charitychain_session');
+      if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed?.token) return parsed;
-        const email = parsed?.email || 'pharmacy@malkia.charity';
+        if (parsed?.email) {
+          return {
+            ...parsed,
+            token: parsed.token || toHexToken(parsed.email),
+          };
+        }
+      }
+      const storeSession = (authStore.get() as { session: any; ready: boolean })?.session;
+      if (storeSession?.user) {
         return {
-          ...parsed,
-          token: toHexToken(email),
+          id: storeSession.user.id,
+          email: storeSession.user.email,
+          name: storeSession.user.name || storeSession.user.email,
+          role: mapBackendRoleToUiRole(storeSession.roles),
+          token: '',
+          walletAddress: '0x90F79bf6EB2c4f870365E785982E1f101E93b906',
         };
-      } catch {}
+      }
+    } catch {
+      // ignore storage errors
     }
-    return defaultSession;
+    return null;
   });
 
-  const [role, setRoleState] = useState<UserRole>(user?.role || 'CUSTODIAN');
+  const [role, setRoleState] = useState<UserRole>(user?.role || 'DONOR');
 
   useEffect(() => {
-    if (user) {
-      localStorage.setItem('charitychain_session', JSON.stringify(user));
-      api.demoLogin({ email: user.email, role: user.role }).catch(() => {});
-    } else {
-      localStorage.removeItem('charitychain_session');
+    const unsubscribe = authStore.subscribe((nextState: { session: any; ready: boolean }) => {
+      if (nextState.session?.user) {
+        const mappedRole = mapBackendRoleToUiRole(nextState.session.roles || []);
+        setRoleState(mappedRole);
+        setUser((prev) => ({
+          id: nextState.session.user.id,
+          email: nextState.session.user.email,
+          name: nextState.session.user.name || nextState.session.user.email,
+          role: mappedRole,
+          token: prev?.email === nextState.session.user.email ? prev?.token || '' : '',
+          walletAddress: prev?.walletAddress || '0x90F79bf6EB2c4f870365E785982E1f101E93b906',
+        }));
+      }
+    });
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    try {
+      if (user && user.token) {
+        localStorage.setItem('charitychain_session', JSON.stringify(user));
+      } else if (!user) {
+        localStorage.removeItem('charitychain_session');
+      }
+    } catch {
+      // ignore storage errors
     }
   }, [user]);
 
-  const setRole = (newRole: UserRole) => {
+  const setRole = useCallback((newRole: UserRole) => {
     setRoleState(newRole);
     const email = roleEmails[newRole] || user?.email || 'pharmacy@malkia.charity';
     const token = toHexToken(email);
@@ -85,9 +126,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
     setUser(updated);
     api.demoLogin({ email, role: newRole }).catch(() => {});
-  };
+  }, [user]);
 
-  const login = (email: string, targetRole: UserRole) => {
+  const login = useCallback((email: string, targetRole: UserRole) => {
     const token = toHexToken(email);
     const session: UserSession = {
       id: `usr-${Date.now()}`,
@@ -100,40 +141,73 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(session);
     setRoleState(targetRole);
     api.demoLogin({ email, role: targetRole }).catch(() => {});
-  };
+  }, []);
 
-  const registerDonor = async (name: string, email: string, password: string) => {
+  const registerDonor = useCallback(async (name: string, email: string, password: string) => {
     const res = await api.register({ name, email, password });
+    let loginResult: any = res;
+    if (res.requiresVerification && res.developmentVerificationToken) {
+      await fetch('/api/v1/public/auth/verify-account', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, token: res.developmentVerificationToken }),
+      });
+      loginResult = await api.login({ email, password });
+    } else if (res.requiresVerification) {
+      throw new Error('Account created! Please check your email to verify your account before signing in.');
+    }
+
     const session: UserSession = {
-      id: res.user?.id || `usr-${Date.now()}`,
-      email: res.user?.email || email,
-      name: res.user?.name || name,
+      id: loginResult.user?.id || res.user?.id || `usr-${Date.now()}`,
+      email: loginResult.user?.email || res.user?.email || email,
+      name: loginResult.user?.name || res.user?.name || name,
       role: 'DONOR',
-      token: res.token,
+      token: loginResult.token || '',
       walletAddress: '0x0000000000000000000000000000000000000000',
     };
     setUser(session);
     setRoleState('DONOR');
-  };
+    authStore.setSession({
+      user: loginResult.user || res.user,
+      session: loginResult.session ?? null,
+      roles: loginResult.roles ?? ['DONOR'],
+      permissions: loginResult.permissions ?? ['donation:create', 'donation:read:self'],
+      mfaVerified: Boolean(loginResult.mfaVerified),
+    });
+  }, []);
 
-  const loginWithPassword = async (email: string, password: string) => {
+  const loginWithPassword = useCallback(async (email: string, password: string) => {
     const res = await api.login({ email, password });
-    const roleCode = (res.role === 'DONOR' || !res.role ? 'DONOR' : res.role) as UserRole;
+    const roleCode = mapBackendRoleToUiRole(res.roles || (res.role ? [res.role] : ['DONOR']));
     const session: UserSession = {
       id: res.user?.id || `usr-${Date.now()}`,
       email: res.user?.email || email,
       name: res.user?.name || email.split('@')[0],
       role: roleCode,
-      token: res.token,
+      token: res.token || '',
       walletAddress: '0x0000000000000000000000000000000000000000',
     };
     setUser(session);
     setRoleState(roleCode);
-  };
+    authStore.setSession({
+      user: res.user,
+      session: res.session ?? null,
+      roles: res.roles ?? [res.role || 'DONOR'],
+      permissions: res.permissions ?? [],
+      mfaVerified: Boolean(res.mfaVerified),
+    });
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     setUser(null);
-  };
+    authStore.clear();
+    try {
+      localStorage.removeItem('charitychain_session');
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const signatoryWallet = user?.walletAddress || '0x90F79bf6EB2c4f870365E785982E1f101E93b906';
 

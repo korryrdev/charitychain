@@ -193,7 +193,7 @@ export function createDonorPortalService({ database = prisma } = {}) {
         where: { receiptCode: code }
       });
       if (!lot) {
-        throw new NotFoundError(`Receipt code "${code}" could not be found.`);
+        throw notFound(`Receipt code "${code}" could not be found.`);
       }
 
       const user = await database.user.findUnique({
@@ -241,7 +241,7 @@ export function createDonorPortalService({ database = prisma } = {}) {
         where: { id: userId },
         include: { donorProfile: true }
       });
-      if (!user) throw new NotFoundError('User not found.');
+      if (!user) throw notFound('User not found.');
 
       let profile = user.donorProfile;
       if (!profile) profile = await donorsService.provision(userId);

@@ -1,6 +1,6 @@
 'use strict';
 
-import { createHmac, randomBytes } from 'node:crypto';
+import { createHmac } from 'node:crypto';
 import { prisma } from '@charitychain/database';
 import { computeDonorRef } from '../../security/donorReference.js';
 import { screenDonorName } from '../../security/nameScreening.js';

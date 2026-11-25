@@ -2,8 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   ROLES,
   requires2Fa,
-  canApproveOrDisburseFunds,
-  ROLES_REQUIRING_2FA
+  canApproveOrDisburseFunds
 } from '../../src/constants/roles.js';
 import { PERMISSIONS } from '../../src/constants/permissions.js';
 import { assertSegregation } from '../../src/utils/assertions.js';

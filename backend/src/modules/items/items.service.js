@@ -15,7 +15,7 @@ export class ItemsService {
     });
   }
 
-  async logItemDonation({ category, itemName, quantity, condition, estimatedValue, photoUrl, donorLabel, loggedByUserId }) {
+  async logItemDonation({ category, itemName, quantity, condition: _condition, estimatedValue: _estimatedValue, photoUrl: _photoUrl, donorLabel, loggedByUserId }) {
     if (quantity <= 0) {
       throw new ValidationError('Quantity must be greater than zero.');
     }

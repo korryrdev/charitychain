@@ -9,8 +9,6 @@ import {
   subtract
 } from '../../src/utils/money.js';
 import {
-  nowUtc,
-  toUtcIso,
   formatYyyyMmDd,
   parseYyyyMmDd,
   startOfDayUtc,

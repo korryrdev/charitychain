@@ -1,7 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import {
-  refHash,
-  normalizeIdentity,
   computeDonorRef,
   computeSourceRefHash,
   DEFAULT_DONOR_PREFERENCES

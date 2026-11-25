@@ -19,12 +19,20 @@ export const caseDecisionSchema = z.object({
   notes: z.string().trim().max(1000).optional(),
 });
 
-export const authorizeReleaseSchema = z.object({
-  amountMinor: z.union([z.number().positive(), z.string().trim()]),
-  nonce: z.number().int().nonnegative(),
-  deadline: z.number().int().positive(),
-  signatures: z.array(z.string().regex(/^0x[a-fA-F0-9]{130}$/)).min(2).max(2),
-});
+export const authorizeReleaseSchema = z
+  .object({
+    amountMinor: z.union([z.number().positive(), z.string().trim()]).optional(),
+    nonce: z.number().int().nonnegative().default(0),
+    deadline: z.number().int().positive().optional(),
+    signatures: z.array(z.string().regex(/^0x[a-fA-F0-9]{130}$/)).min(1).max(2).optional(),
+    signer: z.string().regex(/^0x[a-fA-F0-9]{40}$/).optional(),
+    signature: z.string().regex(/^0x[a-fA-F0-9]{130}$/).optional(),
+    signMethod: z.enum(['METAMASK_EIP712', 'DEMO_SIGNATORY']).optional()
+  })
+  .refine(
+    (value) => (Array.isArray(value.signatures) && value.signatures.length >= 2) || (value.signer && value.signature),
+    'Either 2 signatures or a signer address with a valid 65-byte EIP-712 signature is required.'
+  );
 
 export const recordDisbursementSchema = z.object({
   amount: z.union([z.number().positive(), z.string().trim()]),

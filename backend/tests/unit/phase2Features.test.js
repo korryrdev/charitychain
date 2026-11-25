@@ -169,7 +169,7 @@ describe('Phase 2 Features (G28 to G33)', () => {
       const evaluation = fraudSimulator.evaluateRuleEngine(dataset);
       expect(evaluation.totalRecords).toBe(160);
 
-      for (const [rule, metrics] of Object.entries(evaluation.metrics)) {
+      for (const [_rule, metrics] of Object.entries(evaluation.metrics)) {
         expect(metrics.tp).toBeGreaterThanOrEqual(1);
         expect(metrics.fp).toBe(0);
         expect(metrics.fn).toBe(0);

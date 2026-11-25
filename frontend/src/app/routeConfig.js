@@ -78,39 +78,255 @@ import { InventoryConfigurationPage } from '../pages/admin/InventoryConfiguratio
 import { IntegrationHealthPage } from '../pages/admin/IntegrationHealthPage.jsx';
 import { SecurityIncidentsPage } from '../pages/admin/SecurityIncidentsPage.jsx';
 import { InventorySupervisorDashboardPage } from '../pages/inventory/InventorySupervisorDashboardPage.jsx';
+import { AppLayout as MalkiaAppLayout } from './layouts/AppLayout.tsx';
+import { RequireAuth } from './guards/RequireAuth.tsx';
+import { TracePage } from '../features/trace/TracePage.tsx';
+import { DashboardPage as PublicDappDashboardPage } from '../features/dashboard/DashboardPage.tsx';
+import { RecognitionWallPage } from '../features/recognition/RecognitionWallPage.tsx';
+import { ClaimPreferencesPage } from '../features/donor/ClaimPreferencesPage.tsx';
+import { DonorPortalPage } from '../features/donor/DonorPortalPage.tsx';
+import { ReportsPage as QuarterlyReportsPage } from '../features/reports/ReportsPage.tsx';
+import { LoginPage as DappLoginPage } from '../features/auth/LoginPage.tsx';
+import { RegisterPage as DappRegisterPage } from '../features/auth/RegisterPage.tsx';
+import { CasesPage } from '../features/cases/CasesPage.tsx';
+import { NewCasePage } from '../features/cases/NewCasePage.tsx';
+import { SigningQueuePage } from '../features/signing/SigningQueuePage.tsx';
+import { DonationsPage as BankDepositsPage } from '../features/donations/DonationsPage.tsx';
+import { PharmacyItemPage } from '../features/inventory/PharmacyItemPage.tsx';
+import { AlertsPage as ForensicAlertsPage } from '../features/alerts/AlertsPage.tsx';
+import { FundFlowGraphPage } from '../features/graph/FundFlowGraphPage.tsx';
+
 export const routeConfig = Object.freeze([
-  { path: '/', element: createElement(PublicLayout), children: [
-    { index: true, element: createElement(HomePage) }, { path: 'health', element: createElement(FrontendHealth) }, { path: 'how-it-works', element: createElement(HowItWorksPage) }, { path: 'transparency', element: createElement(TransparencyPage) },
-    { path: 'recognition', element: createElement(DonorRecognitionPage) }, { path: 'track', element: createElement(TrackDonationPage) }, { path: 'goods', element: createElement(GoodsCataloguePage) }, { path: 'governance', element: createElement(GovernancePage) },
-    { path: 'policies', element: createElement(PoliciesPage) }, { path: 'privacy', element: createElement(PrivacyPage) }, { path: 'faq', element: createElement(FaqPage) }, { path: 'help', element: createElement(HelpPage) }, { path: 'contact', element: createElement(ContactPage) }, { path: 'complaints', element: createElement(ComplaintPage) }, { path: 'report-fraud', element: createElement(FraudReportPage) }, { path: 'confirm-physical-donation', element: createElement(PhysicalDonationConfirmationPage) }, { path: 'confirm-goods', element: createElement(GoodsCollectionConfirmationPage) },
-  ] },
-  { path: '/', element: createElement(AuthLayout), children: [
-    { path: 'auth/login', element: createElement(LoginPage) }, { path: 'auth/register', element: createElement(RegisterPage) }, { path: 'student/auth/login', element: createElement(StudentLoginPage) }, { path: 'student/auth/register', element: createElement(StudentRegisterPage) }, { path: 'auth/verify-account', element: createElement(VerifyAccountPage) },
-    { path: 'auth/password-recovery', element: createElement(PasswordRecoveryPage) }, { path: 'auth/reset-password', element: createElement(ResetPasswordPage) }, { path: 'auth/mfa', element: createElement(MfaChallengePage) }, { path: 'access-denied', element: createElement(AccessDeniedPage) },
-  ] },
-  { path: '/donor', element: createElement(ProtectedRoute, { roles: ['DONOR'] }, createElement(CommunityLayout)), children: [
-    { index: true, element: createElement(DonorDashboardPage) }, { path: 'donate', element: createElement(DonateMoneyPage) }, { path: 'goods', element: createElement(DeclareGoodsPage) }, { path: 'donations', element: createElement(DonationHistoryPage) },
-    { path: 'donations/:donationId', element: createElement(DonationDetailPage) }, { path: 'receipts', element: createElement(Navigate, { to: '/donor/donations', replace: true }) }, { path: 'identity', element: createElement(Navigate, { to: '/donor/account?section=identity', replace: true }) }, { path: 'notifications', element: createElement(Navigate, { to: '/donor', replace: true }) }, { path: 'account', element: createElement(DonorAccountPage) },
-  ] },
-  { path: '/student', element: createElement(ProtectedRoute, { roles: ['STUDENT'] }, createElement(CommunityLayout)), children: [
-    { index: true, element: createElement(StudentDashboardPage) }, { path: 'record', element: createElement(UniversityRecordPage) }, { path: 'apply', element: createElement(AssistanceApplicationPage) }, { path: 'applications', element: createElement(ApplicationTimelinePage) }, { path: 'applications/:applicationId', element: createElement(ApplicationTimelinePage) }, { path: 'applications/:applicationId/vetting', element: createElement(VettingResultPage) }, { path: 'appeals', element: createElement(StudentAppealsPage) }, { path: 'goods', element: createElement(StudentGoodsPage) }, { path: 'goods/request', element: createElement(GoodsRequestPage) }, { path: 'goods/history', element: createElement(CollectionHistoryPage) }, { path: 'account', element: createElement(StudentAccountPage) },
-  ] },
-  { path: '/clerk', element: createElement(ProtectedRoute, { permissions: ['physical-donation:record', 'physical-donation:inspect', 'confirmation:manage', 'inventory:read', 'inventory:manage', 'goods-collection:record', 'goods-collection:release'] }, createElement(CommunityLayout)), children: [
-    { index: true, element: createElement(ClerkDashboardPage) }, { path: 'receive', element: createElement(ReceiveDonationPage) }, { path: 'confirmations', element: createElement(PendingConfirmationsPage) }, { path: 'inspect/:donationId', element: createElement(InspectGoodsPage) }, { path: 'inventory', element: createElement(InventoryPage) }, { path: 'collections', element: createElement(StudentCollectionPage) }, { path: 'reconciliation', element: createElement(DailyReconciliationPage) }, { path: 'rejected', element: createElement(RejectedTransactionsPage) },
-  ] },
-  { path: '/committee', element: createElement(ProtectedRoute, { permissions: ['application:review', 'application:approve', 'committee:manage'] }, createElement(CommunityLayout)), children: [
-    { index: true, element: createElement(CommitteeDashboardPage) }, { path: 'review', element: createElement(ReviewQueuePage) }, { path: 'review/:applicationId', element: createElement(ApplicationReviewPage) }, { path: 'history', element: createElement(ApprovalHistoryPage) }, { path: 'commitments', element: createElement(FundingCommitmentsPage) },
-  ] },
-  { path: '/finance', element: createElement(ProtectedRoute, { permissions: ['disbursement:create', 'disbursement:execute', 'disbursement:read', 'reconciliation:execute', 'reconciliation:read'] }, createElement(CommunityLayout)), children: [
-    { index: true, element: createElement(FinanceDashboardPage) }, { path: 'disbursements', element: createElement(ApprovedDisbursementsPage) }, { path: 'disbursements/:disbursementId', element: createElement(PayoutDetailPage) }, { path: 'exceptions', element: createElement(PaymentExceptionsPage) }, { path: 'reconciliation', element: createElement(ReconciliationPage) },
-  ] },
-  { path: '/inventory', element: createElement(ProtectedRoute, { permissions: ['inventory:read', 'inventory:manage'] }, createElement(CommunityLayout)), children: [
-    { index: true, element: createElement(InventorySupervisorDashboardPage) }, { path: 'stock', element: createElement(InventoryPage) },
-  ] },
-  { path: '/auditor', element: createElement(ProtectedRoute, { permissions: ['evidence:read', 'audit:read', 'forensics:read', 'forensics:investigate', 'report:read', 'report:generate'] }, createElement(CommunityLayout)), children: [
-    { index: true, element: createElement(AuditorDashboardPage) }, { path: 'anomalies', element: createElement(AnomalyCasesPage) }, { path: 'anomalies/:anomalyId', element: createElement(InvestigationPage) }, { path: 'money', element: createElement(MoneyAuditPage) }, { path: 'goods', element: createElement(GoodsAuditPage) }, { path: 'blockchain', element: createElement(BlockchainAuditPage) },
-  ] },
-  { path: '/admin', element: createElement(ProtectedRoute, { roles: ['ADMINISTRATOR'] }, createElement(CommunityLayout)), children: [
-    { index: true, element: createElement(AdminDashboardPage) }, { path: 'users', element: createElement(UsersAndRolesPage) }, { path: 'policies', element: createElement(PolicyConfigurationPage) }, { path: 'university', element: createElement(MockUniversityDataPage) }, { path: 'inventory', element: createElement(InventoryConfigurationPage) }, { path: 'integrations', element: createElement(IntegrationHealthPage) }, { path: 'security', element: createElement(SecurityIncidentsPage) },
-  ] },
+  {
+    path: '/',
+    element: createElement(PublicLayout),
+    children: [
+      { index: true, element: createElement(HomePage) },
+      { path: 'health', element: createElement(FrontendHealth) },
+      { path: 'how-it-works', element: createElement(HowItWorksPage) },
+      { path: 'transparency', element: createElement(TransparencyPage) },
+      { path: 'trace', element: createElement(TracePage) },
+      { path: 'trace/:receiptCode', element: createElement(TracePage) },
+      { path: 'dashboard', element: createElement(PublicDappDashboardPage) },
+      { path: 'wall', element: createElement(RecognitionWallPage) },
+      { path: 'claim', element: createElement(ClaimPreferencesPage) },
+      { path: 'donor/claim', element: createElement(ClaimPreferencesPage) },
+      { path: 'reports', element: createElement(QuarterlyReportsPage) },
+      { path: 'recognition', element: createElement(DonorRecognitionPage) },
+      { path: 'track', element: createElement(TrackDonationPage) },
+      { path: 'goods', element: createElement(GoodsCataloguePage) },
+      { path: 'governance', element: createElement(GovernancePage) },
+      { path: 'policies', element: createElement(PoliciesPage) },
+      { path: 'privacy', element: createElement(PrivacyPage) },
+      { path: 'faq', element: createElement(FaqPage) },
+      { path: 'help', element: createElement(HelpPage) },
+      { path: 'contact', element: createElement(ContactPage) },
+      { path: 'complaints', element: createElement(ComplaintPage) },
+      { path: 'report-fraud', element: createElement(FraudReportPage) },
+      { path: 'confirm-physical-donation', element: createElement(PhysicalDonationConfirmationPage) },
+      { path: 'confirm-goods', element: createElement(GoodsCollectionConfirmationPage) },
+      { path: 'login', element: createElement(DappLoginPage) },
+      { path: 'register', element: createElement(DappRegisterPage) },
+    ],
+  },
+  {
+    path: '/',
+    element: createElement(AuthLayout),
+    children: [
+      { path: 'auth/login', element: createElement(LoginPage) },
+      { path: 'auth/register', element: createElement(RegisterPage) },
+      { path: 'student/auth/login', element: createElement(StudentLoginPage) },
+      { path: 'student/auth/register', element: createElement(StudentRegisterPage) },
+      { path: 'auth/verify-account', element: createElement(VerifyAccountPage) },
+      { path: 'auth/password-recovery', element: createElement(PasswordRecoveryPage) },
+      { path: 'auth/reset-password', element: createElement(ResetPasswordPage) },
+      { path: 'auth/mfa', element: createElement(MfaChallengePage) },
+      { path: 'access-denied', element: createElement(AccessDeniedPage) },
+    ],
+  },
+  {
+    path: '/donor',
+    element: createElement(ProtectedRoute, { roles: ['DONOR'] }, createElement(CommunityLayout)),
+    children: [
+      { index: true, element: createElement(DonorDashboardPage) },
+      { path: 'donate', element: createElement(DonateMoneyPage) },
+      { path: 'goods', element: createElement(DeclareGoodsPage) },
+      { path: 'donations', element: createElement(DonationHistoryPage) },
+      { path: 'donations/:donationId', element: createElement(DonationDetailPage) },
+      { path: 'dapp', element: createElement(DonorPortalPage) },
+      { path: 'receipts', element: createElement(Navigate, { to: '/donor/donations', replace: true }) },
+      { path: 'identity', element: createElement(Navigate, { to: '/donor/account?section=identity', replace: true }) },
+      { path: 'notifications', element: createElement(Navigate, { to: '/donor', replace: true }) },
+      { path: 'account', element: createElement(DonorAccountPage) },
+    ],
+  },
+  {
+    path: '/student',
+    element: createElement(ProtectedRoute, { roles: ['STUDENT'] }, createElement(CommunityLayout)),
+    children: [
+      { index: true, element: createElement(StudentDashboardPage) },
+      { path: 'record', element: createElement(UniversityRecordPage) },
+      { path: 'apply', element: createElement(AssistanceApplicationPage) },
+      { path: 'applications', element: createElement(ApplicationTimelinePage) },
+      { path: 'applications/:applicationId', element: createElement(ApplicationTimelinePage) },
+      { path: 'applications/:applicationId/vetting', element: createElement(VettingResultPage) },
+      { path: 'appeals', element: createElement(StudentAppealsPage) },
+      { path: 'goods', element: createElement(StudentGoodsPage) },
+      { path: 'goods/request', element: createElement(GoodsRequestPage) },
+      { path: 'goods/history', element: createElement(CollectionHistoryPage) },
+      { path: 'account', element: createElement(StudentAccountPage) },
+    ],
+  },
+  {
+    path: '/clerk',
+    element: createElement(
+      ProtectedRoute,
+      {
+        permissions: [
+          'physical-donation:record',
+          'physical-donation:inspect',
+          'confirmation:manage',
+          'inventory:read',
+          'inventory:manage',
+          'goods-collection:record',
+          'goods-collection:release',
+        ],
+      },
+      createElement(CommunityLayout)
+    ),
+    children: [
+      { index: true, element: createElement(ClerkDashboardPage) },
+      { path: 'receive', element: createElement(ReceiveDonationPage) },
+      { path: 'confirmations', element: createElement(PendingConfirmationsPage) },
+      { path: 'inspect/:donationId', element: createElement(InspectGoodsPage) },
+      { path: 'inventory', element: createElement(InventoryPage) },
+      { path: 'collections', element: createElement(StudentCollectionPage) },
+      { path: 'reconciliation', element: createElement(DailyReconciliationPage) },
+      { path: 'rejected', element: createElement(RejectedTransactionsPage) },
+    ],
+  },
+  {
+    path: '/committee',
+    element: createElement(
+      ProtectedRoute,
+      {
+        permissions: [
+          'application:review',
+          'application:approve',
+          'committee:manage',
+          'case:read',
+          'case:decide',
+          'release:authorize',
+        ],
+      },
+      createElement(CommunityLayout)
+    ),
+    children: [
+      { index: true, element: createElement(CommitteeDashboardPage) },
+      { path: 'review', element: createElement(ReviewQueuePage) },
+      { path: 'review/:applicationId', element: createElement(ApplicationReviewPage) },
+      { path: 'cases', element: createElement(CasesPage) },
+      { path: 'cases/new', element: createElement(NewCasePage) },
+      { path: 'signing', element: createElement(SigningQueuePage) },
+      { path: 'history', element: createElement(ApprovalHistoryPage) },
+      { path: 'commitments', element: createElement(FundingCommitmentsPage) },
+    ],
+  },
+  {
+    path: '/finance',
+    element: createElement(
+      ProtectedRoute,
+      {
+        permissions: [
+          'disbursement:create',
+          'disbursement:execute',
+          'disbursement:read',
+          'reconciliation:execute',
+          'reconciliation:read',
+        ],
+      },
+      createElement(CommunityLayout)
+    ),
+    children: [
+      { index: true, element: createElement(FinanceDashboardPage) },
+      { path: 'disbursements', element: createElement(ApprovedDisbursementsPage) },
+      { path: 'disbursements/:disbursementId', element: createElement(PayoutDetailPage) },
+      { path: 'exceptions', element: createElement(PaymentExceptionsPage) },
+      { path: 'reconciliation', element: createElement(ReconciliationPage) },
+    ],
+  },
+  {
+    path: '/inventory',
+    element: createElement(
+      ProtectedRoute,
+      { permissions: ['inventory:read', 'inventory:manage', 'item-log:create', 'item:issue'] },
+      createElement(CommunityLayout)
+    ),
+    children: [
+      { index: true, element: createElement(InventorySupervisorDashboardPage) },
+      { path: 'stock', element: createElement(InventoryPage) },
+      { path: 'pharmacy', element: createElement(PharmacyItemPage) },
+    ],
+  },
+  {
+    path: '/auditor',
+    element: createElement(
+      ProtectedRoute,
+      {
+        permissions: [
+          'evidence:read',
+          'audit:read',
+          'forensics:read',
+          'forensics:investigate',
+          'report:read',
+          'report:generate',
+          'alert:read',
+        ],
+      },
+      createElement(CommunityLayout)
+    ),
+    children: [
+      { index: true, element: createElement(AuditorDashboardPage) },
+      { path: 'anomalies', element: createElement(AnomalyCasesPage) },
+      { path: 'anomalies/:anomalyId', element: createElement(InvestigationPage) },
+      { path: 'fund-flow-dag', element: createElement(FundFlowGraphPage) },
+      { path: 'forensic-rules', element: createElement(ForensicAlertsPage) },
+      { path: 'money', element: createElement(MoneyAuditPage) },
+      { path: 'goods', element: createElement(GoodsAuditPage) },
+      { path: 'blockchain', element: createElement(BlockchainAuditPage) },
+      { path: 'quarterly-reports', element: createElement(QuarterlyReportsPage) },
+    ],
+  },
+  {
+    path: '/admin',
+    element: createElement(
+      ProtectedRoute,
+      { roles: ['ADMINISTRATOR', 'SYSTEM_ADMIN'] },
+      createElement(CommunityLayout)
+    ),
+    children: [
+      { index: true, element: createElement(AdminDashboardPage) },
+      { path: 'users', element: createElement(UsersAndRolesPage) },
+      { path: 'policies', element: createElement(PolicyConfigurationPage) },
+      { path: 'university', element: createElement(MockUniversityDataPage) },
+      { path: 'inventory', element: createElement(InventoryConfigurationPage) },
+      { path: 'integrations', element: createElement(IntegrationHealthPage) },
+      { path: 'security', element: createElement(SecurityIncidentsPage) },
+    ],
+  },
+  {
+    path: '/app',
+    element: createElement(RequireAuth, null, createElement(MalkiaAppLayout)),
+    children: [
+      { index: true, element: createElement(Navigate, { to: '/app/cases', replace: true }) },
+      { path: 'cases', element: createElement(CasesPage) },
+      { path: 'cases/new', element: createElement(NewCasePage) },
+      { path: 'signing', element: createElement(SigningQueuePage) },
+      { path: 'donations', element: createElement(BankDepositsPage) },
+      { path: 'pharmacy', element: createElement(PharmacyItemPage) },
+      { path: 'graph', element: createElement(FundFlowGraphPage) },
+      { path: 'alerts', element: createElement(ForensicAlertsPage) },
+      { path: 'reports', element: createElement(QuarterlyReportsPage) },
+    ],
+  },
 ]);

@@ -43,8 +43,8 @@ export const RegisterPage: React.FC = () => {
       setErrorMsg('Please enter a valid email address.');
       return;
     }
-    if (password.length < 8) {
-      setErrorMsg('Password must be at least 8 characters long.');
+    if (password.length < 12) {
+      setErrorMsg('Password must be at least 12 characters long.');
       return;
     }
     if (password !== confirmPassword) {
@@ -132,7 +132,7 @@ export const RegisterPage: React.FC = () => {
                   <Input
                     type={showPassword ? 'text' : 'password'}
                     required
-                    placeholder="At least 8 characters"
+                    placeholder="At least 12 characters"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="pl-9 pr-9 text-xs h-10"

@@ -52,7 +52,28 @@ export function UsersAndRolesPage() {
     }
   };
   useEffect(() => {
-    load();
+    let active = true;
+    (async () => {
+      try {
+        const result = await adminApi.users();
+        if (!active) return;
+        setUsers(result.items ?? []);
+        try {
+          const roles = await adminApi.roles();
+          if (active) setExistingRoles(roles.roles ?? []);
+        } catch {
+          if (active) setExistingRoles([]);
+        }
+        if (active) setError(null);
+      } catch (cause) {
+        if (active) setError(cause.message);
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
   }, []);
   const selected = new Set(composer.permissions);
   const visibleGroups = useMemo(

@@ -138,6 +138,20 @@ export const api = {
     }
   },
 
+  // Subgroups
+  getSubgroups: async (): Promise<{ id: string; code: string; name: string }[]> => {
+    try {
+      const data = await fetchApi<{ items: any[] }>('/api/v1/cases/subgroups');
+      return (data.items || []).map((s: any) => ({
+        id: s.id,
+        code: s.code,
+        name: s.name,
+      }));
+    } catch {
+      return [];
+    }
+  },
+
   // Cases Queue
   getCases: async (params?: { subGroupId?: string; state?: string }): Promise<CaseRecord[]> => {
     const qs = new URLSearchParams();
@@ -146,48 +160,67 @@ export const api = {
     const query = qs.toString() ? `?${qs.toString()}` : '';
 
     const data = await fetchApi<{ items: any[] }>(`/api/v1/cases${query}`);
-    return (data.items || []).map((c: any) => ({
-      id: c.id,
-      caseNumber: c.caseNumber,
-      subGroupId: c.subGroupId,
-      subGroupName: c.subGroup?.name || 'General Subgroup',
-      needCategory: c.needCategory,
-      requestedAmountMinor: Number(c.requestedAmountMinor || 0),
-      approvedAmountMinor: c.approvedAmountMinor ? Number(c.approvedAmountMinor) : undefined,
-      disbursedAmountMinor: c.disbursedAmountMinor ? Number(c.disbursedAmountMinor) : undefined,
-      state: c.status,
-      justification: c.studentPii?.justification || 'Emergency student aid request',
-      signatorySignatures: (c.events || [])
-        .filter((e: any) => e.toState === 'AUTHORIZED')
-        .flatMap((e: any) =>
-          (e.payload?.signatures || []).map((s: any) => ({
-            signer: s.signer,
-            signedAt: e.createdAt,
-          }))
-        ),
-      submitterId: c.createdByUserId || 'rep-1',
-      evidenceCid: c.events?.find((e: any) => e.payload?.evidenceCid)?.payload?.evidenceCid,
-      createdAt: c.createdAt,
-      updatedAt: c.updatedAt,
-    }));
+    return (data.items || []).map((c: any) => {
+      const sigEvents = (c.events || []).filter(
+        (e: any) =>
+          (e.toState === 'APPROVED' && e.payload?.signer) ||
+          (e.toState === 'AUTHORIZED' && Array.isArray(e.payload?.signatures))
+      );
+      const collected: { signer: string; signedAt: string }[] = [];
+      for (const e of sigEvents) {
+        if (e.toState === 'APPROVED' && e.payload?.signer) {
+          collected.push({ signer: e.payload.signer, signedAt: e.createdAt });
+        } else if (e.toState === 'AUTHORIZED' && Array.isArray(e.payload?.signatures)) {
+          const signers = Array.isArray(e.payload.signers) ? e.payload.signers : [];
+          e.payload.signatures.forEach((sig: any, idx: number) => {
+            const addr =
+              typeof sig === 'string'
+                ? signers[idx] || `Signatory #${idx + 1} (${sig.slice(0, 10)}...)`
+                : sig.signer;
+            if (addr && !collected.some((item) => item.signer.toLowerCase() === addr.toLowerCase())) {
+              collected.push({ signer: addr, signedAt: e.createdAt });
+            }
+          });
+        }
+      }
+
+      return {
+        id: c.id,
+        caseNumber: c.caseNumber,
+        subGroupId: c.subGroupId,
+        subGroupName: c.subGroup?.name || 'General Subgroup',
+        needCategory: c.needCategory,
+        requestedAmountMinor: Number(c.requestedAmountMinor || 0),
+        approvedAmountMinor: c.approvedAmountMinor ? Number(c.approvedAmountMinor) : undefined,
+        disbursedAmountMinor: c.disbursedAmountMinor ? Number(c.disbursedAmountMinor) : undefined,
+        state: c.state || c.status,
+        justification: c.justification || c.studentPii?.justification || 'Emergency student aid request',
+        signatorySignatures: collected,
+        submitterId: c.createdByUserId || 'rep-1',
+        evidenceCid: c.events?.find((e: any) => e.payload?.evidenceCid)?.payload?.evidenceCid,
+        createdAt: c.createdAt,
+        updatedAt: c.updatedAt,
+      };
+    });
   },
 
   // Create Case
   createCase: async (payload: {
     subGroupId?: string;
     subGroupName?: string;
+    studentName?: string;
+    studentRegNo?: string;
+    studentPhone?: string;
     needCategory: NeedCategory;
     requestedAmountMinor: number;
     justification: string;
+    hasConsent?: boolean;
   }): Promise<CaseRecord> => {
     let subGroupId = payload.subGroupId;
     if (!subGroupId) {
-      // Find an existing subgroup or use fallback
       try {
-        const existingCases = await fetchApi<{ items: any[] }>('/api/v1/cases?pageSize=1');
-        if (existingCases.items?.[0]?.subGroupId) {
-          subGroupId = existingCases.items[0].subGroupId;
-        }
+        const subgroups = await api.getSubgroups();
+        if (subgroups[0]?.id) subGroupId = subgroups[0].id;
       } catch {
         // ignore
       }
@@ -197,18 +230,19 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({
         subGroupId: subGroupId || '00000000-0000-0000-0000-000000000001',
+        studentName: payload.studentName || 'Student Applicant',
+        studentRegNo: payload.studentRegNo || `MUST/SIM/${Math.floor(1000 + Math.random() * 9000)}`,
+        studentPhone: payload.studentPhone || '254700000000',
         needCategory: payload.needCategory,
-        requestedAmountMinor: payload.requestedAmountMinor,
-        studentPii: {
-          studentName: 'Student Applicant',
-          registrationNumber: `REG-${Math.floor(1000 + Math.random() * 9000)}`,
-          phone: '254700000000',
-          justification: payload.justification,
-        },
+        requestedAmount: (payload.requestedAmountMinor / 100).toFixed(2),
+        justification: payload.justification,
+        hasConsent: payload.hasConsent ?? true,
       }),
     });
 
     const c = data.case;
+    await fetchApi(`/api/v1/cases/${c.id}/submit`, { method: 'POST' }).catch(() => {});
+
     return {
       id: c.id,
       caseNumber: c.caseNumber,
@@ -216,7 +250,7 @@ export const api = {
       subGroupName: payload.subGroupName || 'General Subgroup',
       needCategory: c.needCategory,
       requestedAmountMinor: Number(c.requestedAmountMinor || 0),
-      state: c.status,
+      state: 'SUBMITTED',
       justification: payload.justification,
       signatorySignatures: [],
       submitterId: c.createdByUserId,
@@ -231,7 +265,7 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({
         decision: 'APPROVED',
-        approvedAmountMinor,
+        approvedAmount: (approvedAmountMinor / 100).toFixed(2),
         notes: `Approved by committee member ${approverId}`,
       }),
     });
@@ -244,7 +278,7 @@ export const api = {
       needCategory: c.needCategory,
       requestedAmountMinor: Number(c.requestedAmountMinor || 0),
       approvedAmountMinor: Number(c.approvedAmountMinor || approvedAmountMinor),
-      state: c.status,
+      state: c.state || c.status,
       justification: 'Approved',
       signatorySignatures: [],
       submitterId: c.createdByUserId,
@@ -269,7 +303,7 @@ export const api = {
       subGroupName: 'General Subgroup',
       needCategory: c.needCategory,
       requestedAmountMinor: Number(c.requestedAmountMinor || 0),
-      state: c.status,
+      state: c.state || c.status,
       justification: reason,
       signatorySignatures: [],
       submitterId: c.createdByUserId,
@@ -278,19 +312,41 @@ export const api = {
     };
   },
 
-  // Signatory Sign Action (EIP-712 Release)
-  signReleaseAuthorization: async (caseId: string, signerAddress: string): Promise<CaseRecord> => {
-    const dummySignature = '0x' + '22'.repeat(65);
+  // Signatory Sign Action (EIP-712 2-of-3 Release)
+  signReleaseAuthorization: async (
+    caseId: string,
+    payload:
+      | string
+      | {
+          signer: string;
+          signature: string;
+          amountMinor: number;
+          nonce?: number;
+          deadline?: number;
+          signMethod?: 'METAMASK_EIP712' | 'DEMO_SIGNATORY';
+        }
+  ): Promise<CaseRecord> => {
+    const body =
+      typeof payload === 'string'
+        ? {
+            signer: payload,
+            signature: `0x${payload.replace(/^0x/, '').padEnd(130, 'a').slice(0, 130)}`,
+            nonce: 0,
+            deadline: Math.floor(Date.now() / 1000) + 7 * 86400,
+            signMethod: 'DEMO_SIGNATORY' as const,
+          }
+        : {
+            signer: payload.signer,
+            signature: payload.signature,
+            amountMinor: payload.amountMinor,
+            nonce: payload.nonce ?? 0,
+            deadline: payload.deadline ?? Math.floor(Date.now() / 1000) + 7 * 86400,
+            signMethod: payload.signMethod ?? 'METAMASK_EIP712',
+          };
+
     const data = await fetchApi<{ case: any }>(`/api/v1/cases/${caseId}/authorize`, {
       method: 'POST',
-      body: JSON.stringify({
-        signatures: [
-          {
-            signer: signerAddress,
-            signature: dummySignature,
-          },
-        ],
-      }),
+      body: JSON.stringify(body),
     });
     const c = data.case;
     return {
@@ -301,9 +357,9 @@ export const api = {
       needCategory: c.needCategory,
       requestedAmountMinor: Number(c.requestedAmountMinor || 0),
       approvedAmountMinor: c.approvedAmountMinor ? Number(c.approvedAmountMinor) : undefined,
-      state: c.status,
-      justification: 'Authorized',
-      signatorySignatures: [{ signer: signerAddress, signedAt: new Date().toISOString() }],
+      state: c.state || c.status,
+      justification: c.justification || 'Authorized',
+      signatorySignatures: [{ signer: body.signer, signedAt: new Date().toISOString() }],
       submitterId: c.createdByUserId,
       createdAt: c.createdAt,
       updatedAt: c.updatedAt,
@@ -320,9 +376,9 @@ export const api = {
     const data = await fetchApi<{ case: any }>(`/api/v1/cases/${caseId}/disburse`, {
       method: 'POST',
       body: JSON.stringify({
-        amountMinor,
+        amount: (amountMinor / 100).toFixed(2),
         method: 'MPESA',
-        reference: methodRef,
+        methodReference: methodRef,
         evidenceCid,
       }),
     });
@@ -336,7 +392,7 @@ export const api = {
       requestedAmountMinor: Number(c.requestedAmountMinor || 0),
       approvedAmountMinor: c.approvedAmountMinor ? Number(c.approvedAmountMinor) : undefined,
       disbursedAmountMinor: Number(c.disbursedAmountMinor || amountMinor),
-      state: c.status,
+      state: c.state || c.status,
       justification: 'Disbursed',
       signatorySignatures: [],
       submitterId: c.createdByUserId,
@@ -585,14 +641,28 @@ export const api = {
   },
 
   // Donor Registration & Auth
-  register: async (data: { name: string; email: string; password: string }): Promise<{ user: any; token: string; role?: string }> => {
+  register: async (data: { name: string; email: string; password: string }): Promise<{
+    user: any;
+    token?: string;
+    role?: string;
+    requiresVerification?: boolean;
+    developmentVerificationToken?: string;
+  }> => {
     return fetchApi('/api/v1/public/auth/register', {
       method: 'POST',
       body: JSON.stringify(data),
     });
   },
 
-  login: async (data: { email: string; password: string }): Promise<{ user: any; token: string; role?: string }> => {
+  login: async (data: { email: string; password: string }): Promise<{
+    user: any;
+    token?: string;
+    role?: string;
+    roles?: string[];
+    permissions?: string[];
+    session?: any;
+    mfaVerified?: boolean;
+  }> => {
     return fetchApi('/api/v1/public/auth/login', {
       method: 'POST',
       body: JSON.stringify(data),

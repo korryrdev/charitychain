@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { authApi } from '../../features/authentication/services/auth.api.js';
 import { useAuth } from '../../features/authentication/hooks/useAuth.js';
 import { httpClient } from '../../services/httpClient.js';
 

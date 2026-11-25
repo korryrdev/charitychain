@@ -7,7 +7,6 @@ import { assertSegregation, assertState } from '../../utils/assertions.js';
 import { lotsService } from '../lots/lots.service.js';
 import { ConflictError } from '../../errors/ConflictError.js';
 import { ValidationError } from '../../errors/ValidationError.js';
-import { logger } from '../../observability/logger.js';
 
 export class CasesService {
   async createCase({ subGroupId, studentName, studentRegNo, studentPhone, needCategory, requestedAmount, justification, hasConsent = true, createdByUserId }) {
@@ -186,17 +185,64 @@ export class CasesService {
     return updatedCase;
   }
 
-  async authorizeRelease(caseId, { amountMinor, nonce, deadline, signatures }, actorUserId) {
+  async authorizeRelease(
+    caseId,
+    { amountMinor, nonce = 0, deadline, signatures, signer, signature, signMethod },
+    actorUserId
+  ) {
     const malkiaCase = await prisma.malkiaCase.findUnique({
       where: { id: caseId },
+      include: { events: { orderBy: { createdAt: 'asc' } } },
     });
     if (!malkiaCase) throw new ConflictError(`Case "${caseId}" not found.`);
     assertState(malkiaCase.state, ['APPROVED'], 'Case');
 
-    if (!signatures || signatures.length !== 2) {
+    const effectiveAmountMinor = amountMinor ?? malkiaCase.approvedAmountMinor;
+    const effectiveDeadline = deadline ?? Math.floor(Date.now() / 1000) + 7 * 86400;
+
+    let finalSignatures = signatures;
+    let finalSigners = [];
+
+    if (!finalSignatures || finalSignatures.length < 2) {
+      if (!signer || !signature) {
+        throw new ValidationError('2 valid signatory signatures are required for release authorization.');
+      }
+      const normalizedSigner = signer.toLowerCase();
+      const priorEvents = malkiaCase.events.filter(
+        (e) => e.fromState === 'APPROVED' && e.toState === 'APPROVED' && e.payload?.signer
+      );
+      if (priorEvents.some((e) => String(e.payload.signer).toLowerCase() === normalizedSigner)) {
+        throw new ConflictError('This signatory wallet has already signed release authorization for this case.');
+      }
+      if (priorEvents.length === 0) {
+        await prisma.caseEvent.create({
+          data: {
+            caseId,
+            fromState: 'APPROVED',
+            toState: 'APPROVED',
+            actorUserId,
+            notes: `EIP-712 release signature 1 of 2 collected from ${signer}.`,
+            payload: {
+              signer,
+              signature,
+              signMethod: signMethod || 'METAMASK_EIP712',
+              nonce,
+              deadline: effectiveDeadline,
+            },
+          },
+        });
+        return this.getCase(caseId, false);
+      }
+
+      const firstSig = priorEvents[0].payload.signature;
+      finalSignatures = [firstSig, signature];
+      finalSigners = [priorEvents[0].payload.signer, signer];
+    }
+
+    if (finalSignatures.length !== 2) {
       throw new ValidationError('2 valid signatory signatures are required for release authorization.');
     }
-    if (signatures[0].toLowerCase() === signatures[1].toLowerCase()) {
+    if (finalSignatures[0].toLowerCase() === finalSignatures[1].toLowerCase()) {
       throw new ConflictError('Signatures must come from two distinct signatories.');
     }
 
@@ -211,8 +257,14 @@ export class CasesService {
         fromState: 'APPROVED',
         toState: 'AUTHORIZED',
         actorUserId,
-        notes: `2-of-3 signatures collected and authorized. Amount: ${amountMinor}.`,
-        payload: { signatures, nonce, deadline },
+        notes: `2-of-3 signatures collected and authorized. Amount: ${effectiveAmountMinor}.`,
+        payload: {
+          signatures: finalSignatures,
+          signers: finalSigners,
+          signMethod: signMethod || 'METAMASK_EIP712',
+          nonce,
+          deadline: effectiveDeadline,
+        },
       },
     });
 
@@ -224,10 +276,10 @@ export class CasesService {
         idempotencyKey: `case-authorized-${caseId}`,
         payload: {
           caseId,
-          amountMinor: amountMinor.toString(),
-          signatures,
+          amountMinor: effectiveAmountMinor.toString(),
+          signatures: finalSignatures,
           nonce,
-          deadline,
+          deadline: effectiveDeadline,
         },
       },
     });
@@ -332,6 +384,10 @@ export class CasesService {
     };
   }
 
+  async listSubgroups() {
+    return prisma.subgroup.findMany({ orderBy: { name: 'asc' } });
+  }
+
   async listCases({ subGroupId, state, page = 1, pageSize = 20 }) {
     const where = {
       ...(subGroupId ? { subGroupId } : {}),
@@ -343,7 +399,10 @@ export class CasesService {
       orderBy: { createdAt: 'desc' },
       skip: (page - 1) * pageSize,
       take: pageSize,
-      include: { subGroup: true },
+      include: {
+        subGroup: true,
+        events: { orderBy: { createdAt: 'asc' } },
+      },
     });
 
     return cases.map((c) => ({

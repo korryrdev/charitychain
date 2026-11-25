@@ -31,7 +31,7 @@ export function createBadgesService({ database = prisma } = {}) {
       const coolingDays = 7;
       const activatesAt = new Date(Date.now() + coolingDays * 86400000);
 
-      const rule = await database.forensicRuleConfig.upsert({
+      await database.forensicRuleConfig.upsert({
         where: { id: `PROPOSAL_TIER_${tier}` },
         update: {
           thresholdParams: {

@@ -4,7 +4,6 @@ import { useSession } from '../features/authentication/hooks/useSession.js';
 import { NAVIGATION, allowedNavigation } from './navigation.js';
 import { AppHeader } from './components/AppHeader.jsx';
 import { AppSidebar } from './components/AppSidebar.jsx';
-import { Breadcrumbs } from './components/Breadcrumbs.jsx';
 import { MobileNavigation } from './components/MobileNavigation.jsx';
 export function CommunityLayout() {
   const { session } = useSession();
