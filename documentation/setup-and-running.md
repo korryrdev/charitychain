@@ -8,12 +8,12 @@ This guide describes how to run CharityChain from a fresh clone. It covers the f
 
 | Component | Technology | Local endpoint |
 | --- | --- | --- |
-| **Web Application** | React 19.3, React Router 7.18, Vite 8.3, Tailwind CSS | `http://localhost:5173` |
-| **Backend REST API** | Node.js 22.12+, Express 5.3, Better-Auth | `http://localhost:3000` |
-| **Database** | PostgreSQL 17 | host port `5433` |
+| **Web Application** | React 19.3, React Router 7.18, Vite 8.3 | `http://localhost:5173` |
+| **Backend REST API** | Node.js 22.12+, Express 5.3, Better Auth | `http://localhost:3000` |
+| **Database** | PostgreSQL 17 | host port `5435` |
 | **ORM & Migrations** | Prisma Client & CLI 6.19 | `database/` workspace |
 | **Evidence Storage** | IPFS Kubo 0.39 | API: `http://localhost:5001`, Gateway: `http://localhost:8080` |
-| **Smart Contracts** | Solidity, Hardhat 3.21, OpenZeppelin 5.4, Viem | `blockchain/` workspace |
+| **Smart Contracts** | Solidity, Hardhat 3.21, OpenZeppelin 5.4, Web3.js 4.16 | `blockchain/` workspace |
 
 The repository is an npm-workspace monorepo containing `frontend`, `backend`, `database`, `blockchain`, `shared`, simulators, infrastructure, and documentation.
 
@@ -43,7 +43,7 @@ CharityChain enforces strict **Role-Based Access Control (RBAC)**. The applicati
 * **Node.js 22.12.0 or newer** (see `.nvmrc`)
 * **npm 10 or newer** (included with supported Node releases)
 * **Docker Desktop** with Docker Engine and Docker Compose v2 enabled
-* The following ports must be free: `5173`, `3000`, `5433`, `4001`, `5001`, `8080`
+* The following ports must be free: `5173`, `3000`, `5435`, `4001`, `5001`, `8080`
 
 Verify your tools:
 ```powershell
@@ -64,11 +64,13 @@ Copy-Item .env.example .env
 ```
 
 Key configuration notes:
+* **Single Root Configuration**: The repository-root `.env` is the single configuration source for Docker, the backend, Prisma, and Vite (`VITE_` variables only are exposed to browser code). Never put production credentials in a frontend-prefixed variable.
 * **Database URL**:
-  * For local Node.js processes: `DATABASE_URL=postgresql://charitychain:charitychain-local-only@localhost:5433/charitychain?schema=public`
-  * For Docker Compose: automatically points to `postgres:5432`.
-* **Secrets**: For production, ensure `SESSION_SECRET` and `ENCRYPTION_KEY` are cryptographically random strings.
-* **Email & Integrations**: Keep `FEATURE_EMAIL_ENABLED=false` unless you provide a valid `RESEND_API_KEY`. In development mode, authentication verification tokens are auto-approved.
+  * For local Node.js processes with Docker PostgreSQL: `DATABASE_URL=postgresql://charitychain:change-for-local-development@localhost:5435/charitychain?schema=public`
+  * For Docker Compose API container: Compose overrides it to `postgres:5432` automatically.
+* **Secrets & Integrations**: Set `POSTGRES_PASSWORD`, `SESSION_SECRET`, and `ENCRYPTION_KEY` to cryptographically random strings in production. Keep `FEATURE_EMAIL_ENABLED=false` and payment/SMS feature flags disabled unless valid credentials are configured. In development mode, authentication verification tokens are auto-approved.
+
+Use either the Docker workflow or the local-development workflow below; do not run both frontend/API modes on the same ports at the same time.
 
 ---
 
@@ -183,8 +185,8 @@ From the **Users & Roles** directory:
 3. Donors can immediately donate funds or declare physical items from `/donor`.
 
 ### Student Onboarding
-1. Students register at `http://localhost:5173/student/auth/register`.
-2. The registration automatically assigns the `STUDENT` role.
+1. Students register with their university email (`name123456@students.must.ac.ke`) via `http://localhost:5173/auth/register` (Student tab) or `http://localhost:5173/student/auth/register`.
+2. The registration assigns the `STUDENT` role.
 3. To link their student profile, the student supplies their university registration number matching one of the seeded records (e.g. `MUST/SIM/2026/001` through `MUST/SIM/2026/030`).
 4. Once linked, their academic semester, fee balance, and eligibility data populate automatically on `/student`.
 
@@ -200,7 +202,7 @@ docker compose ps
 ```
 
 This starts:
-* `postgres`: Database on port `5433`
+* `postgres`: Database on port `5435`
 * `ipfs`: Kubo node on ports `5001` and `8080`
 * `bootstrap`: Automatically executes migrations and seeds roles/permissions
 * `backend`: Express API on port `3000`
@@ -232,26 +234,71 @@ npm run verify                # Full CI verification suite
 
 Check API readiness:
 ```powershell
+docker compose ps
 Invoke-WebRequest http://localhost:3000/api/v1/health/ready
+```
+Or with `curl`:
+```bash
+curl http://localhost:3000/api/v1/health/ready
 ```
 
 ---
 
-## 10. Troubleshooting
+## 10. M-Pesa Daraja Sandbox Configuration
+
+Set `MPESA_ENVIRONMENT=sandbox` and fill `MPESA_CONSUMER_KEY`, `MPESA_CONSUMER_SECRET`, `MPESA_BUSINESS_SHORT_CODE` (or `MPESA_SHORTCODE`), and `MPESA_PASSKEY` in the root `.env`, then set `FEATURE_MPESA_ENABLED=true`. STK Push uses the Safaricom sandbox API; its callback URL uses `MPESA_CALLBACK_URL` (or `${MPESA_CALLBACK_BASE_URL}/api/v1/webhooks/payments/mpesa/stk`). Daraja must be able to reach that callback URL, so use a public HTTPS tunnel for local testing. The callback is reconciled with Daraja's STK Push Query API before a donation can be marked paid.
+
+The initiator/security credential and university shortcode/account variables are needed only for M-Pesa disbursements. Do not send Daraja credentials in chat or commit them; configure them only in the ignored root `.env`.
+
+---
+
+## 11. Database Operations Reference
+
+Prisma schema: `database/prisma/schema.prisma`.
+
+| Task | Command |
+| --- | --- |
+| Generate Prisma Client | `npm run db:generate` |
+| Validate Prisma schema | `npm run db:validate` |
+| Create a new local migration during schema development | `npm run db:migrate` |
+| Apply committed migrations in a deployment | `npm run migrate:deploy -w @charitychain/database` |
+| Seed core roles, permissions, and recognition tiers | `npm run db:seed` |
+| Seed simulated university records | `npm run db:seed:university` |
+| Seed sample inventory categories, batches, and desk | `npm run db:seed:inventory` |
+| Seed initial Super Administrator account | `npm run db:seed:admin` |
+| Run all seed scripts together | `npm run db:seed:all` |
+| Check migration state | `npx prisma migrate status --schema database/prisma/schema.prisma` |
+
+Fresh databases must receive both migrations and the core seed before accounts can be created because registration assigns the `DONOR` (or `STUDENT`) role. Student-support workflows also need the simulated university-record seed.
+
+---
+
+## 12. Authentication in Local Development
+
+The local environment does not use a real email/SMS delivery provider unless configured. A development registration is verified automatically via development verification tokens so dashboards can be tested locally. Production does not expose verification tokens: it requires a configured delivery provider (`RESEND_API_KEY`) and the standard verification process.
+
+Student self-registration validates the university format (`name123456@students.must.ac.ke`). Accounts can hold verified student capability through university registration number linkage to the local simulated university record.
+
+---
+
+## 13. Troubleshooting
 
 ### Port already in use
 Check which process is listening on project ports:
 ```powershell
-netstat -ano | Select-String ':5173|:3000|:5433'
+netstat -ano | Select-String ':5173|:3000|:5435'
 ```
 Stop existing processes or Docker containers before running `npm run dev`.
 
 ### Database connection failed
-Ensure PostgreSQL container is running:
+Ensure PostgreSQL container is running and healthy:
 ```powershell
 docker compose ps postgres
 ```
-Verify `DATABASE_URL` in `.env` uses port `5433` for local Node.js execution.
+Verify `DATABASE_URL` in root `.env` uses port `5435` for local Node.js execution (`postgres:5432` inside Docker). If roles are missing, run `npm run migrate:deploy -w @charitychain/database` followed by `npm run db:seed`.
+
+### Frontend shows an API or CSRF error
+Use one local origin consistently (`http://localhost:5173` or `http://127.0.0.1:5173`), refresh once after an API restart, and check `/api/v1/health/ready`.
 
 ### Cannot log in as Super Admin
 Ensure you ran the admin seed command:
@@ -266,3 +313,9 @@ Ensure you ran the university simulation seed:
 npm run db:seed:university
 ```
 Valid test registration numbers range from `MUST/SIM/2026/001` to `MUST/SIM/2026/030`.
+
+---
+
+## Production Note
+
+The Docker Compose configuration is for reproducible local and demo use. Before production deployment, use managed secrets, HTTPS, a production database backup plan, real provider credentials, a hosted IPFS strategy, strict allowed origins, and a dedicated process supervisor or container platform. Do not expose local Docker ports or development secrets to the public internet.

@@ -1,0 +1,149 @@
+/*
+ * CharityChain design tokens ("Calm trust").
+ * One source of truth for the redesigned surfaces (header, auth, search,
+ * help, FAQ). Dark mode only remaps these names, so components never need
+ * per-component dark overrides.
+ */
+:root {
+  /* Brand */
+  --cc-brand-900: #0c3d2a;
+  --cc-brand-800: #0f4a33;
+  --cc-brand-700: #135b3d;
+  --cc-brand-500: #2fa36f;
+  --cc-brand-100: #e0f2e5;
+  --cc-brand-50: #f0f8f2;
+  --cc-accent: #c7ef9c;
+
+  /* Semantic roles (light) */
+  --cc-bg: #fbfcfa;
+  --cc-surface: #ffffff;
+  --cc-surface-2: #f1f5f0;
+  --cc-line: #d9e4dc;
+  --cc-line-strong: #b4c8ba;
+  --cc-text: #17362a;
+  --cc-text-muted: #4f6358;
+  --cc-primary: #135b3d;
+  --cc-primary-hover: #0c3d2a;
+  --cc-on-primary: #ffffff;
+  --cc-primary-soft: #e0f2e5;
+  --cc-primary-text: #135b3d;
+  --cc-focus: #135b3d;
+  --cc-danger: #b42318;
+  --cc-danger-soft: #fef3f2;
+  --cc-success: #1b7a4e;
+  --cc-success-soft: #e6f6ec;
+  --cc-warning: #92400e;
+  --cc-warning-soft: #fff4de;
+  --cc-info: #1e5a99;
+  --cc-info-soft: #e8f1fb;
+  --cc-input-bg: #ffffff;
+  --cc-input-border: #9bb3a3;
+  --cc-overlay: rgb(9 28 19 / 55%);
+  --cc-mark: #fff1a8;
+
+  /* Typography */
+  --cc-font-display: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --cc-font-body: 'Inter', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --cc-text-display: clamp(2.25rem, 1.6rem + 2.6vw, 3rem);
+  --cc-text-h1: clamp(1.875rem, 1.5rem + 1.6vw, 2.25rem);
+  --cc-text-h2: clamp(1.5rem, 1.3rem + 0.8vw, 1.75rem);
+  --cc-text-h3: 1.25rem;
+  --cc-text-body: 1rem;
+  --cc-text-small: 0.875rem;
+  --cc-text-caption: 0.75rem;
+
+  /* Spacing (4px base) */
+  --cc-s-1: 0.25rem;
+  --cc-s-2: 0.5rem;
+  --cc-s-3: 0.75rem;
+  --cc-s-4: 1rem;
+  --cc-s-5: 1.5rem;
+  --cc-s-6: 2rem;
+  --cc-s-7: 3rem;
+  --cc-s-8: 4rem;
+  --cc-s-9: 6rem;
+
+  /* Radius */
+  --cc-r-sm: 8px;
+  --cc-r-md: 12px;
+  --cc-r-lg: 18px;
+  --cc-r-pill: 999px;
+
+  /* Elevation (3 levels) */
+  --cc-shadow-sm: 0 1px 2px rgb(15 52 36 / 6%), 0 1px 3px rgb(15 52 36 / 6%);
+  --cc-shadow-md: 0 8px 24px rgb(15 52 36 / 10%);
+  --cc-shadow-lg: 0 24px 64px rgb(9 28 19 / 28%);
+
+  /* Motion */
+  --cc-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --cc-dur-fast: 150ms;
+  --cc-dur-overlay: 220ms;
+
+  /* Layout */
+  --cc-container: 1200px;
+  --cc-header-h: 4.25rem;
+}
+
+:root[data-theme='dark'] {
+  --cc-bg: #09120e;
+  --cc-surface: #122219;
+  --cc-surface-2: #172c21;
+  --cc-line: #1e3a2b;
+  --cc-line-strong: #2d5340;
+  --cc-text: #eaf3ed;
+  --cc-text-muted: #a3b8ad;
+  --cc-primary: #2fa36f;
+  --cc-primary-hover: #3bc587;
+  --cc-on-primary: #04150d;
+  --cc-primary-soft: #163526;
+  --cc-primary-text: #4fd596;
+  --cc-focus: #7ee0aa;
+  --cc-danger: #ff8a80;
+  --cc-danger-soft: #3a1a1a;
+  --cc-success: #5fd99b;
+  --cc-success-soft: #123423;
+  --cc-warning: #f5b95b;
+  --cc-warning-soft: #3a2a0c;
+  --cc-info: #86b9ee;
+  --cc-info-soft: #14283d;
+  --cc-input-bg: #0d1813;
+  --cc-input-border: #244633;
+  --cc-overlay: rgb(2 8 5 / 68%);
+  --cc-mark: #5d5416;
+  --cc-shadow-sm: 0 1px 2px rgb(0 0 0 / 40%);
+  --cc-shadow-md: 0 8px 24px rgb(0 0 0 / 40%);
+  --cc-shadow-lg: 0 24px 64px rgb(0 0 0 / 60%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --cc-bg: #09120e;
+    --cc-surface: #122219;
+    --cc-surface-2: #172c21;
+    --cc-line: #1e3a2b;
+    --cc-line-strong: #2d5340;
+    --cc-text: #eaf3ed;
+    --cc-text-muted: #a3b8ad;
+    --cc-primary: #2fa36f;
+    --cc-primary-hover: #3bc587;
+    --cc-on-primary: #04150d;
+    --cc-primary-soft: #163526;
+    --cc-primary-text: #4fd596;
+    --cc-focus: #7ee0aa;
+    --cc-danger: #ff8a80;
+    --cc-danger-soft: #3a1a1a;
+    --cc-success: #5fd99b;
+    --cc-success-soft: #123423;
+    --cc-warning: #f5b95b;
+    --cc-warning-soft: #3a2a0c;
+    --cc-info: #86b9ee;
+    --cc-info-soft: #14283d;
+    --cc-input-bg: #0d1813;
+    --cc-input-border: #244633;
+    --cc-overlay: rgb(2 8 5 / 68%);
+    --cc-mark: #5d5416;
+    --cc-shadow-sm: 0 1px 2px rgb(0 0 0 / 40%);
+    --cc-shadow-md: 0 8px 24px rgb(0 0 0 / 40%);
+    --cc-shadow-lg: 0 24px 64px rgb(0 0 0 / 60%);
+  }
+}

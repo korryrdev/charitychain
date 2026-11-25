@@ -49,13 +49,21 @@ const environmentSchema = z
     MPESA_CONSUMER_KEY: optionalString,
     MPESA_CONSUMER_SECRET: optionalString,
     MPESA_SHORTCODE: optionalString,
+    MPESA_BUSINESS_SHORT_CODE: optionalString,
     MPESA_PASSKEY: optionalString,
     MPESA_INITIATOR_NAME: optionalString,
     MPESA_SECURITY_CREDENTIAL: optionalString,
     MPESA_CALLBACK_SECRET: optionalString,
     MPESA_UNIVERSITY_SHORTCODE: optionalString,
     MPESA_UNIVERSITY_ACCOUNT: optionalString,
-    MPESA_CALLBACK_BASE_URL: optionalString,
+    MPESA_CALLBACK_URL: z.preprocess(
+      (value) => (value === '' ? undefined : value),
+      z.url().optional()
+    ),
+    MPESA_CALLBACK_BASE_URL: z.preprocess(
+      (value) => (value === '' ? undefined : value),
+      z.url().optional()
+    ),
     BANK_PROVIDER: z.enum(['sandbox', 'pesapal', 'flutterwave']).default('sandbox'),
     BANK_API_KEY: optionalString,
     BANK_WEBHOOK_SECRET: optionalString,
@@ -111,9 +119,20 @@ const environmentSchema = z
 
     requireValues(
       value.FEATURE_MPESA_ENABLED,
-      ['MPESA_CONSUMER_KEY', 'MPESA_CONSUMER_SECRET', 'MPESA_SHORTCODE', 'MPESA_PASSKEY', 'MPESA_INITIATOR_NAME', 'MPESA_SECURITY_CREDENTIAL', 'MPESA_CALLBACK_SECRET', 'MPESA_UNIVERSITY_SHORTCODE', 'MPESA_UNIVERSITY_ACCOUNT'],
+      ['MPESA_CONSUMER_KEY', 'MPESA_CONSUMER_SECRET', 'MPESA_PASSKEY'],
       'when M-Pesa is enabled'
     );
+    if (
+      value.FEATURE_MPESA_ENABLED &&
+      !value.MPESA_SHORTCODE &&
+      !value.MPESA_BUSINESS_SHORT_CODE
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['MPESA_SHORTCODE'],
+        message: 'MPESA_SHORTCODE or MPESA_BUSINESS_SHORT_CODE is required when M-Pesa is enabled.'
+      });
+    }
     requireValues(
       value.FEATURE_BANK_ENABLED && value.BANK_PROVIDER !== 'sandbox',
       ['BANK_API_KEY', 'BANK_WEBHOOK_SECRET'],
@@ -130,7 +149,11 @@ const environmentSchema = z
       ['POLYGON_RPC_URL', 'BLOCKCHAIN_SERVICE_PRIVATE_KEY', 'BLOCKCHAIN_AUDIT_CONTRACT_ADDRESS'],
       'when blockchain anchoring is enabled'
     );
-    requireValues(value.FEATURE_CHAINLINK_ENABLED, ['CHAINLINK_ORACLE_URL', 'CHAINLINK_WEBHOOK_SECRET'], 'when Chainlink is enabled');
+    requireValues(
+      value.FEATURE_CHAINLINK_ENABLED,
+      ['CHAINLINK_ORACLE_URL', 'CHAINLINK_WEBHOOK_SECRET'],
+      'when Chainlink is enabled'
+    );
 
     if (value.NODE_ENV === 'production') {
       for (const key of ['APP_URL', 'API_URL']) {

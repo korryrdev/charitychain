@@ -7,6 +7,7 @@ import { createAuthenticatedRouter } from '../../src/routes/authenticated.routes
 import { createHealthRouter } from '../../src/routes/health.routes.js';
 import { createPublicRouter } from '../../src/routes/public.routes.js';
 import { createWebhookRouter } from '../../src/routes/webhook.routes.js';
+import { createMpesaCallbacksRouter } from '../../src/integrations/mpesa/mpesa.routes.js';
 
 function endpoint(method, path, handler) {
   const router = Router();
@@ -84,6 +85,21 @@ describe('route composition', () => {
       raw: '{"transaction":"ABC123"}',
       parsed: { transaction: 'ABC123' }
     });
+  });
+
+  it('validates raw Daraja STK callbacks before payment processing', async () => {
+    const service = { processMpesaCallback: vi.fn() };
+    const api = createApiRouter({
+      webhookRoutes: [{ path: '/payments/mpesa', router: createMpesaCallbacksRouter(service) }]
+    });
+    const app = createApp({ routes: { api } });
+
+    const response = await request(app)
+      .post('/api/v1/webhooks/payments/mpesa/stk')
+      .send({ Body: {} });
+
+    expect(response.status).toBe(400);
+    expect(service.processMpesaCallback).not.toHaveBeenCalled();
   });
 
   it('returns a correlated 404 for routes that were not explicitly registered', async () => {

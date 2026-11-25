@@ -1,6 +1,7 @@
 import { accountVerificationService } from './accountVerification.service.js';
 import { randomBytes } from 'node:crypto';
 import { authenticationConfig } from '../../config/authentication.js';
+import { env } from '../../config/environment.js';
 import { authService } from './auth.service.js';
 import { mfaService } from './mfa.service.js';
 import { passwordResetService } from './passwordReset.service.js';
@@ -86,7 +87,12 @@ export function createAuthController({
       try {
         const reset = await resetService.issue(request.body.email);
         if (reset) await sendPasswordReset({ email: request.body.email, ...reset });
-        response.status(202).json({ accepted: true });
+        response.status(202).json({
+          accepted: true,
+          ...(env.NODE_ENV !== 'production' && reset
+            ? { developmentResetToken: reset.token, userId: reset.userId }
+            : {})
+        });
       } catch (error) {
         next(error);
       }

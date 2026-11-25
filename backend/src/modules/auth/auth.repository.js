@@ -64,6 +64,21 @@ export function createAuthRepository(database = prisma) {
         });
       });
     },
+    ensureStudentProfile(userId, fullName) {
+      return database.$transaction(async (transaction) => {
+        const existing = await transaction.student.findUnique({ where: { userId } });
+        if (existing) return existing;
+        const unlinked = await transaction.student.findFirst({
+          where: { userId: null, academicStatus: 'ACTIVE' },
+          orderBy: { registrationNumber: 'asc' }
+        });
+        if (!unlinked) return null;
+        return transaction.student.update({
+          where: { id: unlinked.id },
+          data: { userId, ...(fullName ? { fullName } : {}) }
+        });
+      });
+    },
     deleteUser(id) {
       return database.user.delete({ where: { id } });
     }
