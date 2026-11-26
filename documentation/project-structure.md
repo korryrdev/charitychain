@@ -2,11 +2,11 @@
 
 ## 1. Purpose and Architecture
 
-CharityChain is organized as a JavaScript and Solidity monorepo. The repository separates the public and role-based React interface, the Node.js/Express API, PostgreSQL/Prisma data layer, Solidity smart contracts, shared definitions, integration simulators, tests, deployment assets, scripts, and documentation.
+CharityChain is organized as a TypeScript, JavaScript, and Solidity monorepo. The repository separates the public and role-based React TypeScript interface, the Node.js/Express API, PostgreSQL/Prisma data layer, Solidity smart contracts, shared definitions, integration simulators, tests, deployment assets, scripts, and documentation.
 
 The project uses:
 
-- **Frontend:** React with JavaScript
+- **Frontend:** React with strict TypeScript (`.tsx`/`.ts`)
 - **Backend:** Node.js with Express and JavaScript
 - **Database:** PostgreSQL with Prisma ORM and versioned migrations
 - **Blockchain:** Solidity contracts on Polygon, accessed through Web3.js
@@ -32,7 +32,8 @@ charitychain/
 │
 ├── frontend/
 │   ├── package.json
-│   ├── vite.config.js
+│   ├── tsconfig.json
+│   ├── vite.config.ts
 │   ├── index.html
 │   ├── public/
 │   │   ├── favicon.ico
@@ -40,13 +41,13 @@ charitychain/
 │   │   ├── manifest.webmanifest
 │   │   └── static/
 │   └── src/
-│       ├── main.jsx
-│       ├── App.jsx
+│       ├── main.tsx
+│       ├── App.tsx
 │       ├── app/
-│       │   ├── router.jsx
-│       │   ├── providers.jsx
-│       │   ├── queryClient.js
-│       │   └── routeConfig.js
+│       │   ├── Router.tsx
+│       │   ├── Providers.tsx
+│       │   ├── queryClient.ts
+│       │   └── routeConfig.ts
 │       ├── assets/
 │       │   ├── images/
 │       │   ├── icons/
@@ -61,11 +62,11 @@ charitychain/
 │       │   ├── privacy/
 │       │   └── status/
 │       ├── layouts/
-│       │   ├── PublicLayout.jsx
-│       │   ├── AuthLayout.jsx
-│       │   ├── CommunityLayout.jsx
-│       │   ├── OperationsLayout.jsx
-│       │   └── GovernanceLayout.jsx
+│       │   ├── PublicLayout.tsx
+│       │   ├── AuthLayout.tsx
+│       │   ├── CommunityLayout.tsx
+│       │   ├── OperationsLayout.tsx
+│       │   └── GovernanceLayout.tsx
 │       ├── pages/
 │       │   ├── public/
 │       │   ├── auth/
@@ -333,11 +334,11 @@ Owns application bootstrap, route definitions, global providers, query caching, 
 
 ### `layouts/`
 
-- `PublicLayout.jsx`: public website
-- `AuthLayout.jsx`: registration, login, recovery, and verification
-- `CommunityLayout.jsx`: donor and student portals
-- `OperationsLayout.jsx`: clerk, inventory, and finance operations
-- `GovernanceLayout.jsx`: committee, auditor, and administrator portals
+- `PublicLayout.tsx`: public website
+- `AuthLayout.tsx`: registration, login, recovery, and verification
+- `CommunityLayout.tsx`: donor and student portals
+- `OperationsLayout.tsx`: clerk, inventory, and finance operations
+- `GovernanceLayout.tsx`: committee, auditor, and administrator portals
 
 ### `pages/`
 
@@ -840,262 +841,262 @@ This section expands the high-level tree into the concrete files expected when i
 
 ```text
 frontend/src/
-├── main.jsx
-├── App.jsx
+├── main.tsx
+├── App.tsx
 ├── app/
-│   ├── router.jsx
-│   ├── routeConfig.js
-│   ├── providers.jsx
-│   ├── queryClient.js
-│   ├── ErrorBoundary.jsx
-│   └── StartupGate.jsx
+│   ├── Router.tsx
+│   ├── routeConfig.ts
+│   ├── Providers.tsx
+│   ├── queryClient.ts
+│   ├── ErrorBoundary.tsx
+│   └── StartupGate.tsx
 ├── layouts/
-│   ├── PublicLayout.jsx
-│   ├── AuthLayout.jsx
-│   ├── CommunityLayout.jsx
-│   ├── OperationsLayout.jsx
-│   ├── GovernanceLayout.jsx
+│   ├── PublicLayout.tsx
+│   ├── AuthLayout.tsx
+│   ├── CommunityLayout.tsx
+│   ├── OperationsLayout.tsx
+│   ├── GovernanceLayout.tsx
 │   └── components/
-│       ├── AppHeader.jsx
-│       ├── AppSidebar.jsx
-│       ├── Breadcrumbs.jsx
-│       ├── MobileNavigation.jsx
-│       └── UserMenu.jsx
+│       ├── AppHeader.tsx
+│       ├── AppSidebar.tsx
+│       ├── Breadcrumbs.tsx
+│       ├── MobileNavigation.tsx
+│       └── UserMenu.tsx
 ├── pages/
 │   ├── public/
-│   │   ├── HomePage.jsx
-│   │   ├── HowItWorksPage.jsx
-│   │   ├── TransparencyPage.jsx
-│   │   ├── DonorRecognitionPage.jsx
-│   │   ├── TrackDonationPage.jsx
-│   │   ├── GoodsCataloguePage.jsx
-│   │   ├── GovernancePage.jsx
-│   │   ├── PoliciesPage.jsx
-│   │   ├── PrivacyPage.jsx
-│   │   ├── ContactPage.jsx
-│   │   ├── ComplaintPage.jsx
-│   │   └── FraudReportPage.jsx
+│   │   ├── HomePage.tsx
+│   │   ├── HowItWorksPage.tsx
+│   │   ├── TransparencyPage.tsx
+│   │   ├── DonorRecognitionPage.tsx
+│   │   ├── TrackDonationPage.tsx
+│   │   ├── GoodsCataloguePage.tsx
+│   │   ├── GovernancePage.tsx
+│   │   ├── PoliciesPage.tsx
+│   │   ├── PrivacyPage.tsx
+│   │   ├── ContactPage.tsx
+│   │   ├── ComplaintPage.tsx
+│   │   └── FraudReportPage.tsx
 │   ├── auth/
-│   │   ├── RegisterPage.jsx
-│   │   ├── LoginPage.jsx
-│   │   ├── VerifyAccountPage.jsx
-│   │   ├── ForgotPasswordPage.jsx
-│   │   ├── ResetPasswordPage.jsx
-│   │   ├── MfaChallengePage.jsx
-│   │   └── SessionExpiredPage.jsx
+│   │   ├── RegisterPage.tsx
+│   │   ├── LoginPage.tsx
+│   │   ├── VerifyAccountPage.tsx
+│   │   ├── ForgotPasswordPage.tsx
+│   │   ├── ResetPasswordPage.tsx
+│   │   ├── MfaChallengePage.tsx
+│   │   └── SessionExpiredPage.tsx
 │   ├── donor/
-│   │   ├── DonorDashboardPage.jsx
-│   │   ├── DonateMoneyPage.jsx
-│   │   ├── DeclareGoodsPage.jsx
-│   │   ├── DonationHistoryPage.jsx
-│   │   ├── DonationDetailPage.jsx
-│   │   ├── ReceiptsPage.jsx
-│   │   ├── PublicIdentityPage.jsx
-│   │   └── DonorNotificationsPage.jsx
+│   │   ├── DonorDashboardPage.tsx
+│   │   ├── DonateMoneyPage.tsx
+│   │   ├── DeclareGoodsPage.tsx
+│   │   ├── DonationHistoryPage.tsx
+│   │   ├── DonationDetailPage.tsx
+│   │   ├── ReceiptsPage.tsx
+│   │   ├── PublicIdentityPage.tsx
+│   │   └── DonorNotificationsPage.tsx
 │   ├── student/
-│   │   ├── StudentDashboardPage.jsx
-│   │   ├── UniversityRecordPage.jsx
-│   │   ├── AssistanceApplicationPage.jsx
-│   │   ├── VettingResultPage.jsx
-│   │   ├── ApplicationTimelinePage.jsx
-│   │   ├── StudentGoodsPage.jsx
-│   │   ├── GoodsRequestPage.jsx
-│   │   ├── CollectionHistoryPage.jsx
-│   │   └── StudentAppealsPage.jsx
+│   │   ├── StudentDashboardPage.tsx
+│   │   ├── UniversityRecordPage.tsx
+│   │   ├── AssistanceApplicationPage.tsx
+│   │   ├── VettingResultPage.tsx
+│   │   ├── ApplicationTimelinePage.tsx
+│   │   ├── StudentGoodsPage.tsx
+│   │   ├── GoodsRequestPage.tsx
+│   │   ├── CollectionHistoryPage.tsx
+│   │   └── StudentAppealsPage.tsx
 │   ├── clerk/
-│   │   ├── ClerkDashboardPage.jsx
-│   │   ├── ReceiveDonationPage.jsx
-│   │   ├── PendingConfirmationsPage.jsx
-│   │   ├── InspectGoodsPage.jsx
-│   │   ├── InventoryPage.jsx
-│   │   ├── StudentCollectionPage.jsx
-│   │   ├── RejectedTransactionsPage.jsx
-│   │   └── DailyReconciliationPage.jsx
+│   │   ├── ClerkDashboardPage.tsx
+│   │   ├── ReceiveDonationPage.tsx
+│   │   ├── PendingConfirmationsPage.tsx
+│   │   ├── InspectGoodsPage.tsx
+│   │   ├── InventoryPage.tsx
+│   │   ├── StudentCollectionPage.tsx
+│   │   ├── RejectedTransactionsPage.tsx
+│   │   └── DailyReconciliationPage.tsx
 │   ├── committee/
-│   │   ├── CommitteeDashboardPage.jsx
-│   │   ├── ReviewQueuePage.jsx
-│   │   ├── ApplicationReviewPage.jsx
-│   │   ├── ApprovalHistoryPage.jsx
-│   │   └── FundingCommitmentsPage.jsx
+│   │   ├── CommitteeDashboardPage.tsx
+│   │   ├── ReviewQueuePage.tsx
+│   │   ├── ApplicationReviewPage.tsx
+│   │   ├── ApprovalHistoryPage.tsx
+│   │   └── FundingCommitmentsPage.tsx
 │   ├── finance/
-│   │   ├── FinanceDashboardPage.jsx
-│   │   ├── ApprovedDisbursementsPage.jsx
-│   │   ├── PayoutDetailPage.jsx
-│   │   ├── ReconciliationPage.jsx
-│   │   └── PaymentExceptionsPage.jsx
+│   │   ├── FinanceDashboardPage.tsx
+│   │   ├── ApprovedDisbursementsPage.tsx
+│   │   ├── PayoutDetailPage.tsx
+│   │   ├── ReconciliationPage.tsx
+│   │   └── PaymentExceptionsPage.tsx
 │   ├── auditor/
-│   │   ├── AuditorDashboardPage.jsx
-│   │   ├── MoneyAuditPage.jsx
-│   │   ├── GoodsAuditPage.jsx
-│   │   ├── AnomalyCasesPage.jsx
-│   │   ├── InvestigationPage.jsx
-│   │   └── BlockchainAuditPage.jsx
+│   │   ├── AuditorDashboardPage.tsx
+│   │   ├── MoneyAuditPage.tsx
+│   │   ├── GoodsAuditPage.tsx
+│   │   ├── AnomalyCasesPage.tsx
+│   │   ├── InvestigationPage.tsx
+│   │   └── BlockchainAuditPage.tsx
 │   ├── admin/
-│   │   ├── AdminDashboardPage.jsx
-│   │   ├── UsersAndRolesPage.jsx
-│   │   ├── PolicyConfigurationPage.jsx
-│   │   ├── MockUniversityDataPage.jsx
-│   │   ├── InventoryConfigurationPage.jsx
-│   │   ├── IntegrationHealthPage.jsx
-│   │   └── SecurityIncidentsPage.jsx
+│   │   ├── AdminDashboardPage.tsx
+│   │   ├── UsersAndRolesPage.tsx
+│   │   ├── PolicyConfigurationPage.tsx
+│   │   ├── MockUniversityDataPage.tsx
+│   │   ├── InventoryConfigurationPage.tsx
+│   │   ├── IntegrationHealthPage.tsx
+│   │   └── SecurityIncidentsPage.tsx
 │   └── errors/
-│       ├── NotFoundPage.jsx
-│       ├── ForbiddenPage.jsx
-│       ├── ServiceUnavailablePage.jsx
-│       └── UnexpectedErrorPage.jsx
+│       ├── NotFoundPage.tsx
+│       ├── ForbiddenPage.tsx
+│       ├── ServiceUnavailablePage.tsx
+│       └── UnexpectedErrorPage.tsx
 ├── features/
 │   ├── authentication/
-│   │   ├── components/LoginForm.jsx
-│   │   ├── components/RegisterForm.jsx
-│   │   ├── components/MfaForm.jsx
-│   │   ├── hooks/useAuth.js
-│   │   ├── hooks/useSession.js
-│   │   ├── services/auth.api.js
-│   │   ├── validation/auth.schema.js
-│   │   └── tests/authentication.test.jsx
+│   │   ├── components/LoginForm.tsx
+│   │   ├── components/RegisterForm.tsx
+│   │   ├── components/MfaForm.tsx
+│   │   ├── hooks/useAuth.ts
+│   │   ├── hooks/useSession.ts
+│   │   ├── services/auth.api.ts
+│   │   ├── validation/auth.schema.ts
+│   │   └── tests/authentication.test.tsx
 │   ├── authorization/
-│   │   ├── components/ProtectedRoute.jsx
-│   │   ├── components/PermissionGate.jsx
-│   │   ├── hooks/usePermissions.js
-│   │   ├── permissions.js
-│   │   └── tests/authorization.test.jsx
+│   │   ├── components/ProtectedRoute.tsx
+│   │   ├── components/PermissionGate.tsx
+│   │   ├── hooks/usePermissions.ts
+│   │   ├── permissions.ts
+│   │   └── tests/authorization.test.tsx
 │   ├── donorIdentity/
-│   │   ├── components/PublicIdentityForm.jsx
-│   │   ├── components/PublicProfilePreview.jsx
-│   │   ├── services/donorIdentity.api.js
-│   │   ├── validation/publicIdentity.schema.js
-│   │   └── tests/donorIdentity.test.jsx
+│   │   ├── components/PublicIdentityForm.tsx
+│   │   ├── components/PublicProfilePreview.tsx
+│   │   ├── services/donorIdentity.api.ts
+│   │   ├── validation/publicIdentity.schema.ts
+│   │   └── tests/donorIdentity.test.tsx
 │   ├── moneyDonations/
-│   │   ├── components/DonationForm.jsx
-│   │   ├── components/PaymentMethodSelector.jsx
-│   │   ├── components/DonationStatus.jsx
-│   │   ├── components/DonationTimeline.jsx
-│   │   ├── hooks/useDonation.js
-│   │   ├── services/moneyDonations.api.js
-│   │   ├── validation/donation.schema.js
-│   │   └── tests/moneyDonations.test.jsx
+│   │   ├── components/DonationForm.tsx
+│   │   ├── components/PaymentMethodSelector.tsx
+│   │   ├── components/DonationStatus.tsx
+│   │   ├── components/DonationTimeline.tsx
+│   │   ├── hooks/useDonation.ts
+│   │   ├── services/moneyDonations.api.ts
+│   │   ├── validation/donation.schema.ts
+│   │   └── tests/moneyDonations.test.tsx
 │   ├── physicalDonations/
-│   │   ├── components/PhysicalDonationForm.jsx
-│   │   ├── components/DonationLineEditor.jsx
-│   │   ├── components/ConfirmationStatus.jsx
-│   │   ├── services/physicalDonations.api.js
-│   │   ├── validation/physicalDonation.schema.js
-│   │   └── tests/physicalDonations.test.jsx
+│   │   ├── components/PhysicalDonationForm.tsx
+│   │   ├── components/DonationLineEditor.tsx
+│   │   ├── components/ConfirmationStatus.tsx
+│   │   ├── services/physicalDonations.api.ts
+│   │   ├── validation/physicalDonation.schema.ts
+│   │   └── tests/physicalDonations.test.tsx
 │   ├── studentVetting/
-│   │   ├── components/VettingFactors.jsx
-│   │   ├── components/VettingExplanation.jsx
-│   │   ├── components/RecordDiscrepancyAlert.jsx
-│   │   ├── services/vetting.api.js
-│   │   └── tests/studentVetting.test.jsx
+│   │   ├── components/VettingFactors.tsx
+│   │   ├── components/VettingExplanation.tsx
+│   │   ├── components/RecordDiscrepancyAlert.tsx
+│   │   ├── services/vetting.api.ts
+│   │   └── tests/studentVetting.test.tsx
 │   ├── assistanceApplications/
-│   │   ├── components/ApplicationForm.jsx
-│   │   ├── components/ApplicationStatus.jsx
-│   │   ├── components/ApplicationTimeline.jsx
-│   │   ├── services/applications.api.js
-│   │   ├── validation/application.schema.js
-│   │   └── tests/applications.test.jsx
+│   │   ├── components/ApplicationForm.tsx
+│   │   ├── components/ApplicationStatus.tsx
+│   │   ├── components/ApplicationTimeline.tsx
+│   │   ├── services/applications.api.ts
+│   │   ├── validation/application.schema.ts
+│   │   └── tests/applications.test.tsx
 │   ├── committeeApprovals/
-│   │   ├── components/ApprovalPanel.jsx
-│   │   ├── components/DecisionForm.jsx
-│   │   ├── components/ConflictDeclaration.jsx
-│   │   ├── components/ApprovalProgress.jsx
-│   │   ├── services/approvals.api.js
-│   │   └── tests/committeeApprovals.test.jsx
+│   │   ├── components/ApprovalPanel.tsx
+│   │   ├── components/DecisionForm.tsx
+│   │   ├── components/ConflictDeclaration.tsx
+│   │   ├── components/ApprovalProgress.tsx
+│   │   ├── services/approvals.api.ts
+│   │   └── tests/committeeApprovals.test.tsx
 │   ├── disbursements/
-│   │   ├── components/PayoutStatus.jsx
-│   │   ├── components/PayoutTimeline.jsx
-│   │   ├── components/ReconciliationEvidence.jsx
-│   │   ├── services/disbursements.api.js
-│   │   └── tests/disbursements.test.jsx
+│   │   ├── components/PayoutStatus.tsx
+│   │   ├── components/PayoutTimeline.tsx
+│   │   ├── components/ReconciliationEvidence.tsx
+│   │   ├── services/disbursements.api.ts
+│   │   └── tests/disbursements.test.tsx
 │   ├── inventory/
-│   │   ├── components/InventoryTable.jsx
-│   │   ├── components/StockMovementForm.jsx
-│   │   ├── components/BatchInspector.jsx
-│   │   ├── components/StockVarianceAlert.jsx
-│   │   ├── services/inventory.api.js
-│   │   └── tests/inventory.test.jsx
+│   │   ├── components/InventoryTable.tsx
+│   │   ├── components/StockMovementForm.tsx
+│   │   ├── components/BatchInspector.tsx
+│   │   ├── components/StockVarianceAlert.tsx
+│   │   ├── services/inventory.api.ts
+│   │   └── tests/inventory.test.tsx
 │   ├── goodsCollection/
-│   │   ├── components/GoodsSelector.jsx
-│   │   ├── components/AllowanceSummary.jsx
-│   │   ├── components/CollectionConfirmation.jsx
-│   │   ├── services/goodsCollection.api.js
-│   │   ├── validation/goodsCollection.schema.js
-│   │   └── tests/goodsCollection.test.jsx
+│   │   ├── components/GoodsSelector.tsx
+│   │   ├── components/AllowanceSummary.tsx
+│   │   ├── components/CollectionConfirmation.tsx
+│   │   ├── services/goodsCollection.api.ts
+│   │   ├── validation/goodsCollection.schema.ts
+│   │   └── tests/goodsCollection.test.tsx
 │   ├── transparency/
-│   │   ├── components/TransparencySummary.jsx
-│   │   ├── components/FundFlowChart.jsx
-│   │   ├── components/GoodsDistributionChart.jsx
-│   │   ├── services/transparency.api.js
-│   │   └── tests/transparency.test.jsx
+│   │   ├── components/TransparencySummary.tsx
+│   │   ├── components/FundFlowChart.tsx
+│   │   ├── components/GoodsDistributionChart.tsx
+│   │   ├── services/transparency.api.ts
+│   │   └── tests/transparency.test.tsx
 │   ├── recognitionTiers/
-│   │   ├── components/TierBadge.jsx
-│   │   ├── components/TierProgress.jsx
-│   │   ├── components/RecognitionBoard.jsx
-│   │   ├── services/recognition.api.js
-│   │   └── tests/recognitionTiers.test.jsx
+│   │   ├── components/TierBadge.tsx
+│   │   ├── components/TierProgress.tsx
+│   │   ├── components/RecognitionBoard.tsx
+│   │   ├── services/recognition.api.ts
+│   │   └── tests/recognitionTiers.test.tsx
 │   ├── forensicAnalytics/
-│   │   ├── components/AnomalySummary.jsx
-│   │   ├── components/InvestigationTimeline.jsx
-│   │   ├── services/forensics.api.js
-│   │   └── tests/forensicAnalytics.test.jsx
+│   │   ├── components/AnomalySummary.tsx
+│   │   ├── components/InvestigationTimeline.tsx
+│   │   ├── services/forensics.api.ts
+│   │   └── tests/forensicAnalytics.test.tsx
 │   ├── auditTrail/
-│   │   ├── components/AuditTimeline.jsx
-│   │   ├── components/EvidenceVerifier.jsx
-│   │   ├── services/audit.api.js
-│   │   └── tests/auditTrail.test.jsx
+│   │   ├── components/AuditTimeline.tsx
+│   │   ├── components/EvidenceVerifier.tsx
+│   │   ├── services/audit.api.ts
+│   │   └── tests/auditTrail.test.tsx
 │   ├── notifications/
-│   │   ├── components/NotificationList.jsx
-│   │   ├── components/NotificationPreferences.jsx
-│   │   ├── services/notifications.api.js
-│   │   └── tests/notifications.test.jsx
+│   │   ├── components/NotificationList.tsx
+│   │   ├── components/NotificationPreferences.tsx
+│   │   ├── services/notifications.api.ts
+│   │   └── tests/notifications.test.tsx
 │   └── complaints/
-│       ├── components/ComplaintForm.jsx
-│       ├── components/AppealForm.jsx
-│       ├── components/CaseStatus.jsx
-│       ├── services/complaints.api.js
-│       └── tests/complaints.test.jsx
+│       ├── components/ComplaintForm.tsx
+│       ├── components/AppealForm.tsx
+│       ├── components/CaseStatus.tsx
+│       ├── services/complaints.api.ts
+│       └── tests/complaints.test.tsx
 ├── components/
-│   ├── common/Button.jsx
-│   ├── common/Card.jsx
-│   ├── common/Modal.jsx
-│   ├── common/Pagination.jsx
-│   ├── forms/FormField.jsx
-│   ├── forms/SelectField.jsx
-│   ├── forms/PhoneField.jsx
-│   ├── tables/DataTable.jsx
-│   ├── charts/MetricChart.jsx
-│   ├── feedback/Alert.jsx
-│   ├── feedback/LoadingState.jsx
-│   ├── feedback/EmptyState.jsx
-│   ├── feedback/ErrorState.jsx
-│   ├── privacy/MaskedValue.jsx
-│   └── status/StatusBadge.jsx
+│   ├── common/Button.tsx
+│   ├── common/Card.tsx
+│   ├── common/Modal.tsx
+│   ├── common/Pagination.tsx
+│   ├── forms/FormField.tsx
+│   ├── forms/SelectField.tsx
+│   ├── forms/PhoneField.tsx
+│   ├── tables/DataTable.tsx
+│   ├── charts/MetricChart.tsx
+│   ├── feedback/Alert.tsx
+│   ├── feedback/LoadingState.tsx
+│   ├── feedback/EmptyState.tsx
+│   ├── feedback/ErrorState.tsx
+│   ├── privacy/MaskedValue.tsx
+│   └── status/StatusBadge.tsx
 ├── services/
-│   ├── httpClient.js
-│   ├── csrf.js
-│   ├── requestId.js
-│   ├── errorMapper.js
-│   └── downloadClient.js
+│   ├── httpClient.ts
+│   ├── csrf.ts
+│   ├── requestId.ts
+│   ├── errorMapper.ts
+│   └── downloadClient.ts
 ├── store/
-│   ├── auth.store.js
-│   ├── preferences.store.js
-│   └── notification.store.js
+│   ├── auth.store.ts
+│   ├── preferences.store.ts
+│   └── notification.store.ts
 ├── hooks/
-│   ├── useAsyncAction.js
-│   ├── useDebounce.js
-│   ├── usePagination.js
-│   └── useDocumentTitle.js
+│   ├── useAsyncAction.ts
+│   ├── useDebounce.ts
+│   ├── usePagination.ts
+│   └── useDocumentTitle.ts
 ├── validation/
-│   ├── common.schema.js
-│   └── phone.schema.js
+│   ├── common.schema.ts
+│   └── phone.schema.ts
 ├── utils/
-│   ├── currency.js
-│   ├── dates.js
-│   ├── masking.js
-│   ├── statuses.js
-│   └── accessibility.js
+│   ├── currency.ts
+│   ├── dates.ts
+│   ├── masking.ts
+│   ├── statuses.ts
+│   └── accessibility.ts
 └── tests/
-    ├── setup.js
+    ├── setup.ts
     ├── mocks/
     ├── fixtures/
     └── accessibility/
@@ -2034,7 +2035,7 @@ documentation/
 ## 17. As-Built Unified Architectural Boundaries
 
 The unified CharityChain monorepo implements the full specification across five npm workspaces (`frontend/`, `backend/`, `database/`, `blockchain/`, `shared/`). Specifically:
-- **`frontend/` (`tsconfig.json`, `vite.config.ts`, `src/main.tsx`):** Supports `.tsx` and `.jsx` coexistence inside a single React 19 router (`src/app/routeConfig.js`), preserving all 9 `kip` portals alongside `aldo` `Web3.js` EIP-712 signing, Sankey tracing, 5-column DAG visualization, and `/app/*`.
+- **`frontend/` (`tsconfig.json`, `vite.config.ts`, `src/main.tsx`):** Strictly typed TypeScript (`allowJs: false`, 100% `.tsx`/`.ts`) inside a single React 19 router (`src/app/routeConfig.ts`), preserving all 9 `kip` portals alongside `aldo` `Web3.js` EIP-712 signing, Sankey tracing, 5-column DAG visualization, and `/app/*`.
 - **`backend/` (`Express 5.3`, 40 modules, `src/simulator/`):** Unifies RBAC across 14 roles and 55 permissions (`backend/src/constants/{roles,permissions}.js`) with `Better-Auth`, CSRF protection, Daraja C2B/STK/B2C/B2B intake, Resend notifications, FIFO lots, R01–R20 forensics, and daily Merkle proofs.
 - **`database/` (`PostgreSQL 17`, `Prisma 6.19`):** Houses 86 models, 26 committed migrations, PostgreSQL `BEFORE UPDATE OR DELETE` append-only triggers on `case_events`, `allocations`, and `donation_raw_callbacks`, and modular seed scripts (`db:seed:all`).
 - **`blockchain/` (`Solidity 0.8.28`, `Hardhat 3.21`):** Deploys 7 notary and governance contracts (`CharityChainAccess`, `DonationLedger`, `CaseWorkflow`, `SignatoryRegistry`, `PeriodAnchor`, `EvidenceRegistry`, `ChainlinkFxAndAutomation`) targeting `localhost` (`31337`) and `polygonAmoy` (`80002`), exporting ABIs to `shared/abis/`.

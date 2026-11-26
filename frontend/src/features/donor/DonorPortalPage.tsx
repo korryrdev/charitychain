@@ -466,7 +466,7 @@ export const DonorPortalPage: React.FC = () => {
                                     </div>
                                     {alloc.justification && (
                                       <p className="text-[11px] text-zinc-500 italic max-w-md">
-                                        "{alloc.justification}"
+                                        &ldquo;{alloc.justification}&rdquo;
                                       </p>
                                     )}
                                   </div>

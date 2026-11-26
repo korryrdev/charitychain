@@ -1,0 +1,81 @@
+import { useEffect, useState } from 'react';
+import { adminApi } from '../../features/administration/services/admin.api';
+import { getErrorMessage } from '../../services/errorMapper';
+
+interface VettingPolicyConfiguration {
+  thresholds?: {
+    verifiedScore?: number | string;
+    manualReviewScore?: number | string;
+  };
+  weights?: Record<string, unknown>;
+}
+
+interface VettingPolicy {
+  version: number | string;
+  name: string;
+  configuration?: VettingPolicyConfiguration;
+}
+
+export function PolicyConfigurationPage() {
+  const [policy, setPolicy] = useState<VettingPolicy | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    adminApi
+      .activeVettingPolicy()
+      .then((value) => setPolicy((value.policy ?? value) as VettingPolicy))
+      .catch((cause: unknown) => setError(getErrorMessage(cause, 'Failed to load active vetting policy.')));
+  }, []);
+
+  return (
+    <main className="portal-page admin-page">
+      <p className="section-kicker">Policy configuration</p>
+      <h1>Versioned vetting rules.</h1>
+      <p className="portal-page__lead">
+        The active policy is shown below. Policy changes are versioned and prospective; they cannot
+        rewrite an earlier decision or replace committee approval.
+      </p>
+      {error && <p className="form-error">{error}</p>}
+      {policy ? (
+        <section className="portal-card">
+          <dl className="admin-definition-list">
+            <div>
+              <dt>Version</dt>
+              <dd>{policy.version}</dd>
+            </div>
+            <div>
+              <dt>Policy name</dt>
+              <dd>{policy.name}</dd>
+            </div>
+            <div>
+              <dt>Verified threshold</dt>
+              <dd>{policy.configuration?.thresholds?.verifiedScore ?? '—'}</dd>
+            </div>
+            <div>
+              <dt>Manual-review threshold</dt>
+              <dd>{policy.configuration?.thresholds?.manualReviewScore ?? '—'}</dd>
+            </div>
+          </dl>
+          <h2>Need-index factors</h2>
+          <div className="admin-chip-list">
+            {Object.entries(policy.configuration?.weights ?? {}).map(([factor, weight]) => (
+              <span key={factor}>
+                {factor.replace(/([A-Z])/g, ' $1')}: {String(weight)}
+              </span>
+            ))}
+          </div>
+        </section>
+      ) : (
+        !error && <p>Loading active policy…</p>
+      )}
+      <section className="portal-card">
+        <h2>Protected controls</h2>
+        <p>
+          Only authorized administrators can publish a validated new version. The API rejects
+          weights that do not total 100 and inconsistent thresholds; every accepted version remains
+          auditable.
+        </p>
+      </section>
+    </main>
+  );
+}

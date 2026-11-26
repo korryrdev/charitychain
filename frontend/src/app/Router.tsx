@@ -1,5 +1,6 @@
 import React from 'react';
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { createBrowserRouter, Navigate, useRoutes, type RouteObject } from 'react-router-dom';
+import { routeConfig } from './routeConfig';
 import { PublicLayout } from '@/app/layouts/PublicLayout';
 import { AppLayout } from '@/app/layouts/AppLayout';
 import { RequireAuth } from '@/app/guards/RequireAuth';
@@ -68,3 +69,7 @@ export const router = createBrowserRouter([
     element: <Navigate to="/trace" replace />,
   },
 ]);
+
+export function AppRouter() {
+  return useRoutes([...routeConfig] as RouteObject[]);
+}

@@ -1,7 +1,7 @@
 import React, { useSyncExternalStore } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/app/auth/AuthContext';
-import { authStore } from '../../store/auth.store.js';
+import { authStore } from '../../store/auth.store';
 
 export const RequireAuth: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();

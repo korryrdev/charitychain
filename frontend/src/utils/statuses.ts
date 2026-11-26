@@ -1,0 +1,27 @@
+const labels: Record<string, string> = Object.freeze({
+  PAYMENT_REQUESTED: 'Awaiting payment',
+  PROVIDER_PENDING: 'Provider pending',
+  AWAITING_APPROVALS: 'Awaiting approvals',
+  DISBURSEMENT_PENDING: 'Payment initiated',
+  IN_PROGRESS: 'In progress',
+});
+
+export function statusLabel(status?: string | null): string {
+  if (!status) return 'Unknown';
+  return (
+    labels[status] ??
+    String(status)
+      .replaceAll('_', ' ')
+      .toLowerCase()
+      .replace(/\b\w/g, (letter) => letter.toUpperCase())
+  );
+}
+
+export type StatusTone = 'danger' | 'warning' | 'success' | 'neutral';
+
+export function statusTone(status?: string | null): StatusTone {
+  if (/(FAILED|REJECTED|DECLINED|REVERSED|DENIED)/.test(status ?? '')) return 'danger';
+  if (/(PENDING|AWAITING|PROCESSING|REVIEW)/.test(status ?? '')) return 'warning';
+  if (/(CONFIRMED|RECONCILED|APPROVED|DELIVERED|ACTIVE|SUCCESS)/.test(status ?? '')) return 'success';
+  return 'neutral';
+}

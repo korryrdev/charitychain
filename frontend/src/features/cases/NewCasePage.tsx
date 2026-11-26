@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
@@ -25,19 +25,14 @@ export const NewCasePage: React.FC = () => {
   const [justification, setJustification] = useState('');
   const [hasConsent, setHasConsent] = useState(false);
 
-  useEffect(() => {
-    if (!subGroup && subgroups.length > 0) {
-      setSubGroup(subgroups[0].id);
-    }
-  }, [subGroup, subgroups]);
-
-  const selectedSubgroupObj = subgroups.find((s) => s.id === subGroup);
+  const effectiveSubGroup = subGroup || subgroups[0]?.id || '';
+  const selectedSubgroupObj = subgroups.find((s) => s.id === effectiveSubGroup);
 
   const createMutation = useMutation({
     mutationFn: async () => {
       const amountMinor = Math.round(parseFloat(amountMajor || '0') * 100);
       return api.createCase({
-        subGroupId: subGroup || undefined,
+        subGroupId: effectiveSubGroup || undefined,
         subGroupName: selectedSubgroupObj?.name || 'Campus Sub-group',
         studentName: studentName.trim(),
         studentRegNo: studentRegNo.trim(),
@@ -89,7 +84,7 @@ export const NewCasePage: React.FC = () => {
                 Sub-group Origin
               </label>
               <select
-                value={subGroup}
+                value={effectiveSubGroup}
                 onChange={(e) => setSubGroup(e.target.value)}
                 className="w-full text-sm rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 py-2.5 px-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
                 required

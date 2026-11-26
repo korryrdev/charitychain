@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
@@ -34,15 +34,10 @@ export const TracePage: React.FC = () => {
   const initialCode = queryParam || 'MLK-7F3K-92QD';
 
   const [searchInput, setSearchInput] = useState(initialCode);
-  const [activeCode, setActiveCode] = useState(initialCode);
+  const [submittedCode, setSubmittedCode] = useState(initialCode);
   const [techDetailsOpen, setTechDetailsOpen] = useState(false);
 
-  useEffect(() => {
-    if (queryParam && queryParam !== activeCode) {
-      setSearchInput(queryParam);
-      setActiveCode(queryParam);
-    }
-  }, [queryParam]);
+  const activeCode = queryParam || submittedCode;
 
   const { data: donation, isLoading, isError } = useQuery<DonationTrace | null>({
     queryKey: ['trace', activeCode],
@@ -54,7 +49,7 @@ export const TracePage: React.FC = () => {
     e.preventDefault();
     if (searchInput.trim()) {
       const code = searchInput.trim().toUpperCase();
-      setActiveCode(code);
+      setSubmittedCode(code);
       setSearchParams({ code });
     }
   };
@@ -100,7 +95,7 @@ export const TracePage: React.FC = () => {
                 type="button"
                 onClick={() => {
                   setSearchInput(sample);
-                  setActiveCode(sample);
+                  setSubmittedCode(sample);
                   setSearchParams({ code: sample });
                 }}
                 className="font-mono px-2 py-1 rounded-md bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition-colors"
@@ -130,7 +125,8 @@ export const TracePage: React.FC = () => {
           actionLabel="Try Sample Code MLK-7F3K-92QD"
           onAction={() => {
             setSearchInput('MLK-7F3K-92QD');
-            setActiveCode('MLK-7F3K-92QD');
+            setSubmittedCode('MLK-7F3K-92QD');
+            setSearchParams({ code: 'MLK-7F3K-92QD' });
           }}
         />
       )}

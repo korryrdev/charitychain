@@ -1,3 +1,5 @@
+export * from './portal';
+
 export type Channel = 'MPESA' | 'BANK' | 'IN_KIND' | 'CRYPTO';
 
 export type CaseState =

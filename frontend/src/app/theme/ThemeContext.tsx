@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { preferencesStore } from '../../store/preferences.store.js';
+import { preferencesStore } from '../../store/preferences.store';
 
 export type Theme = 'light' | 'dark' | 'system';
 

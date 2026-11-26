@@ -1,1 +1,0 @@
-export function PayoutTimeline({ attempts = [] }) { return <ol className="payout-timeline">{attempts.map((attempt) => <li key={attempt.id}><strong>Attempt {attempt.sequence} · {attempt.status}</strong><span>{attempt.providerRequestId ?? attempt.failureMessage ?? 'Awaiting provider response'}</span></li>)}</ol>; }

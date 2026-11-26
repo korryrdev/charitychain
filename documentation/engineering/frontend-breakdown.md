@@ -15,26 +15,25 @@ frontend/
 └── src/
 ```
 
-Responsibilities: TypeScript (`allowJs: true` supporting `.tsx` + `.jsx` coexistence), Vite 8 + `@tailwindcss/vite` build configuration, `@/*` path aliasing, environment-safe API URL configuration, Vitest `jsdom` tests, and production bundle verification (`tsc --noEmit && vite build`).
+Responsibilities: Strict TypeScript (`allowJs: false`, 100% `.tsx`/`.ts`), Vite 8 + `@tailwindcss/vite` build configuration, `@/*` path aliasing, environment-safe API URL configuration, Vitest `jsdom` tests, and production bundle verification (`tsc --noEmit && vite build`).
 
 ## 2. Application Bootstrap & Theme Isolation
 
 ```text
 src/
 ├── main.tsx
-├── App.jsx
+├── App.tsx
 ├── index.css                 CSS Cascade Layers (@layer) without Tailwind Preflight reset
 └── app/
-    ├── providers.jsx         Portal session & auth store bootstrap
-    ├── Providers.tsx         React Query, I18nProvider, AuthProvider wrapper
-    ├── router.jsx
-    ├── routeConfig.js        Unified routes across 9 portals + .tsx DApp + /app/*
-    ├── queryClient.js
-    ├── StartupGate.jsx
-    ├── ErrorBoundary.jsx
+    ├── Providers.tsx         Portal session, theme context, React Query, I18n & auth store
+    ├── Router.tsx            Unified router entry & guards
+    ├── routeConfig.ts        Unified routes across 9 portals + .tsx DApp + /app/*
+    ├── queryClient.ts
+    ├── StartupGate.tsx
+    ├── ErrorBoundary.tsx
     ├── auth/AuthContext.tsx
     ├── guards/RequireAuth.tsx
-    └── theme/ThemeContext.tsx (syncs data-theme attribute and .dark class)
+    └── theme/                Theme CSS / bootstrap utilities
 ```
 
 Responsibilities: mount React 19 with `Plus Jakarta Sans` and `Inter` typography, compose unified providers without CSS Preflight collisions, synchronize `data-theme` and `.dark` theme tokens, restore sessions safely, configure unified routes, and catch rendering errors.
@@ -72,15 +71,15 @@ Responsibilities: consistent accessible controls, form errors, confirmation dial
 
 ```text
 src/services/
-├── httpClient.js
-├── csrf.js
-├── requestId.js
-├── errorMapper.js
-└── downloadClient.js
+├── httpClient.ts
+├── csrf.ts
+├── requestId.ts
+├── errorMapper.ts
+└── downloadClient.ts
 src/store/
-├── auth.store.js
-├── notification.store.js
-└── preferences.store.js
+├── auth.store.ts
+├── notification.store.ts
+└── preferences.store.ts
 ```
 
 Responsibilities: cookie-based API calls, CSRF handling, request correlation, safe error mapping, authorized downloads, session state, notification state, and user interface preferences. No payment secret, database credential, blockchain private key, or provider credential belongs in the browser.
@@ -91,13 +90,13 @@ Responsibilities: cookie-based API calls, CSRF handling, request correlation, sa
 features/authentication/
 ├── components/   LoginForm, RegisterForm, MfaForm
 ├── hooks/        useAuth, useSession
-├── services/     auth.api.js
-├── validation/   auth.schema.js
+├── services/     auth.api.ts
+├── validation/   auth.schema.ts
 └── tests/
 features/authorization/
 ├── components/   ProtectedRoute, PermissionGate
 ├── hooks/        usePermissions
-├── permissions.js
+├── permissions.ts
 └── tests/
 pages/auth/
 ```
@@ -108,11 +107,11 @@ Responsibilities: donor/student registration, login, logout, verification, passw
 
 ```text
 layouts/
-├── PublicLayout.jsx
-├── AuthLayout.jsx
-├── CommunityLayout.jsx
-├── OperationsLayout.jsx
-├── GovernanceLayout.jsx
+├── PublicLayout.tsx
+├── AuthLayout.tsx
+├── CommunityLayout.tsx
+├── OperationsLayout.tsx
+├── GovernanceLayout.tsx
 └── components/ AppHeader, AppSidebar, Breadcrumbs, MobileNavigation, UserMenu
 ```
 
@@ -127,18 +126,18 @@ Responsibilities: responsive navigation and role-scoped portal shells:
 
 ```text
 pages/public/
-├── HomePage.jsx
-├── HowItWorksPage.jsx
-├── TransparencyPage.jsx
-├── DonorRecognitionPage.jsx
-├── TrackDonationPage.jsx
-├── GoodsCataloguePage.jsx
-├── GovernancePage.jsx
-├── PoliciesPage.jsx
-├── PrivacyPage.jsx
-├── ContactPage.jsx
-├── ComplaintPage.jsx
-└── FraudReportPage.jsx
+├── HomePage.tsx
+├── HowItWorksPage.tsx
+├── TransparencyPage.tsx
+├── DonorRecognitionPage.tsx
+├── TrackDonationPage.tsx
+├── GoodsCataloguePage.tsx
+├── GovernancePage.tsx
+├── PoliciesPage.tsx
+├── PrivacyPage.tsx
+├── ContactPage.tsx
+├── ComplaintPage.tsx
+└── FraudReportPage.tsx
 ```
 
 Responsibilities: publish reconciled and anonymized figures only; explain fiat money and physical-goods flows; expose public transparency, recognition, private tracking, catalogue limits, governance, policy, privacy, contact, complaint, and fraud-reporting pages.
@@ -148,11 +147,11 @@ Responsibilities: publish reconciled and anonymized figures only; explain fiat m
 ```text
 features/transparency/
 ├── components/ TransparencySummary, FundFlowChart, GoodsDistributionChart
-├── services/transparency.api.js
+├── services/transparency.api.ts
 └── tests/
 features/recognitionTiers/
 ├── components/ RecognitionBoard, TierBadge, TierProgress
-├── services/recognition.api.js
+├── services/recognition.api.ts
 └── tests/
 ```
 
@@ -164,13 +163,13 @@ Responsibilities: public inflow/outflow charts, goods distribution, anonymized a
 features/donorIdentity/
 features/moneyDonations/
 pages/donor/
-├── DonorDashboardPage.jsx
-├── DonateMoneyPage.jsx
-├── DonationHistoryPage.jsx
-├── DonationDetailPage.jsx
-├── ReceiptsPage.jsx
-├── PublicIdentityPage.jsx
-└── DonorNotificationsPage.jsx
+├── DonorDashboardPage.tsx
+├── DonateMoneyPage.tsx
+├── DonationHistoryPage.tsx
+├── DonationDetailPage.tsx
+├── ReceiptsPage.tsx
+├── PublicIdentityPage.tsx
+└── DonorNotificationsPage.tsx
 ```
 
 Responsibilities: generated alias preview/editing, real-name consent, visibility toggles, tier progress, M-Pesa/Paybill/bank donation initiation, pending/confirmed/reversed/reconciled states, tracking credentials, receipts, contribution history, and donor notifications.
@@ -180,10 +179,10 @@ Responsibilities: generated alias preview/editing, real-name consent, visibility
 ```text
 features/physicalDonations/
 ├── components/ PhysicalDonationForm, DonationLineEditor, ConfirmationStatus
-├── services/physicalDonations.api.js
-├── validation/physicalDonation.schema.js
+├── services/physicalDonations.api.ts
+├── validation/physicalDonation.schema.ts
 └── tests/
-pages/donor/DeclareGoodsPage.jsx
+pages/donor/DeclareGoodsPage.tsx
 ```
 
 Responsibilities: donor intent declaration, clerk-recorded actual goods/cash, independent donor Yes/No confirmation, rejection/correction status, and a clear rule that only confirmed entries enter inventory or cash reconciliation.
@@ -194,12 +193,12 @@ Responsibilities: donor intent declaration, clerk-recorded actual goods/cash, in
 features/assistanceApplications/
 features/studentVetting/
 pages/student/
-├── StudentDashboardPage.jsx
-├── UniversityRecordPage.jsx
-├── AssistanceApplicationPage.jsx
-├── VettingResultPage.jsx
-├── ApplicationTimelinePage.jsx
-└── StudentAppealsPage.jsx
+├── StudentDashboardPage.tsx
+├── UniversityRecordPage.tsx
+├── AssistanceApplicationPage.tsx
+├── VettingResultPage.tsx
+├── ApplicationTimelinePage.tsx
+└── StudentAppealsPage.tsx
 ```
 
 Responsibilities: read-only simulated university record, tuition/upkeep application, no document upload in the prototype, clear Need Index factors and explanations, record-discrepancy reporting, application status timeline, decisions, and appeal intake.
@@ -209,12 +208,12 @@ Responsibilities: read-only simulated university record, tuition/upkeep applicat
 ```text
 features/goodsCollection/
 ├── components/ AllowanceSummary, GoodsSelector, CollectionConfirmation
-├── services/goodsCollection.api.js
-├── validation/goodsCollection.schema.js
+├── services/goodsCollection.api.ts
+├── validation/goodsCollection.schema.ts
 └── tests/
-pages/student/StudentGoodsPage.jsx
-pages/student/GoodsRequestPage.jsx
-pages/student/CollectionHistoryPage.jsx
+pages/student/StudentGoodsPage.tsx
+pages/student/GoodsRequestPage.tsx
+pages/student/CollectionHistoryPage.tsx
 ```
 
 Responsibilities: show eligible categories, remaining limits, collection history, stock availability, reservation expiry, and the student’s independent confirmation before goods are released.
@@ -224,7 +223,7 @@ Responsibilities: show eligible categories, remaining limits, collection history
 ```text
 features/inventory/
 ├── components/ InventoryTable, BatchInspector, StockMovementForm, StockVarianceAlert
-├── services/inventory.api.js
+├── services/inventory.api.ts
 └── tests/
 pages/clerk/
 ```
@@ -236,7 +235,7 @@ Responsibilities: incoming physical donation entry, pending donor confirmations,
 ```text
 features/committeeApprovals/
 ├── components/ ApprovalPanel, ApprovalProgress, ConflictDeclaration, DecisionForm
-├── services/approvals.api.js
+├── services/approvals.api.ts
 └── tests/
 pages/committee/
 ```
@@ -248,7 +247,7 @@ Responsibilities: pseudonymized application queue, vetting evidence, conflict de
 ```text
 features/disbursements/
 ├── components/ PayoutStatus, PayoutTimeline, ReconciliationEvidence
-├── services/disbursements.api.js
+├── services/disbursements.api.ts
 └── tests/
 pages/finance/
 ```
@@ -269,13 +268,13 @@ Responsibilities: anomaly summaries, money/goods audit comparisons, investigatio
 
 ```text
 pages/admin/
-├── AdminDashboardPage.jsx
-├── UsersAndRolesPage.jsx
-├── PolicyConfigurationPage.jsx
-├── MockUniversityDataPage.jsx
-├── InventoryConfigurationPage.jsx
-├── IntegrationHealthPage.jsx
-└── SecurityIncidentsPage.jsx
+├── AdminDashboardPage.tsx
+├── UsersAndRolesPage.tsx
+├── PolicyConfigurationPage.tsx
+├── MockUniversityDataPage.tsx
+├── InventoryConfigurationPage.tsx
+├── IntegrationHealthPage.tsx
+└── SecurityIncidentsPage.tsx
 ```
 
 Responsibilities: staff access, roles, policy configuration, simulated university data, inventory configuration, integration health, security incidents, session revocation, and operational pause controls; administrators cannot approve or release funds alone.
@@ -292,7 +291,7 @@ Responsibilities: complaints and appeals, restricted case status, notification p
 
 ## 20. Unified Malkia DApp & `Web3.js` Features (`.tsx`)
 
-Coexisting seamlessly under the unified router (`src/app/routeConfig.js`):
+Coexisting seamlessly under the unified router (`src/app/routeConfig.ts`):
 * `features/trace/` (`TracePage.tsx`, `SankeyFlow.tsx`): Public receipt lookup (`MLK-XXXX-XXXX`), allocation Sankey flow, and direct browser `Web3.js` verification against `DonationLedger.sol`.
 * `features/signing/` (`SigningQueuePage.tsx`, `signing.test.tsx`): Live `Web3.js` + MetaMask `eth_signTypedData_v4` 2-of-3 EIP-712 signatory signing (`"CharityChain CaseWorkflow"` v1) with Demo Signatory fallback.
 * `features/cases/`, `features/donations/`, `features/inventory/` (`PharmacyItemPage.tsx`), `features/graph/` (`FundFlowGraphPage.tsx`), `features/alerts/` (`AlertsPage.tsx`), `features/reports/` (`ReportsPage.tsx`), `features/donor/` (`ClaimPreferencesPage.tsx`, `DonorPortalPage.tsx`), `features/recognition/` (`RecognitionWallPage.tsx`), and `app/layouts/AppLayout.tsx` (`/app/*`).
@@ -300,7 +299,7 @@ Coexisting seamlessly under the unified router (`src/app/routeConfig.js`):
 ## 21. Frontend Testing and Verification
 
 ```text
-src/**/*.test.{js,jsx,tsx}
+src/**/*.test.{ts,tsx}
 ```
 
 Verification covers route protection, portal navigation, dual theme parity, API error states, form validation, privacy masking, public-data safety, `Web3.js` EIP-712 signing queue (`signing.test.tsx`), `tsc --noEmit`, `eslint --max-warnings=0`, and Vite production builds (52 passing tests across 22 test files).

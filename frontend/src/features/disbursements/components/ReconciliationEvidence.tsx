@@ -1,0 +1,51 @@
+export interface ReconciliationExceptionItem {
+  id: string;
+  outcome?: string | null;
+  type: string;
+}
+
+export interface ReconciliationResult {
+  status?: string | null;
+  scope: string;
+  periodStart: string | number | Date;
+  periodEnd: string | number | Date;
+  exceptions?: ReconciliationExceptionItem[];
+}
+
+export interface ReconciliationEvidenceProps {
+  reconciliation?: ReconciliationResult | null;
+}
+
+export function ReconciliationEvidence({ reconciliation }: ReconciliationEvidenceProps) {
+  if (!reconciliation) return null;
+  return (
+    <section className="reconciliation-evidence">
+      <h2>Reconciliation result</h2>
+      <p>
+        <strong>{reconciliation.status?.replaceAll('_', ' ')}</strong>
+      </p>
+      <dl>
+        <div>
+          <dt>Scope</dt>
+          <dd>{reconciliation.scope}</dd>
+        </div>
+        <div>
+          <dt>Period</dt>
+          <dd>
+            {new Date(reconciliation.periodStart).toLocaleDateString('en-KE')} –{' '}
+            {new Date(reconciliation.periodEnd).toLocaleDateString('en-KE')}
+          </dd>
+        </div>
+      </dl>
+      {reconciliation.exceptions?.length ? (
+        <ul>
+          {reconciliation.exceptions.map((item) => (
+            <li key={item.id}>{item.outcome ?? item.type}</li>
+          ))}
+        </ul>
+      ) : (
+        <p>No exceptions were recorded.</p>
+      )}
+    </section>
+  );
+}

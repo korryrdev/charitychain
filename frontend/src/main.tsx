@@ -41,10 +41,10 @@ import './assets/styles/admin.css';
 import './assets/styles/access-workspace.css';
 import './assets/styles/ui.css';
 import './index.css';
-import { AppProviders } from './app/providers.jsx';
-import { ErrorBoundary } from './app/ErrorBoundary.jsx';
-import { StartupGate } from './app/StartupGate.jsx';
-import { AppRouter } from './app/router.jsx';
+import { AppProviders } from './app/Providers';
+import { ErrorBoundary } from './app/ErrorBoundary';
+import { StartupGate } from './app/StartupGate';
+import { AppRouter } from './app/Router';
 
 createRoot(document.getElementById('root') as HTMLElement).render(
   <StrictMode>

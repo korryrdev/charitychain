@@ -1,1 +1,0 @@
-export function StockVarianceAlert({ message }) { return message ? <aside className="stock-variance-alert" role="alert"><strong>Inventory variance requires attention</strong><p>{message}</p></aside> : null; }

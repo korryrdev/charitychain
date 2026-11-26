@@ -10,7 +10,7 @@ CharityChain is a transparent donation, student assistance, inventory management
                                   [ Users & Clients ]
                                            │
                                            ▼
-                      [ React 19 + TypeScript / JSX Frontend ]
+                      [ React 19 + TypeScript (.tsx/.ts) Frontend ]
                   (9 Role Portals + Web3.js EIP-712 + Sankey/DAG UI)
                                            │
                                            ▼
@@ -23,7 +23,7 @@ CharityChain is a transparent donation, student assistance, inventory management
    (Prisma, FIFO, Triggers)       (Evidence CIDs)       (CaseWorkflow, PeriodAnchor, FX)
 ```
 
-* **Frontend:** React 19.3, TypeScript + JSX coexistence, React Router 7.18, Vite 8.3, Tailwind CSS v4 (`@layer`), `Web3.js` 4.16, TanStack React Query, Lucide Icons, `Plus Jakarta Sans` & `Inter`
+* **Frontend:** React 19.3, strict TypeScript (`.tsx`/`.ts`, `allowJs: false`), React Router 7.18, Vite 8.3, Tailwind CSS v4 (`@layer`), `Web3.js` 4.16, TanStack React Query, Lucide Icons, `Plus Jakarta Sans` & `Inter`
 * **Backend API:** Node.js 22.12+, Express 5.3, Better-Auth (with TOTP MFA & sessions), M-Pesa Daraja STK/B2C/B2B + C2B tokenized callbacks, Resend email, FIFO lot allocation, Benford's Law & R01–R20 forensic engine, 1-year fraud simulator
 * **Database & ORM:** PostgreSQL 17, Prisma 6.19, PostgreSQL `BEFORE UPDATE OR DELETE` append-only triggers on `case_events`, `allocations`, and `donation_raw_callbacks`
 * **Evidence Storage:** IPFS Kubo 0.39 (decentralized receipt & disbursement evidence CIDs)

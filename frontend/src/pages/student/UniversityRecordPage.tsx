@@ -1,0 +1,171 @@
+import { useEffect, useState } from 'react';
+import { studentRecordsApi } from '../../features/studentVetting/services/vetting.api';
+import { RecordDiscrepancyAlert } from '../../features/studentVetting/components/RecordDiscrepancyAlert';
+import { getErrorMessage } from '../../services/errorMapper';
+
+const money = (amount: unknown): string => `KES ${Number(amount ?? 0).toLocaleString()}`;
+const date = (value: string | null | undefined): string =>
+  value ? new Intl.DateTimeFormat('en-KE', { dateStyle: 'medium' }).format(new Date(value)) : '—';
+
+export function UniversityRecordPage() {
+  const [record, setRecord] = useState<Record<string, any> | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    studentRecordsApi
+      .mine()
+      .then(({ record: value }) => setRecord(value))
+      .catch((cause: unknown) =>
+        setError(getErrorMessage(cause, 'Unable to load university record.'))
+      );
+  }, []);
+
+  if (error) {
+    return (
+      <main className="portal-page">
+        <p className="form-error" role="alert">
+          {error}
+        </p>
+      </main>
+    );
+  }
+  if (!record) {
+    return (
+      <main className="portal-page">
+        <p className="loading-state">Loading your verified university record…</p>
+      </main>
+    );
+  }
+
+  const financialRecords: Array<Record<string, any>> = record.financialRecords ?? [];
+  const payments: Array<Record<string, any>> = record.payments ?? [];
+  const aidRecords: Array<Record<string, any>> = record.aidRecords ?? [];
+  const financeBlocks: Array<Record<string, any>> = record.financeBlocks ?? [];
+
+  return (
+    <main className="portal-page student-record-page">
+      <p className="section-kicker">Read-only university record</p>
+      <h1>{record.student.fullName}</h1>
+      <p className="portal-page__lead">
+        This is simulated institutional data used for the prototype. It is authoritative for eligibility and cannot be edited from this page.
+      </p>
+      <section className="record-identity">
+        <dl>
+          <div>
+            <dt>Registration number</dt>
+            <dd>{record.student.registrationNumber}</dd>
+          </div>
+          <div>
+            <dt>Programme</dt>
+            <dd>{record.student.programme}</dd>
+          </div>
+          <div>
+            <dt>School</dt>
+            <dd>{record.student.school}</dd>
+          </div>
+          <div>
+            <dt>Academic status</dt>
+            <dd>{record.student.academicStatus.replaceAll('_', ' ')}</dd>
+          </div>
+        </dl>
+      </section>
+      <section className="record-section">
+        <h2>Fee position by semester</h2>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Semester</th>
+                <th>Invoiced</th>
+                <th>Paid</th>
+                <th>Aid</th>
+                <th>Outstanding</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {financialRecords.map((item) => (
+                <tr key={item.semester.code}>
+                  <td>{item.semester.name}</td>
+                  <td>{money(item.invoicedAmount)}</td>
+                  <td>{money(item.paidAmount)}</td>
+                  <td>{money(item.aidAmount)}</td>
+                  <td>{money(item.outstandingBalance)}</td>
+                  <td>{item.status}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section className="record-section">
+        <h2>Payment history</h2>
+        {payments.length ? (
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Semester</th>
+                  <th>Source</th>
+                  <th>Amount</th>
+                  <th>Reference</th>
+                </tr>
+              </thead>
+              <tbody>
+                {payments.map((payment) => (
+                  <tr key={payment.id}>
+                    <td>{date(payment.paidAt)}</td>
+                    <td>{payment.semesterCode}</td>
+                    <td>{payment.source}</td>
+                    <td>{money(payment.amount)}</td>
+                    <td>{payment.reference}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="muted">No payment history is available.</p>
+        )}
+      </section>
+      <section className="record-grid">
+        <div>
+          <h2>HELB, scholarship, or NGO support</h2>
+          {aidRecords.length ? (
+            <ul>
+              {aidRecords.map((aid) => (
+                <li key={aid.id}>
+                  <strong>{aid.providerName}</strong>
+                  <span>
+                    {aid.aidType} · {money(aid.disbursedAmount)} · {aid.status}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="muted">No aid record is available.</p>
+          )}
+        </div>
+        <div>
+          <h2>Finance blocks</h2>
+          {financeBlocks.length ? (
+            <ul>
+              {financeBlocks.map((block) => (
+                <li key={block.id}>
+                  <strong>{block.blockType.replaceAll('_', ' ')}</strong>
+                  <span>
+                    {block.reason} · {date(block.blockedAt)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="muted">No finance block is recorded.</p>
+          )}
+        </div>
+      </section>
+      <RecordDiscrepancyAlert />
+    </main>
+  );
+}

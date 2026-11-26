@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { UserRole, UserSession } from '@/types';
 import { api } from '@/lib/api';
-import { authStore } from '../../store/auth.store.js';
+import { authStore } from '../../store/auth.store';
 
 interface AuthContextType {
   user: UserSession | null;

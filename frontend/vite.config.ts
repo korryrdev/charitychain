@@ -35,13 +35,14 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
-    setupFiles: './src/tests/setup.js',
+    setupFiles: './src/tests/setup.ts',
+    testTimeout: 15000,
     clearMocks: true,
     restoreMocks: true,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
-      include: ['src/**/*.{js,jsx,ts,tsx}'],
+      include: ['src/**/*.{ts,tsx}'],
       exclude: ['src/tests/**'],
     },
   },

@@ -89,6 +89,7 @@ export const SigningQueuePage: React.FC = () => {
   const [lastSignatureHex, setLastSignatureHex] = useState<string | null>(null);
   const [walletError, setWalletError] = useState<string | null>(null);
   const [signingModalCase, setSigningModalCase] = useState<CaseRecord | null>(null);
+  const [modalDeadline, setModalDeadline] = useState<number>(0);
   const [isSigningLive, setIsSigningLive] = useState(false);
 
   const hasBrowserProvider =
@@ -135,7 +136,6 @@ export const SigningQueuePage: React.FC = () => {
     }
   };
 
-  const modalDeadline = useMemo(() => Math.floor(Date.now() / 1000) + 7 * 86400, [signingModalCase?.id]);
   const modalTypedData = useMemo(() => {
     if (!signingModalCase) return null;
     return buildEip712TypedData(
@@ -153,7 +153,7 @@ export const SigningQueuePage: React.FC = () => {
       setWalletError(null);
 
       const amountMinor = Number(targetCase.approvedAmountMinor || targetCase.requestedAmountMinor);
-      const deadline = modalDeadline;
+      const deadline = modalDeadline || Math.floor(Date.now() / 1000) + 7 * 86400;
       const typedData = buildEip712TypedData(
         targetCase,
         connectedChainId,
@@ -219,7 +219,7 @@ export const SigningQueuePage: React.FC = () => {
           </h1>
           <p className="text-xs text-zinc-500 mt-1">
             Matches <span className="font-mono">CaseWorkflow.sol</span> domain{' '}
-            <span className="font-mono">"CharityChain CaseWorkflow"</span> (v1)
+            <span className="font-mono">&ldquo;CharityChain CaseWorkflow&rdquo;</span> (v1)
           </p>
         </div>
 
@@ -398,7 +398,10 @@ export const SigningQueuePage: React.FC = () => {
                       <Button
                         variant="emerald"
                         size="sm"
-                        onClick={() => setSigningModalCase(c)}
+                        onClick={() => {
+                          setModalDeadline(Math.floor(Date.now() / 1000) + 7 * 86400);
+                          setSigningModalCase(c);
+                        }}
                         className="gap-2"
                       >
                         <KeyRound className="w-4 h-4" />

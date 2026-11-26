@@ -40,15 +40,9 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({ caseRecord, on
   );
   const [activeTab, setActiveTab] = useState<'DETAILS' | 'DECIDE' | 'DISBURSE'>('DETAILS');
 
-  if (!caseRecord) return null;
-
-  const isSubmitter = caseRecord.submitterId === (user?.id || 'current-user');
-  const canDecide = ['COMMITTEE', 'ADMIN'].includes(role) && caseRecord.state === 'SUBMITTED';
-  const canDisburse =
-    ['COMMITTEE', 'TREASURER', 'ADMIN'].includes(role) && caseRecord.state === 'AUTHORIZED';
-
   const approveMutation = useMutation({
     mutationFn: async () => {
+      if (!caseRecord) throw new Error('Case record is missing');
       const amountMinor = Math.round(parseFloat(approveAmountMajor) * 100);
       return api.approveCase(caseRecord.id, amountMinor, user?.id || 'current-user');
     },
@@ -63,6 +57,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({ caseRecord, on
 
   const rejectMutation = useMutation({
     mutationFn: async () => {
+      if (!caseRecord) throw new Error('Case record is missing');
       return api.rejectCase(caseRecord.id, rejectReason);
     },
     onSuccess: () => {
@@ -73,6 +68,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({ caseRecord, on
 
   const disburseMutation = useMutation({
     mutationFn: async () => {
+      if (!caseRecord) throw new Error('Case record is missing');
       const amountMinor = Math.round(parseFloat(disburseAmountMajor) * 100);
       const fakeCid = `Qm${Math.random().toString(36).substring(2, 15)}...encrypted`;
       return api.recordDisbursement(
@@ -90,6 +86,13 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({ caseRecord, on
       alert(err.message || 'Disbursement recording failed');
     },
   });
+
+  if (!caseRecord) return null;
+
+  const isSubmitter = caseRecord.submitterId === (user?.id || 'current-user');
+  const canDecide = ['COMMITTEE', 'ADMIN'].includes(role) && caseRecord.state === 'SUBMITTED';
+  const canDisburse =
+    ['COMMITTEE', 'TREASURER', 'ADMIN'].includes(role) && caseRecord.state === 'AUTHORIZED';
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
@@ -149,7 +152,7 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({ caseRecord, on
               Sub-group Justification
             </h4>
             <div className="p-3.5 rounded-lg bg-zinc-50/70 dark:bg-zinc-800/40 border border-zinc-200/70 dark:border-zinc-800/70 text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed italic">
-              "{caseRecord.justification}"
+              &ldquo;{caseRecord.justification}&rdquo;
             </div>
           </div>
 

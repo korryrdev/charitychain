@@ -1,4 +1,5 @@
 import js from '@eslint/js';
+import babelParser from '@babel/eslint-parser';
 import globals from 'globals';
 import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
@@ -27,6 +28,32 @@ export default [
       'react/react-in-jsx-scope': 'off',
       'react/prop-types': 'off',
       'no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }]
+    }
+  },
+  {
+    files: ['frontend/src/**/*.{ts,tsx}', 'frontend/vite.config.ts'],
+    languageOptions: {
+      parser: babelParser,
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: { ...globals.node, ...globals.browser },
+      parserOptions: {
+        requireConfigFile: false,
+        ecmaFeatures: { jsx: true },
+        babelOptions: {
+          presets: [['@babel/preset-typescript', { isTSX: true, allExtensions: true }]]
+        }
+      }
+    },
+    plugins: { react, 'react-hooks': reactHooks },
+    settings: { react: { version: 'detect' } },
+    rules: {
+      ...react.configs.recommended.rules,
+      ...reactHooks.configs.flat.recommended.rules,
+      'react/react-in-jsx-scope': 'off',
+      'react/prop-types': 'off',
+      'no-undef': 'off',
+      'no-unused-vars': 'off'
     }
   }
 ];
