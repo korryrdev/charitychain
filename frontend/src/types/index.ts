@@ -133,7 +133,7 @@ export interface RecognitionEntry {
   id: string;
   displayName: string;
   displayMode: 'ALIAS' | 'NAMED';
-  tier: BadgeTier;
+  tier: BadgeTier | null;
   awardedMonth: string;
   isConsistentGiver?: boolean;
 }
@@ -232,4 +232,94 @@ export interface BankReconciliationReport {
     amountMinor: string;
     createdAt: string;
   }[];
+}
+
+export interface RecognitionModerationEntry {
+  id: string;
+  maskedDonorRef: string;
+  displayName: string;
+  displayMode: 'ALIAS' | 'NAMED';
+  badge: BadgeTier | null;
+  isConsistentGiver: boolean;
+  awardedMonth: string;
+}
+
+export interface RecognitionReportAlert {
+  id: string;
+  ruleId: string;
+  severity: string;
+  description: string;
+  entityType: string;
+  entityId: string | null;
+  status: string;
+  createdAt: string;
+}
+
+export interface BadgeTierThresholdConfig {
+  tier: 'BRONZE' | 'SILVER' | 'GOLD' | 'PATRON';
+  thresholdMinor: string;
+  thresholdKes: number;
+}
+
+export interface BadgeTierProposal {
+  id: string;
+  tier: 'BRONZE' | 'SILVER' | 'GOLD' | 'PATRON';
+  thresholdMinor: string;
+  thresholdKes: number;
+  proposedByUserId: string | null;
+  approvedByUserId: string | null;
+  activatesAt: string | null;
+  approvedAt: string | null;
+  status: 'PENDING_APPROVAL' | 'APPROVED' | string;
+}
+
+export interface MaskedDonorReferenceItem {
+  donorRef: string;
+  maskedName: string;
+  displayMode: string;
+  donationCount: number;
+  isOptedIn: boolean;
+  isMasked: boolean;
+  lastActivityAt: string | null;
+}
+
+export interface RevealedDonorReferenceResult {
+  donorRef: string;
+  name: string;
+  displayMode: string;
+  isMasked: boolean;
+  auditEventId?: string | null;
+}
+
+export interface ComplaintRecord {
+  id: string;
+  trackingRef: string;
+  kind: 'COMPLAINT' | 'FRAUD_REPORT';
+  category: string;
+  subject: string | null;
+  reference: string | null;
+  description: string;
+  status: string;
+  severity: string;
+  createdAt: string;
+  updatedAt: string;
+  reporterContact?: string | null;
+  events: {
+    id: string;
+    fromStatus: string;
+    toStatus: string;
+    notes: string;
+    createdAt: string;
+  }[];
+}
+
+export interface AdminStudentRecord {
+  id: string;
+  registrationNumber: string;
+  fullName: string;
+  programme: string;
+  school: string;
+  yearOfStudy: number;
+  academicStatus: string;
+  linked: boolean;
 }

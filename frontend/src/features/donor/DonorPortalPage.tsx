@@ -52,7 +52,6 @@ export const DonorPortalPage: React.FC = () => {
   // Settings form state
   const [displayMode, setDisplayMode] = useState<DisplayMode>('ALIAS');
   const [customAlias, setCustomAlias] = useState('');
-  const [showTotal, setShowTotal] = useState(false);
   const [showBadge, setShowBadge] = useState(true);
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [settingsSuccess, setSettingsSuccess] = useState(false);
@@ -65,7 +64,6 @@ export const DonorPortalPage: React.FC = () => {
       if (data?.settings) {
         setDisplayMode((data.settings.displayMode as DisplayMode) || 'ALIAS');
         setCustomAlias(data.settings.publicAlias || '');
-        setShowTotal(Boolean(data.settings.showContributionTotal));
         setShowBadge(Boolean(data.settings.showRecognitionTier));
       }
       return data;
@@ -119,7 +117,7 @@ export const DonorPortalPage: React.FC = () => {
       displayMode,
       publicAlias: customAlias.trim() || undefined,
       publicListed: displayMode !== 'ANONYMOUS',
-      showContributionTotal: showTotal,
+      showContributionTotal: false,
       showRecognitionTier: showBadge,
     });
   };
@@ -519,7 +517,7 @@ export const DonorPortalPage: React.FC = () => {
                 <span>Recognition & Privacy Preferences</span>
               </CardTitle>
               <CardDescription className="text-xs">
-                Control how you appear on the public Supporter Wall and whether your contribution total is visible.
+                Control how your display name and milestone tier badge appear on the public Supporter Wall. Contribution amounts remain private to your donor view.
               </CardDescription>
             </CardHeader>
 
@@ -648,22 +646,15 @@ export const DonorPortalPage: React.FC = () => {
                   <label className="flex items-center gap-2.5 text-xs text-zinc-700 dark:text-zinc-300 cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={showTotal}
-                      onChange={(e) => setShowTotal(e.target.checked)}
-                      className="rounded accent-emerald-600 w-4 h-4"
-                    />
-                    <span>Show my total contribution amount on the public recognition wall</span>
-                  </label>
-
-                  <label className="flex items-center gap-2.5 text-xs text-zinc-700 dark:text-zinc-300 cursor-pointer">
-                    <input
-                      type="checkbox"
                       checked={showBadge}
                       onChange={(e) => setShowBadge(e.target.checked)}
                       className="rounded accent-emerald-600 w-4 h-4"
                     />
                     <span>Show my milestone tier badge (e.g. Gold / Silver) publicly</span>
                   </label>
+                  <p className="text-[11px] text-zinc-500">
+                    Individual donation amounts and timestamps are never displayed publicly on recognition boards (KDPA 2019).
+                  </p>
                 </div>
               </div>
 

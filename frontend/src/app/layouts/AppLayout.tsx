@@ -211,8 +211,8 @@ export const AppLayout: React.FC = () => {
 
       {/* Main Content Pane */}
       <div className="flex-1 lg:pl-64 flex flex-col min-h-screen">
-        <SkipLink />
-        <main id="main-content" className="flex-1 w-full min-w-0 p-4 sm:p-6 lg:p-8">
+        <SkipLink targetId="main-content" />
+        <main id="main-content" tabIndex={-1} className="flex-1 w-full min-w-0 p-4 sm:p-6 lg:p-8">
           <Outlet />
         </main>
       </div>

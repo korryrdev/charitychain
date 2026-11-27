@@ -135,9 +135,16 @@ export class AlertsService {
         description: description || `Alert triggered by rule ${ruleId}`,
         entityType,
         entityId,
-        details,
-        status: 'OPEN'
-      }
+        status: 'OPEN',
+        events: {
+          create: {
+            fromStatus: 'NONE',
+            toStatus: 'OPEN',
+            notes: JSON.stringify(details && typeof details === 'object' ? details : {}),
+          },
+        },
+      },
+      include: { events: true },
     });
     logger.warn({ ruleId, severity, entityType, entityId }, 'Forensic alert raised');
     return alert;

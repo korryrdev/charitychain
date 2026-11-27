@@ -60,6 +60,7 @@ import { ReviewQueuePage } from '../pages/committee/ReviewQueuePage';
 import { ApplicationReviewPage } from '../pages/committee/ApplicationReviewPage';
 import { ApprovalHistoryPage } from '../pages/committee/ApprovalHistoryPage';
 import { FundingCommitmentsPage } from '../pages/committee/FundingCommitmentsPage';
+import { RecognitionModerationPage } from '../pages/committee/RecognitionModerationPage';
 import { FinanceDashboardPage } from '../pages/finance/FinanceDashboardPage';
 import { ApprovedDisbursementsPage } from '../pages/finance/ApprovedDisbursementsPage';
 import { PayoutDetailPage } from '../pages/finance/PayoutDetailPage';
@@ -74,7 +75,8 @@ import { BlockchainAuditPage } from '../pages/auditor/BlockchainAuditPage';
 import { AdminDashboardPage } from '../pages/admin/AdminDashboardPage';
 import { UsersAndRolesPage } from '../pages/admin/UsersAndRolesPage';
 import { PolicyConfigurationPage } from '../pages/admin/PolicyConfigurationPage';
-import { MockUniversityDataPage } from '../pages/admin/MockUniversityDataPage';
+import { UniversityRecordsAdminPage } from '../pages/admin/UniversityRecordsAdminPage';
+import { DonorIdentityRevealPage } from '../pages/admin/DonorIdentityRevealPage';
 import { InventoryConfigurationPage } from '../pages/admin/InventoryConfigurationPage';
 import { IntegrationHealthPage } from '../pages/admin/IntegrationHealthPage';
 import { SecurityIncidentsPage } from '../pages/admin/SecurityIncidentsPage';
@@ -220,6 +222,8 @@ export const routeConfig = Object.freeze([
           'case:read',
           'case:decide',
           'release:authorize',
+          'recognition:moderate',
+          'badge-tier:manage',
         ],
       },
       createElement(CommunityLayout)
@@ -231,6 +235,14 @@ export const routeConfig = Object.freeze([
       { path: 'cases', element: createElement(CasesPage) },
       { path: 'cases/new', element: createElement(NewCasePage) },
       { path: 'signing', element: createElement(SigningQueuePage) },
+      {
+        path: 'recognition',
+        element: createElement(
+          ProtectedRoute,
+          { permissions: ['recognition:moderate', 'badge-tier:manage'] },
+          createElement(RecognitionModerationPage)
+        ),
+      },
       { path: 'history', element: createElement(ApprovalHistoryPage) },
       { path: 'commitments', element: createElement(FundingCommitmentsPage) },
     ],
@@ -307,7 +319,13 @@ export const routeConfig = Object.freeze([
     element: createElement(
       ProtectedRoute,
       {
-        permissions: ['system:administer', 'user:manage', 'role:manage', 'policy:manage'],
+        permissions: [
+          'system:administer',
+          'user:manage',
+          'role:manage',
+          'policy:manage',
+          'donor-identity:reveal',
+        ],
       },
       createElement(CommunityLayout)
     ),
@@ -315,7 +333,15 @@ export const routeConfig = Object.freeze([
       { index: true, element: createElement(AdminDashboardPage) },
       { path: 'users', element: createElement(UsersAndRolesPage) },
       { path: 'policies', element: createElement(PolicyConfigurationPage) },
-      { path: 'university', element: createElement(MockUniversityDataPage) },
+      { path: 'university', element: createElement(UniversityRecordsAdminPage) },
+      {
+        path: 'donor-identity',
+        element: createElement(
+          ProtectedRoute,
+          { permissions: ['donor-identity:reveal'] },
+          createElement(DonorIdentityRevealPage)
+        ),
+      },
       { path: 'inventory', element: createElement(InventoryConfigurationPage) },
       { path: 'integrations', element: createElement(IntegrationHealthPage) },
       { path: 'security', element: createElement(SecurityIncidentsPage) },

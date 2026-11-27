@@ -21,5 +21,28 @@ describe('portal navigation', () => {
     };
     expect(allowedNavigation(NAVIGATION.administration, sysAdmin).length).toBe(8);
     expect(allowedNavigation(NAVIGATION.governance, sysAdmin).some((item) => item.to === '/admin')).toBe(true);
+
+    const fullAdmin = {
+      roles: ['ADMINISTRATOR'],
+      permissions: [
+        'system:administer',
+        'user:manage',
+        'role:manage',
+        'policy:manage',
+        'donor-identity:reveal',
+        'recognition:moderate',
+        'badge-tier:manage',
+      ],
+    };
+    expect(
+      allowedNavigation(NAVIGATION.administration, fullAdmin).some(
+        (item) => item.to === '/admin/donor-identity'
+      )
+    ).toBe(true);
+    expect(
+      allowedNavigation(NAVIGATION.governance, fullAdmin).some(
+        (item) => item.to === '/committee/recognition'
+      )
+    ).toBe(true);
   });
 });

@@ -38,6 +38,9 @@ export function CommitteeDashboardPage() {
         <Link to="/committee/review">
           Review queue <span>{queue.length}</span>
         </Link>
+        <Link to="/committee/cases">Malkia aid cases</Link>
+        <Link to="/committee/signing">Web3 2-of-3 signing</Link>
+        <Link to="/committee/recognition">Recognition &amp; badge tiers</Link>
         <Link to="/committee/history">Approval history</Link>
         <Link to="/committee/commitments">Funding commitments</Link>
       </div>

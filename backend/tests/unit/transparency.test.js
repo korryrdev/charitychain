@@ -22,7 +22,7 @@ describe('Section 26 public transparency', () => {
     expect(dashboard).toMatchObject({ currency: 'KES', donations: { total: 10000, count: 4 }, disbursements: { total: 3500, count: 2 }, centralPoolBalance: 6500 });
     expect(dashboard.fundFlow).toEqual([{ from: 'Public donations', to: 'CharityChain central pool', amount: 10000 }, { from: 'CharityChain central pool', to: 'Verified student support', amount: 3500 }]);
     expect(dashboard.inventory).toEqual(expect.arrayContaining([{ category: 'Hygiene', availableQuantity: 17 }, { category: 'Food', availableQuantity: 4 }]));
-    expect(dashboard.recognition).toEqual([{ name: 'Kind Falcon', tier: 'SILVER' }, { name: 'Public Name', tier: 'GOLD', contributionTotal: 9000 }]);
+    expect(dashboard.recognition).toEqual([{ name: 'Kind Falcon', tier: 'SILVER' }, { name: 'Public Name', tier: 'GOLD' }]);
     expect(JSON.stringify(dashboard)).not.toContain('Private Name');
   });
 

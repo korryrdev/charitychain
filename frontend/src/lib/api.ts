@@ -1,16 +1,25 @@
 import type {
+  AdminStudentRecord,
+  BadgeTier,
+  BadgeTierProposal,
+  BadgeTierThresholdConfig,
   BankDeposit,
   BankReconciliationReport,
   BenfordAnalysisResponse,
   CaseRecord,
+  ComplaintRecord,
   DisplayMode,
   DonationTrace,
   DonorClaimProfile,
   ForensicAlert,
   ForensicRuleConfig,
+  MaskedDonorReferenceItem,
   NeedCategory,
   QuarterlyReport,
   RecognitionEntry,
+  RecognitionModerationEntry,
+  RecognitionReportAlert,
+  RevealedDonorReferenceResult,
   TransparencyStats,
   UploadedCaseEvidence,
 } from '@/types';
@@ -557,18 +566,26 @@ export const api = {
   // Recognition Wall (FR-DON-12)
   getRecognitionWall: async (): Promise<{ entries: RecognitionEntry[]; anonymousCount: number }> => {
     const data = await fetchApi<{
-      donors: any[];
+      donors: Array<{
+        id: string;
+        displayName: string;
+        displayMode: 'ALIAS' | 'NAMED';
+        badge: BadgeTier | null;
+        isConsistentGiver?: boolean;
+        awardedMonth?: string;
+        year: number;
+      }>;
       anonymousDonorsCount: number | null;
       anonymousThresholdMet: boolean;
     }>('/api/v1/public/recognition');
 
-    const entries: RecognitionEntry[] = (data.donors || []).map((d: any) => ({
+    const entries: RecognitionEntry[] = (data.donors || []).map((d) => ({
       id: d.id,
       displayName: d.displayName,
       displayMode: d.displayMode,
-      tier: d.badge || 'BRONZE',
-      awardedMonth: `${d.year}`,
-      isConsistentGiver: d.badge === 'CONSISTENT',
+      tier: d.badge ?? null,
+      awardedMonth: d.awardedMonth || `${d.year}`,
+      isConsistentGiver: Boolean(d.isConsistentGiver || d.badge === 'CONSISTENT'),
     }));
 
     return {
@@ -577,12 +594,177 @@ export const api = {
     };
   },
 
-  // Report recognition name
-  reportRecognitionName: async (entryPreferenceId: string, reason: string): Promise<void> => {
-    await fetchApi(`/api/v1/public/recognition/${entryPreferenceId}/report`, {
+  reportRecognitionName: async (
+    entryId: string,
+    payload: { reason: string; reporterContact?: string }
+  ): Promise<{ reported: boolean; alertId: string }> => {
+    return fetchApi(`/api/v1/public/recognition/${encodeURIComponent(entryId)}/report`, {
       method: 'POST',
-      body: JSON.stringify({ reason }),
+      body: JSON.stringify({
+        reason: payload.reason.trim(),
+        ...(payload.reporterContact?.trim()
+          ? { reporterContact: payload.reporterContact.trim() }
+          : {}),
+      }),
     });
+  },
+
+  getRecognitionModeration: async (): Promise<{
+    entries: RecognitionModerationEntry[];
+    openReports: RecognitionReportAlert[];
+  }> => {
+    return fetchApi('/api/v1/recognition/names');
+  },
+
+  takedownRecognitionName: async (
+    entryId: string,
+    reason: string
+  ): Promise<{ takedown: boolean; newDisplayMode: string; auditEventId?: string | null }> => {
+    return fetchApi(`/api/v1/recognition/names/${encodeURIComponent(entryId)}/takedown`, {
+      method: 'POST',
+      body: JSON.stringify({ reason: reason.trim() }),
+    });
+  },
+
+  getBadgeTierGovernance: async (): Promise<{
+    thresholds: BadgeTierThresholdConfig[];
+    proposals: BadgeTierProposal[];
+  }> => {
+    return fetchApi('/api/v1/recognition/badge-tiers');
+  },
+
+  proposeBadgeTierChange: async (
+    tier: 'BRONZE' | 'SILVER' | 'GOLD' | 'PATRON',
+    thresholdKes: number
+  ): Promise<BadgeTierProposal> => {
+    return fetchApi('/api/v1/recognition/badge-tiers/propose', {
+      method: 'POST',
+      body: JSON.stringify({ tier, thresholdKes }),
+    });
+  },
+
+  approveBadgeTierChange: async (
+    tier: 'BRONZE' | 'SILVER' | 'GOLD' | 'PATRON'
+  ): Promise<{ tier: string; status: string; thresholds: BadgeTierThresholdConfig[] }> => {
+    return fetchApi(`/api/v1/recognition/badge-tiers/${encodeURIComponent(tier)}/approve`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+  },
+
+  recomputeDonorBadges: async (
+    academicYear = '2025/2026'
+  ): Promise<{ donorsProcessed: number; totalNewAwards: number }> => {
+    return fetchApi('/api/v1/recognition/badge-tiers/recompute', {
+      method: 'POST',
+      body: JSON.stringify({ academicYear }),
+    });
+  },
+
+  // Masked Donor Identity Governance (FR-DON-15)
+  listMaskedDonorReferences: async (params?: {
+    search?: string;
+    page?: number;
+    pageSize?: number;
+  }): Promise<{
+    items: MaskedDonorReferenceItem[];
+    total: number;
+    page: number;
+    pageSize: number;
+  }> => {
+    const query = new URLSearchParams();
+    if (params?.search?.trim()) query.set('search', params.search.trim());
+    if (params?.page) query.set('page', String(params.page));
+    if (params?.pageSize) query.set('pageSize', String(params.pageSize));
+    const qs = query.toString();
+    return fetchApi(`/api/v1/donors/references${qs ? `?${qs}` : ''}`);
+  },
+
+  revealDonorReference: async (
+    donorRef: string,
+    reason: string
+  ): Promise<RevealedDonorReferenceResult> => {
+    return fetchApi(`/api/v1/donors/references/${encodeURIComponent(donorRef)}/reveal`, {
+      method: 'POST',
+      body: JSON.stringify({ reason: reason.trim() }),
+    });
+  },
+
+  // Complaints & Fraud Reports
+  submitPublicFraudReport: async (payload: {
+    category: string;
+    reference?: string;
+    description: string;
+    reporterContact?: string;
+  }): Promise<{ report: ComplaintRecord }> => {
+    return fetchApi('/api/v1/public/fraud-reports', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  submitPublicComplaint: async (payload: {
+    category: string;
+    subject: string;
+    description: string;
+    reference?: string;
+    reporterContact?: string;
+  }): Promise<{ complaint: ComplaintRecord }> => {
+    return fetchApi('/api/v1/public/complaints', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  submitAuthenticatedComplaint: async (payload: {
+    category: string;
+    subject: string;
+    description: string;
+    reference?: string;
+    reporterContact?: string;
+  }): Promise<{ complaint: ComplaintRecord }> => {
+    return fetchApi('/api/v1/complaints', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  getMyComplaints: async (): Promise<{ items: ComplaintRecord[] }> => {
+    return fetchApi('/api/v1/complaints/mine');
+  },
+
+  listComplaints: async (params?: {
+    kind?: string;
+    status?: string;
+  }): Promise<{ items: ComplaintRecord[] }> => {
+    const query = new URLSearchParams();
+    if (params?.kind) query.set('kind', params.kind);
+    if (params?.status) query.set('status', params.status);
+    const qs = query.toString();
+    return fetchApi(`/api/v1/complaints${qs ? `?${qs}` : ''}`);
+  },
+
+  resolveComplaint: async (
+    id: string,
+    payload: { status: string; notes: string }
+  ): Promise<{ complaint: ComplaintRecord }> => {
+    return fetchApi(`/api/v1/complaints/${encodeURIComponent(id)}/resolve`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  // Live University Student Registry
+  listStudents: async (params?: {
+    academicStatus?: string;
+    page?: number;
+    pageSize?: number;
+  }): Promise<{ items: AdminStudentRecord[]; total: number; page: number; pageSize: number }> => {
+    const query = new URLSearchParams();
+    if (params?.academicStatus) query.set('academicStatus', params.academicStatus);
+    if (params?.page) query.set('page', String(params.page));
+    query.set('pageSize', String(params?.pageSize ?? 100));
+    return fetchApi(`/api/v1/students?${query.toString()}`);
   },
 
   // Donor Claim Profile (FR-DON-11)

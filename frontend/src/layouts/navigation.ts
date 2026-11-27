@@ -95,6 +95,12 @@ export const NAVIGATION: Readonly<Record<'community' | 'student' | 'operations' 
         permissions: ['release:authorize', 'committee:manage'],
       },
       {
+        to: '/committee/recognition',
+        label: 'Recognition & tiers',
+        icon: 'fa-award',
+        permissions: ['recognition:moderate', 'badge-tier:manage'],
+      },
+      {
         to: '/committee/history',
         label: 'Decision history',
         icon: 'fa-clock-rotate-left',
@@ -136,6 +142,7 @@ export const NAVIGATION: Readonly<Record<'community' | 'student' | 'operations' 
       { to: '/admin/users', label: 'Users and roles', icon: 'fa-users-gear', permissions: ['system:administer', 'user:manage', 'role:manage'] },
       { to: '/admin/policies', label: 'Policies', icon: 'fa-sliders', permissions: ['system:administer', 'policy:manage', 'vetting-policy:manage'] },
       { to: '/admin/university', label: 'University records', icon: 'fa-graduation-cap', permissions: ['system:administer', 'student-record:manage', 'student-record:read:all'] },
+      { to: '/admin/donor-identity', label: 'Donor identity reveal', icon: 'fa-user-secret', permissions: ['donor-identity:reveal'] },
       { to: '/admin/inventory', label: 'Inventory setup', icon: 'fa-boxes-stacked', permissions: ['system:administer', 'inventory:manage'] },
       { to: '/admin/integrations', label: 'Integrations', icon: 'fa-plug', permissions: ['system:administer'] },
       { to: '/admin/security', label: 'Audit and security', icon: 'fa-shield-halved', permissions: ['system:administer', 'audit:read'] },

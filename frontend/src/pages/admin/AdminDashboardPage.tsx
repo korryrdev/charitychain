@@ -26,7 +26,8 @@ interface AdminDashboardState {
 const sections: ReadonlyArray<readonly [string, string, string]> = [
   ['users', 'Users and access', 'Create accounts, assign exact permissions, suspend access, and retain responsibility.'],
   ['policies', 'Policies and governance', 'Set versioned rules for vetting, approvals, goods collection, and accountability.'],
-  ['university', 'University records', 'Maintain the simulated student, financial, and aid records used for objective vetting.'],
+  ['university', 'University records', 'Inspect verified MUST student registry entries (`CTxxx/xxxxxx/yy`), academic status, and account links.'],
+  ['donor-identity', 'Donor identity reveal', 'Review masked donor references and perform audited justification-backed identity disclosures.'],
   ['inventory', 'Goods and inventory', 'Configure accepted goods, collection limits, locations, and available stock.'],
   ['integrations', 'Payments and integrations', 'Monitor channels, callbacks, reconciliation, and operational provider health.'],
   ['security', 'Audit and security', 'Review retained activity, incidents, access changes, and forensic safeguards.']

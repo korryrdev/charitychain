@@ -7,7 +7,6 @@ export interface DonorPublicProfile {
   publicAlias?: string | null;
   displayNameMode?: string | null;
   publicListed?: boolean;
-  showContributionTotal?: boolean;
   showRecognitionTier?: boolean;
   recognitionTier?: string | null;
 }
@@ -15,7 +14,6 @@ export interface DonorPublicProfile {
 export type DonorPublicProfilePatch = {
   displayNameMode?: string;
   publicListed?: boolean;
-  showContributionTotal?: boolean;
   showRecognitionTier?: boolean;
 };
 
@@ -26,7 +24,12 @@ export interface PublicIdentityFormProps {
   pending?: boolean;
 }
 
-export function PublicIdentityForm({ profile, onAlias, onSettings, pending = false }: PublicIdentityFormProps) {
+export function PublicIdentityForm({
+  profile,
+  onAlias,
+  onSettings,
+  pending = false,
+}: PublicIdentityFormProps) {
   const [alias, setAlias] = useState(profile?.publicAlias ?? '');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -37,8 +40,10 @@ export function PublicIdentityForm({ profile, onAlias, onSettings, pending = fal
     if (!Object.keys(next).length) await onAlias(alias.trim());
   };
 
-  const change = <K extends keyof DonorPublicProfilePatch>(key: K, value: DonorPublicProfilePatch[K]) =>
-    onSettings({ [key]: value });
+  const change = <K extends keyof DonorPublicProfilePatch>(
+    key: K,
+    value: DonorPublicProfilePatch[K]
+  ) => onSettings({ [key]: value });
 
   return (
     <div className="public-identity-form">
@@ -49,7 +54,11 @@ export function PublicIdentityForm({ profile, onAlias, onSettings, pending = fal
           hint="Used by default on public recognition."
           error={errors.publicAlias}
         >
-          <input id="public-alias" value={alias} onChange={(event) => setAlias(event.target.value)} />
+          <input
+            id="public-alias"
+            value={alias}
+            onChange={(event) => setAlias(event.target.value)}
+          />
         </FormField>
         <Button type="submit" loading={pending}>
           Change alias / anonymous name
@@ -84,19 +93,14 @@ export function PublicIdentityForm({ profile, onAlias, onSettings, pending = fal
         <label>
           <input
             type="checkbox"
-            checked={Boolean(profile?.showContributionTotal)}
-            onChange={(event) => change('showContributionTotal', event.target.checked)}
-          />{' '}
-          Show my contribution total
-        </label>
-        <label>
-          <input
-            type="checkbox"
             checked={Boolean(profile?.showRecognitionTier)}
             onChange={(event) => change('showRecognitionTier', event.target.checked)}
           />{' '}
-          Show my recognition tier
+          Show my recognition tier badge
         </label>
+        <p className="muted">
+          Contribution amounts and exact donation dates remain private to your donor dashboard and are never published on public recognition walls.
+        </p>
       </fieldset>
     </div>
   );

@@ -1,6 +1,9 @@
 import { useState, useSyncExternalStore } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { Menu } from 'lucide-react';
+import { useTranslation } from '../app/i18n/I18nContext';
+import { LanguageToggle } from '../components/LanguageToggle';
+import { SkipLink } from '../components/SkipLink';
 import { ThemeToggle } from '../components/common/ThemeToggle';
 import { ContextualHelpDrawer } from '../components/navigation/ContextualHelpDrawer';
 import { GlobalSearch } from '../components/navigation/GlobalSearch';
@@ -9,43 +12,8 @@ import { authStore } from '../store/auth.store';
 import { HelpMenu } from './components/HelpMenu';
 import { MobileMenu } from './components/MobileMenu';
 
-const primaryLinks = [
-  { to: '/how-it-works', label: 'How it works' },
-  { to: '/transparency', label: 'Transparency' },
-  { to: '/trace', label: 'Fund-flow trace' },
-  { to: '/track', label: 'Track donation' },
-  { to: '/goods', label: 'Goods' }
-];
-const helpLinks = [
-  { to: '/help', label: 'Help center' },
-  { to: '/faq', label: 'FAQ' },
-  { to: '/contact', label: 'Contact support' },
-  { to: '/report-fraud', label: 'Report fraud' }
-];
-const footerGroups = [
-  { title: 'Explore', links: [...primaryLinks, { to: '/recognition', label: 'Donor recognition' }] },
-  {
-    title: 'Support',
-    links: [
-      { to: '/governance', label: 'Governance' },
-      { to: '/faq', label: 'Frequently asked questions' },
-      { to: '/help', label: 'Help center & guides' },
-      { to: '/complaints', label: 'Complaints and appeals' },
-      { to: '/report-fraud', label: 'Report fraud' },
-      { to: '/contact', label: 'Contact and support' }
-    ]
-  },
-  {
-    title: 'Policies',
-    links: [
-      { to: '/policies', label: 'Policies' },
-      { to: '/privacy', label: 'Privacy notice' },
-      { to: '/recognition', label: 'Donor recognition' }
-    ]
-  }
-];
-
 export function PublicLayout() {
+  const { t } = useTranslation();
   const { pathname } = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
@@ -54,10 +22,47 @@ export function PublicLayout() {
   const dashboardTo = defaultAuthorizedPath(session);
   const closeMenu = () => setMenuOpen(false);
 
+  const primaryLinks = [
+    { to: '/how-it-works', label: t('navHowItWorks') },
+    { to: '/transparency', label: t('navDashboard') },
+    { to: '/trace', label: t('navTrace') },
+    { to: '/track', label: t('navTrack') },
+    { to: '/goods', label: t('navGoods') },
+  ];
+  const helpLinks = [
+    { to: '/help', label: t('footerHelp') },
+    { to: '/faq', label: 'FAQ' },
+    { to: '/contact', label: t('footerContact') },
+    { to: '/report-fraud', label: t('footerReportFraud') },
+  ];
+  const footerGroups = [
+    { title: t('footerExplore'), links: [...primaryLinks, { to: '/recognition', label: t('navRecognition') }] },
+    {
+      title: t('footerSupport'),
+      links: [
+        { to: '/governance', label: t('footerGovernance') },
+        { to: '/faq', label: t('footerFaq') },
+        { to: '/help', label: t('footerHelp') },
+        { to: '/complaints', label: t('footerComplaints') },
+        { to: '/report-fraud', label: t('footerReportFraud') },
+        { to: '/contact', label: t('footerContact') },
+      ],
+    },
+    {
+      title: t('footerPolicies'),
+      links: [
+        { to: '/policies', label: t('footerPoliciesLink') },
+        { to: '/privacy', label: t('footerPrivacy') },
+        { to: '/recognition', label: t('navRecognition') },
+      ],
+    },
+  ];
+
   return (
     <div className="marketing-shell">
+      <SkipLink targetId="main-content" />
       <div className="marketing-banner">
-        <span aria-hidden="true">✓</span> Public figures are published only after confirmation and reconciliation.
+        <span aria-hidden="true">✓</span> {t('bannerVerified')}
       </div>
       <header className="cc-header">
         <div className="cc-header__inner">
@@ -65,7 +70,7 @@ export function PublicLayout() {
             <span className="cc-brand__mark" aria-hidden="true">
               C
             </span>
-            <span>CharityChain</span>
+            <span>{t('appName')}</span>
           </Link>
 
           <nav className="cc-nav" aria-label="Primary navigation">
@@ -79,20 +84,21 @@ export function PublicLayout() {
 
           <div className="cc-header__actions">
             <GlobalSearch />
+            <LanguageToggle />
             <span className="cc-hide-sm">
               <ThemeToggle />
             </span>
             {authenticated ? (
               <Link className="cc-btn cc-btn--primary cc-btn--sm cc-hide-sm" to={dashboardTo}>
-                My dashboard
+                {t('navMyDashboard')}
               </Link>
             ) : (
               <>
                 <Link className="cc-btn cc-btn--secondary cc-btn--sm cc-hide-sm" to="/auth/login">
-                  Sign in
+                  {t('navSignIn')}
                 </Link>
                 <Link className="cc-btn cc-btn--primary cc-btn--sm cc-hide-sm" to="/auth/register">
-                  Give support <span aria-hidden="true">→</span>
+                  {t('navGiveSupport')} <span aria-hidden="true">→</span>
                 </Link>
               </>
             )}
@@ -121,7 +127,7 @@ export function PublicLayout() {
       />
       <ContextualHelpDrawer open={helpOpen} onClose={() => setHelpOpen(false)} pathname={pathname} />
 
-      <main>
+      <main id="main-content" tabIndex={-1}>
         <Outlet />
       </main>
       <footer className="marketing-footer">
@@ -131,12 +137,10 @@ export function PublicLayout() {
               <span className="marketing-brand__mark" aria-hidden="true">
                 C
               </span>
-              <span>CharityChain</span>
+              <span>{t('appName')}</span>
             </Link>
-            <p>Transparent, accountable university support for students and staff.</p>
-            <p className="marketing-footer__note">
-              Payments are handled through M-Pesa, Paybill, and banks. Public reporting is reconciled and privacy-safe.
-            </p>
+            <p>{t('footerTagline')}</p>
+            <p className="marketing-footer__note">{t('footerPaymentNote')}</p>
           </section>
           {footerGroups.map((group) => (
             <section key={group.title}>
@@ -152,8 +156,8 @@ export function PublicLayout() {
           ))}
         </div>
         <div className="marketing-footer__base">
-          <span>© {new Date().getFullYear()} CharityChain</span>
-          <span>Built for accountable support.</span>
+          <span>© {new Date().getFullYear()} {t('appName')}</span>
+          <span>{t('footerBuiltFor')}</span>
         </div>
       </footer>
     </div>

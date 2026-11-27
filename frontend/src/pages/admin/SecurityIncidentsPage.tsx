@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useState, type FormEvent } from 'react';
 import { useAuth } from '../../features/authentication/hooks/useAuth';
 import { getErrorMessage } from '../../services/errorMapper';
@@ -40,7 +41,13 @@ export function SecurityIncidentsPage() {
             <li>High-risk user and role changes require MFA.</li>
             <li>Session revocation and account-status changes are audit logged.</li>
             <li>Suspected fraud is handled through restricted forensic cases.</li>
-            <li>Credentials, secure tokens, and private evidence are never shown in audit views.</li>
+            <li>
+              Donor references stay masked;{' '}
+              <Link to="/admin/donor-identity" className="underline font-semibold">
+                audited reveal console
+              </Link>{' '}
+              requires a logged justification.
+            </li>
           </ul>
         </section>
         <section className="portal-card">

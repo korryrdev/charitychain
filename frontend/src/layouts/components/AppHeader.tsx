@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { LanguageToggle } from '../../components/LanguageToggle';
 import { GlobalSearch } from '../../components/navigation/GlobalSearch';
 import { HelpFab } from '../../components/navigation/HelpFab';
 import { UserMenu } from './UserMenu';
@@ -27,6 +28,7 @@ export function AppHeader({ title = 'CharityChain', onMenuToggle }: AppHeaderPro
       <h1 className="app-header__title">{title}</h1>
       <div className="app-header__utilities">
         <GlobalSearch />
+        <LanguageToggle />
       </div>
       <UserMenu />
       <HelpFab />

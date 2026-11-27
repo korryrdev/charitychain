@@ -7,6 +7,12 @@ import { auditorService } from './auditor.service.js';
 import { certificateService } from './certificate.service.js';
 import { donorClaimService } from '../donors/donorClaim.service.js';
 import { recognitionWallService } from '../donors/recognitionWall.service.js';
+import { validateRequest } from '../../middleware/validateRequest.js';
+import { complaintsController } from '../complaints/complaints.controller.js';
+import {
+  createComplaintSchema,
+  createFraudReportSchema,
+} from '../complaints/complaints.validation.js';
 
 export function createPublicEndpointsRouter({
   service = publicService,
@@ -14,7 +20,8 @@ export function createPublicEndpointsRouter({
   auditor = auditorService,
   cert = certificateService,
   claim = donorClaimService,
-  recognition = recognitionWallService
+  recognition = recognitionWallService,
+  complaints = complaintsController,
 } = {}) {
   const router = Router();
 
@@ -153,6 +160,18 @@ export function createPublicEndpointsRouter({
       next(err);
     }
   });
+
+  router.post(
+    '/complaints',
+    validateRequest({ body: createComplaintSchema }),
+    complaints.submitPublicComplaint
+  );
+
+  router.post(
+    '/fraud-reports',
+    validateRequest({ body: createFraudReportSchema }),
+    complaints.submitPublicFraudReport
+  );
 
   return router;
 }
