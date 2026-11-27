@@ -70,7 +70,11 @@ export function useAuth(api = authApi) {
       const response = await api.verifyMfa(input);
       const next = mergeSession(session, response);
       if (next) setSession(next);
-      return response;
+      return {
+        ...response,
+        roles: next?.roles ?? response?.roles ?? [],
+        permissions: next?.permissions ?? response?.permissions ?? [],
+      };
     },
     [api, session, setSession],
   );
@@ -83,7 +87,11 @@ export function useAuth(api = authApi) {
         mfaEnrollmentRequired: response?.mfaEnrollmentRequired ?? false,
       });
       if (next) setSession(next);
-      return response;
+      return {
+        ...response,
+        roles: next?.roles ?? response?.roles ?? [],
+        permissions: next?.permissions ?? response?.permissions ?? [],
+      };
     },
     [api, session, setSession],
   );

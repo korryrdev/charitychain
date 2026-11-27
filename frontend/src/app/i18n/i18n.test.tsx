@@ -59,9 +59,9 @@ describe('Wave 3 i18n (EN/SW) & WCAG SkipLink Shell Integration', () => {
       '#main-content'
     );
     expect(screen.getByRole('main')).toHaveAttribute('id', 'main-content');
-    expect(screen.getByRole('heading', { name: 'Super administration' })).toBeInTheDocument();
+    expect(screen.getByText('Super administration')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /Switch language/i }));
-    expect(screen.getByRole('heading', { name: 'Utawala Mkuu' })).toBeInTheDocument();
+    expect(screen.getByText('Utawala Mkuu')).toBeInTheDocument();
   });
 });

@@ -9,6 +9,7 @@ import { VerifyEmailView } from '../components/VerifyEmailView';
 import { RegisterPage } from '../../../pages/auth/RegisterPage';
 import { StudentRegisterPage } from '../../../pages/auth/StudentRegisterPage';
 import { ProtectedRoute } from '../../authorization/components/ProtectedRoute';
+import { nextAuthPath } from '../nextStep';
 import { createAuthApi } from '../services/auth.api';
 import {
   validateChangePassword,
@@ -414,5 +415,30 @@ describe('authentication foundation and hardening', () => {
       ['/admin'],
     );
     expect(await screen.findByText('Forced MFA Setup')).toBeInTheDocument();
+  });
+
+  it('routes a Pharmacy Custodian directly to /inventory/pharmacy after password change even when roles arrive on user', () => {
+    expect(
+      nextAuthPath({
+        user: {
+          id: 'p1',
+          email: 'pharmacy@charitychain.org',
+          roles: ['PHARMACY_CUSTODIAN'],
+          permissions: ['item-log:create', 'item:issue'],
+        },
+        mustChangePassword: false,
+        mfaEnrollmentRequired: false,
+      })
+    ).toBe('/inventory/pharmacy');
+
+    expect(
+      nextAuthPath({
+        user: { id: 'p2', email: 'pharmacy2@charitychain.org' },
+        roles: ['PHARMACY_CUSTODIAN'],
+        permissions: ['item-log:create', 'item:issue'],
+        mustChangePassword: false,
+        mfaEnrollmentRequired: false,
+      })
+    ).toBe('/inventory/pharmacy');
   });
 });

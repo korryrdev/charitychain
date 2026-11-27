@@ -167,6 +167,8 @@ export function createUsersService({
       const result = await authentication.changePassword(auth, input, context);
       return {
         user: toUserResponse(result.user),
+        roles: result.roles,
+        permissions: result.permissions,
         mustChangePassword: false,
         mfaEnrollmentRequired: Boolean(result.mfaEnrollmentRequired)
       };
