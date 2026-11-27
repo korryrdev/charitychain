@@ -45,9 +45,8 @@ export const studentRegisterSchema = z
     registrationNumber: z
       .string()
       .trim()
-      .min(4)
-      .max(80)
-      .transform((value) => value.toUpperCase())
+      .toUpperCase()
+      .regex(/^MUST\/SIM\/2026\/\d{3}$/, 'Use a valid university registration number (e.g. MUST/SIM/2026/001).')
   })
   .superRefine((data, ctx) => refinePortalEmail({ ...data, role: 'STUDENT' }, ctx));
 

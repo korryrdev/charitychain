@@ -22,3 +22,22 @@ export function authorize(...requiredPermissions) {
     return next();
   };
 }
+
+export function authorizeAny(...requiredPermissions) {
+  if (requiredPermissions.length === 0) throw new TypeError('At least one permission is required.');
+
+  return function authorizationAnyMiddleware(request, _response, next) {
+    if (!request.auth) return next(new AuthenticationError());
+    const grantedPermissions = new Set(request.auth.permissions ?? []);
+    const allowed = requiredPermissions.some((permission) => grantedPermissions.has(permission));
+    if (!allowed) {
+      return next(
+        new AuthorizationError('You do not have permission to perform this action.', {
+          code: ERROR_CODES.PERMISSION_DENIED,
+          details: { requiredAnyPermissions: requiredPermissions }
+        })
+      );
+    }
+    return next();
+  };
+}

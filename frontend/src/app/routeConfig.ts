@@ -12,6 +12,7 @@ import { PasswordRecoveryPage } from '../pages/auth/PasswordRecoveryPage';
 import { ResetPasswordPage } from '../pages/auth/ResetPasswordPage';
 import { MfaChallengePage } from '../pages/auth/MfaChallengePage';
 import { AccessDeniedPage } from '../pages/auth/AccessDeniedPage';
+import { NotFoundPage } from '../pages/errors/NotFoundPage';
 import { HowItWorksPage } from '../pages/public/HowItWorksPage';
 import { HomePage } from '../pages/public/HomePage';
 import { TransparencyPage } from '../pages/public/TransparencyPage';
@@ -79,7 +80,6 @@ import { IntegrationHealthPage } from '../pages/admin/IntegrationHealthPage';
 import { SecurityIncidentsPage } from '../pages/admin/SecurityIncidentsPage';
 import { InventorySupervisorDashboardPage } from '../pages/inventory/InventorySupervisorDashboardPage';
 import { AppLayout as MalkiaAppLayout } from './layouts/AppLayout';
-import { RequireAuth } from './guards/RequireAuth';
 import { TracePage } from '../features/trace/TracePage';
 import { DashboardPage as PublicDappDashboardPage } from '../features/dashboard/DashboardPage';
 import { RecognitionWallPage } from '../features/recognition/RecognitionWallPage';
@@ -127,6 +127,7 @@ export const routeConfig = Object.freeze([
       { path: 'confirm-goods', element: createElement(GoodsCollectionConfirmationPage) },
       { path: 'login', element: createElement(DappLoginPage) },
       { path: 'register', element: createElement(DappRegisterPage) },
+      { path: '*', element: createElement(NotFoundPage) },
     ],
   },
   {
@@ -214,6 +215,8 @@ export const routeConfig = Object.freeze([
           'application:review',
           'application:approve',
           'committee:manage',
+          'case:create',
+          'case:submit',
           'case:read',
           'case:decide',
           'release:authorize',
@@ -281,6 +284,7 @@ export const routeConfig = Object.freeze([
           'report:read',
           'report:generate',
           'alert:read',
+          'rules:manage',
         ],
       },
       createElement(CommunityLayout)
@@ -301,7 +305,9 @@ export const routeConfig = Object.freeze([
     path: '/admin',
     element: createElement(
       ProtectedRoute,
-      { roles: ['ADMINISTRATOR', 'SYSTEM_ADMIN'] },
+      {
+        permissions: ['system:administer', 'user:manage', 'role:manage', 'policy:manage'],
+      },
       createElement(CommunityLayout)
     ),
     children: [
@@ -316,7 +322,26 @@ export const routeConfig = Object.freeze([
   },
   {
     path: '/app',
-    element: createElement(RequireAuth, null, createElement(MalkiaAppLayout)),
+    element: createElement(
+      ProtectedRoute,
+      {
+        permissions: [
+          'case:read',
+          'case:create',
+          'case:decide',
+          'release:authorize',
+          'bank-deposit:create',
+          'bank-deposit:verify',
+          'item-log:create',
+          'item:issue',
+          'alert:read',
+          'report:read',
+          'forensics:read',
+          'system:administer',
+        ],
+      },
+      createElement(MalkiaAppLayout)
+    ),
     children: [
       { index: true, element: createElement(Navigate, { to: '/app/cases', replace: true }) },
       { path: 'cases', element: createElement(CasesPage) },

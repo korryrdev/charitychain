@@ -184,7 +184,7 @@ export function createDonorPortalService({ database = prisma } = {}) {
       };
     },
 
-    async claimReceipt(userId, receiptCode) {
+    async claimReceipt(userId, receiptCode, donorIdentity) {
       if (!receiptCode || typeof receiptCode !== 'string') {
         throw new ValidationError('A valid receipt code is required.');
       }
@@ -205,12 +205,34 @@ export function createDonorPortalService({ database = prisma } = {}) {
       }
 
       const donorRef = computeDonorRef(user.email, 'email');
+      if (lot.donorRef !== donorRef) {
+        const cleanIdentity = typeof donorIdentity === 'string' ? donorIdentity.trim() : '';
+        if (!cleanIdentity) {
+          throw new ValidationError(
+            'Provide the phone number, email, or bank reference used for this donation to verify ownership.'
+          );
+        }
+        if (cleanIdentity.includes('@')) {
+          const ownerUser = await database.user.findUnique({
+            where: { email: cleanIdentity.toLowerCase() },
+            select: { id: true }
+          });
+          if (ownerUser && ownerUser.id !== userId) {
+            throw new ConflictError('This donation receipt belongs to another registered account.');
+          }
+        }
+        const candidateRefs = ['phone', 'email', 'bank'].map((mode) =>
+          computeDonorRef(cleanIdentity, mode)
+        );
+        if (!candidateRefs.includes(lot.donorRef)) {
+          throw new ValidationError('The provided donor identity does not match this receipt code.');
+        }
 
-      // Update the lot's donorRef to match this user
-      await database.donationLot.update({
-        where: { id: lot.id },
-        data: { donorRef }
-      });
+        await database.donationLot.update({
+          where: { id: lot.id },
+          data: { donorRef }
+        });
+      }
 
       // Update donor profile contribution
       if (user.donorProfile) {

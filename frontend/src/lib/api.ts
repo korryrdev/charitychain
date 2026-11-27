@@ -11,19 +11,47 @@ import type {
   QuarterlyReport,
 } from '@/types';
 
-async function fetchApi<T>(url: string, options?: RequestInit): Promise<T> {
-  const sessionStr = localStorage.getItem('charitychain_session');
-  let token: string | undefined;
-  if (sessionStr) {
-    try {
-      const session = JSON.parse(sessionStr);
-      token = session.token;
-    } catch {
-      // ignore parse error
-    }
-  }
+const API_BASE = (import.meta.env?.VITE_API_BASE_URL ?? '/api/v1').replace(/\/$/, '');
+const CLAIM_SESSION_KEY = 'charitychain_claim_session';
 
-  const claimToken = localStorage.getItem('charitychain_claim_token');
+function resolveApiUrl(url: string): string {
+  if (url.startsWith('/api/v1')) {
+    return `${API_BASE}${url.slice('/api/v1'.length)}`;
+  }
+  return url;
+}
+
+export function getCertificateSvgUrl(receiptCode: string): string {
+  return `${API_BASE}/public/certificate/${encodeURIComponent(receiptCode)}?format=svg`;
+}
+
+function readStoredClaimSession(): { receiptCode: string; token: string } | null {
+  try {
+    const raw = localStorage.getItem(CLAIM_SESSION_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed?.receiptCode && parsed?.token) return parsed;
+    }
+    const legacy = localStorage.getItem('charitychain_claim_token');
+    if (legacy) {
+      localStorage.removeItem('charitychain_claim_token');
+    }
+  } catch {
+    // ignore storage errors
+  }
+  return null;
+}
+
+function writeStoredClaimSession(receiptCode: string, token: string): void {
+  try {
+    localStorage.setItem(CLAIM_SESSION_KEY, JSON.stringify({ receiptCode, token }));
+  } catch {
+    // ignore storage errors
+  }
+}
+
+async function fetchApi<T>(url: string, options?: RequestInit): Promise<T> {
+  const claimSession = url.startsWith('/api/v1/public/donor/') ? readStoredClaimSession() : null;
   const csrfMatch = typeof document !== 'undefined' ? document.cookie.match(/(?:^|; )charitychain_csrf=([^;]*)/) : null;
   const csrfToken = csrfMatch ? decodeURIComponent(csrfMatch[1]) : undefined;
   const requestId = globalThis.crypto?.randomUUID?.() || `req-${Date.now()}`;
@@ -32,12 +60,11 @@ async function fetchApi<T>(url: string, options?: RequestInit): Promise<T> {
     'Content-Type': 'application/json',
     'X-Request-ID': requestId,
     ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...(claimToken && !token ? { Authorization: `Bearer ${claimToken}` } : {}),
+    ...(claimSession?.token ? { Authorization: `Bearer ${claimSession.token}` } : {}),
     ...((options?.headers as Record<string, string>) || {}),
   };
 
-  const res = await fetch(url, {
+  const res = await fetch(resolveApiUrl(url), {
     ...options,
     credentials: 'include',
     headers,
@@ -58,12 +85,6 @@ async function fetchApi<T>(url: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  demoLogin: async (data: { email?: string; role?: string }): Promise<any> => {
-    return fetchApi('/api/v1/public/auth/demo-login', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
   // Public Trace
   getDonationTrace: async (receiptCode: string): Promise<DonationTrace | null> => {
     try {
@@ -83,7 +104,7 @@ export const api = {
         txHash: data.txHash || undefined,
         blockNumber: data.blockNumber ? Number(data.blockNumber) : undefined,
         recordHash: data.recordHash || '0x' + '00'.repeat(32),
-        donorDisplayMode: data.donorDisplayMode || 'ALIAS',
+        donorDisplayMode: data.donorDisplayMode || 'ANONYMOUS',
         donorAlias: data.donorAlias || undefined,
         donorBadge: data.donorBadge || undefined,
         allocations: (data.allocations || []).map((a: any) => ({
@@ -516,19 +537,23 @@ export const api = {
   // Donor Claim Profile (FR-DON-11)
   getDonorClaimProfile: async (receiptCode: string, donorIdentity?: string): Promise<DonorClaimProfile> => {
     const normalized = receiptCode.trim().toUpperCase();
+    const cleanIdentity = donorIdentity?.trim();
+    const existing = readStoredClaimSession();
+    let token = existing?.receiptCode === normalized ? existing.token : undefined;
 
-    // Try claiming first if donorIdentity is provided
-    let token = localStorage.getItem('charitychain_claim_token');
-    if (donorIdentity || !token) {
+    if (cleanIdentity || !token) {
+      if (!cleanIdentity) {
+        throw new Error('Enter the phone number, email, or bank reference used when making this donation.');
+      }
       const claimRes = await fetchApi<{ token: string; donorRef: string }>('/api/v1/public/donor/claim', {
         method: 'POST',
         body: JSON.stringify({
           receiptCode: normalized,
-          donorIdentity: donorIdentity || 'anonymous@donor.test',
+          donorIdentity: cleanIdentity,
         }),
       });
       token = claimRes.token;
-      localStorage.setItem('charitychain_claim_token', token);
+      writeStoredClaimSession(normalized, token);
     }
 
     const data = await fetchApi<any>(`/api/v1/public/donor/me?token=${encodeURIComponent(token)}`);
@@ -555,7 +580,12 @@ export const api = {
     displayMode: DisplayMode,
     displayName: string
   ): Promise<void> => {
-    const token = localStorage.getItem('charitychain_claim_token');
+    const claimSession = readStoredClaimSession();
+    const token =
+      claimSession?.receiptCode === receiptCode.trim().toUpperCase() ? claimSession.token : undefined;
+    if (!token) {
+      throw new Error('Claim your receipt before updating display preferences.');
+    }
     await fetchApi('/api/v1/public/donor/preferences', {
       method: 'PATCH',
       body: JSON.stringify({
@@ -656,11 +686,12 @@ export const api = {
 
   login: async (data: { email: string; password: string }): Promise<{
     user: any;
-    token?: string;
     role?: string;
     roles?: string[];
     permissions?: string[];
     session?: any;
+    requiresMfa?: boolean;
+    twoFactorRedirect?: boolean;
     mfaVerified?: boolean;
   }> => {
     return fetchApi('/api/v1/public/auth/login', {
@@ -733,7 +764,7 @@ export const api = {
     return fetchApi('/api/v1/donor/dashboard');
   },
 
-  claimReceiptToAccount: async (receiptCode: string): Promise<{
+  claimReceiptToAccount: async (receiptCode: string, donorIdentity?: string): Promise<{
     success: boolean;
     message: string;
     receiptCode: string;
@@ -742,7 +773,10 @@ export const api = {
   }> => {
     return fetchApi('/api/v1/donor/claim', {
       method: 'POST',
-      body: JSON.stringify({ receiptCode }),
+      body: JSON.stringify({
+        receiptCode,
+        ...(donorIdentity?.trim() ? { donorIdentity: donorIdentity.trim() } : {}),
+      }),
     });
   },
 

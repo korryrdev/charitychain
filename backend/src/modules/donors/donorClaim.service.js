@@ -1,10 +1,11 @@
 'use strict';
 
-import { createHmac } from 'node:crypto';
+import { createHmac, timingSafeEqual } from 'node:crypto';
 import { prisma } from '@charitychain/database';
 import { computeDonorRef } from '../../security/donorReference.js';
 import { screenDonorName } from '../../security/nameScreening.js';
 import { securityConfig } from '../../config/security.js';
+import { AuthenticationError } from '../../errors/AuthenticationError.js';
 import { ValidationError } from '../../errors/ValidationError.js';
 import { ConflictError } from '../../errors/ConflictError.js';
 
@@ -24,7 +25,11 @@ export function createDonorClaimService({
     if (parts.length !== 2) return null;
     const [data, sig] = parts;
     const expected = createHmac('sha256', secret).update(data).digest('base64url');
-    if (sig !== expected) return null;
+    const sigBuf = Buffer.from(sig);
+    const expectedBuf = Buffer.from(expected);
+    if (sigBuf.length !== expectedBuf.length || !timingSafeEqual(sigBuf, expectedBuf)) {
+      return null;
+    }
     try {
       const payload = JSON.parse(Buffer.from(data, 'base64url').toString('utf8'));
       if (payload.exp && Date.now() > payload.exp) return null;
@@ -43,8 +48,14 @@ export function createDonorClaimService({
         throw new ConflictError('Receipt code not found.');
       }
 
-      const expectedDonorRef = computeDonorRef(donorIdentity);
-      if (lot.donorRef !== expectedDonorRef) {
+      if (!donorIdentity || typeof donorIdentity !== 'string' || !donorIdentity.trim()) {
+        throw new ValidationError('Donor identity is required to claim a receipt.');
+      }
+
+      const candidateRefs = ['phone', 'email', 'bank'].map((mode) =>
+        computeDonorRef(donorIdentity, mode)
+      );
+      if (!candidateRefs.includes(lot.donorRef)) {
         throw new ValidationError('Donor identity does not match this receipt code.');
       }
 
@@ -61,9 +72,12 @@ export function createDonorClaimService({
       };
     },
 
-    async getDonorDashboard(tokenOrRef) {
-      const payload = verifyToken(tokenOrRef);
-      const donorRef = payload ? payload.donorRef : tokenOrRef;
+    async getDonorDashboard(token) {
+      const payload = verifyToken(token);
+      if (!payload?.donorRef) {
+        throw new AuthenticationError('Valid claim token is required.');
+      }
+      const donorRef = payload.donorRef;
 
       const lots = await database.donationLot.findMany({
         where: { donorRef },
@@ -134,9 +148,12 @@ export function createDonorClaimService({
       };
     },
 
-    async updatePreferences(tokenOrRef, { displayMode, publicAlias, confirmedName, consentVersion = 'v1.0' }) {
-      const payload = verifyToken(tokenOrRef);
-      const donorRef = payload ? payload.donorRef : tokenOrRef;
+    async updatePreferences(token, { displayMode, publicAlias, confirmedName, consentVersion = 'v1.0' }) {
+      const payload = verifyToken(token);
+      if (!payload?.donorRef) {
+        throw new AuthenticationError('Valid claim token is required.');
+      }
+      const donorRef = payload.donorRef;
 
       if (!['ANONYMOUS', 'ALIAS', 'NAMED'].includes(displayMode)) {
         throw new ValidationError('Invalid display mode. Must be ANONYMOUS, ALIAS, or NAMED.');

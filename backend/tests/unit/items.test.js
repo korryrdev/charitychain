@@ -77,6 +77,30 @@ describe('G10: In-Kind Item Log and Issue (FR-INT-08, FR-FLOW-05)', () => {
     expect(updatedLot.isExhausted).toBe(false);
   });
 
+  it('issues items by receipt code and caseNumber with mixed-case category names', async () => {
+    const cat = `Clinical_Supplies_${Date.now()}`;
+    const logged = await service.logItemDonation({
+      category: cat,
+      itemName: 'Surgical Gloves Box',
+      quantity: 6,
+      condition: 'NEW',
+      loggedByUserId: actorId,
+    });
+
+    const issueRes = await service.issueItemsToCase({
+      caseId: testCase.caseNumber,
+      itemId: logged.lot.receiptCode,
+      quantity: 2,
+      notes: 'Issued via case number and receipt code',
+      actorUserId: actorId,
+    });
+
+    expect(issueRes.success).toBe(true);
+    expect(issueRes.caseId).toBe(testCase.id);
+    expect(issueRes.caseNumber).toBe(testCase.caseNumber);
+    expect(issueRes.quantityIssued).toBe(2);
+  });
+
   it('rejects issuance when requested quantity exceeds available stock', async () => {
     const logged = await service.logItemDonation({
       category: 'MEDS',

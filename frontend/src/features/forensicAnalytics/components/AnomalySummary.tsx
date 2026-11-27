@@ -1,10 +1,12 @@
 export interface ForensicAnomalyInvestigation {
   status?: string | null;
+  conclusion?: string | null;
   summary?: string | null;
   openedAt?: string | number | Date | null;
 }
 
 export interface ForensicAnomaly {
+  status?: string | null;
   severity?: string | null;
   investigation?: ForensicAnomalyInvestigation | null;
 }
@@ -14,7 +16,11 @@ export interface AnomalySummaryProps {
 }
 
 export function AnomalySummary({ anomalies = [] }: AnomalySummaryProps) {
-  const open = anomalies.filter((item) => !['RESOLVED', 'DISMISSED'].includes(item.investigation?.status ?? '')).length;
+  const open = anomalies.filter((item) =>
+    item.status
+      ? !['RESOLVED', 'DISMISSED'].includes(item.status)
+      : item.investigation?.status !== 'CLOSED'
+  ).length;
   return (
     <section className="anomaly-summary">
       <div>

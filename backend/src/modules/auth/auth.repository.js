@@ -1,4 +1,7 @@
 import { prisma } from '@charitychain/database';
+import { AppError } from '../../errors/AppError.js';
+import { ConflictError } from '../../errors/ConflictError.js';
+import { ERROR_CODES } from '../../errors/errorCodes.js';
 
 export function createAuthRepository(database = prisma) {
   return {
@@ -24,6 +27,10 @@ export function createAuthRepository(database = prisma) {
     },
     findSessionByToken(token) {
       return database.session.findUnique({ where: { token } });
+    },
+    revokeSessionByToken(token) {
+      if (!token) return Promise.resolve({ count: 0 });
+      return database.session.deleteMany({ where: { token } });
     },
     createVerification(data) {
       return database.verification.create({ data });
@@ -64,9 +71,30 @@ export function createAuthRepository(database = prisma) {
         });
       });
     },
-    ensureStudentProfile(userId, fullName) {
+    ensureStudentProfile(userId, fullName, registrationNumber) {
       return database.$transaction(async (transaction) => {
         const existing = await transaction.student.findUnique({ where: { userId } });
+        if (registrationNumber) {
+          const requested = await transaction.student.findUnique({ where: { registrationNumber } });
+          if (!requested || requested.academicStatus !== 'ACTIVE') {
+            throw new AppError({
+              message: 'Student record not found.',
+              code: ERROR_CODES.STUDENT_NOT_FOUND,
+              statusCode: 404
+            });
+          }
+          if (requested.userId && requested.userId !== userId) {
+            throw new ConflictError('Student record is already linked to another account.');
+          }
+          if (existing && existing.id !== requested.id) {
+            throw new ConflictError('This account is already linked to another student record.');
+          }
+          if (requested.userId === userId) return requested;
+          return transaction.student.update({
+            where: { id: requested.id },
+            data: { userId, ...(fullName ? { fullName } : {}) }
+          });
+        }
         if (existing) return existing;
         const unlinked = await transaction.student.findFirst({
           where: { userId: null, academicStatus: 'ACTIVE' },

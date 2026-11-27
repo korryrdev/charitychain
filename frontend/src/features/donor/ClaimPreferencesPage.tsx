@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { api } from '@/lib/api';
+import { api, getCertificateSvgUrl } from '@/lib/api';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -26,29 +26,33 @@ export const ClaimPreferencesPage: React.FC = () => {
   const navigate = useNavigate();
 
   // Receipt Claim Input State
-  const [receiptInput, setReceiptInput] = useState('MLK-7F3K-92QD');
+  const [receiptInput, setReceiptInput] = useState('');
+  const [donorIdentityInput, setDonorIdentityInput] = useState('');
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [claimProfile, setClaimProfile] = useState<DonorClaimProfile | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Preference Form State
-  const [displayMode, setDisplayMode] = useState<DisplayMode>('ALIAS');
-  const [customName, setCustomName] = useState('Wanjiku M.');
+  const [displayMode, setDisplayMode] = useState<DisplayMode>('ANONYMOUS');
+  const [customName, setCustomName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   const handleLookupReceipt = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!receiptInput.trim()) return;
+    if (!receiptInput.trim() || !donorIdentityInput.trim()) return;
 
     setErrorMsg(null);
     setIsLoadingProfile(true);
 
     try {
-      const profile = await api.getDonorClaimProfile(receiptInput.trim());
+      const profile = await api.getDonorClaimProfile(
+        receiptInput.trim(),
+        donorIdentityInput.trim()
+      );
       setClaimProfile(profile);
       setDisplayMode(profile.displayMode);
-      setCustomName(profile.displayName || (profile.displayMode === 'ALIAS' ? 'Wanjiku M.' : ''));
+      setCustomName(profile.displayName || '');
     } catch (err: any) {
       setErrorMsg(err.message || 'Receipt code could not be verified.');
       setClaimProfile(null);
@@ -98,16 +102,26 @@ export const ClaimPreferencesPage: React.FC = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleLookupReceipt} className="flex gap-2">
-            <Input
-              type="text"
-              value={receiptInput}
-              onChange={(e) => setReceiptInput(e.target.value)}
-              placeholder="e.g. MLK-7F3K-92QD"
-              className="font-mono uppercase tracking-wider text-sm"
-              required
-            />
-            <Button type="submit" variant="emerald" disabled={isLoadingProfile} className="shrink-0">
+          <form onSubmit={handleLookupReceipt} className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <Input
+                type="text"
+                value={receiptInput}
+                onChange={(e) => setReceiptInput(e.target.value)}
+                placeholder="Receipt code (e.g. MLK-XXXX-XXXX)"
+                className="font-mono uppercase tracking-wider text-sm"
+                required
+              />
+              <Input
+                type="text"
+                value={donorIdentityInput}
+                onChange={(e) => setDonorIdentityInput(e.target.value)}
+                placeholder="Phone, email, or bank reference"
+                className="text-sm"
+                required
+              />
+            </div>
+            <Button type="submit" variant="emerald" disabled={isLoadingProfile} className="w-full sm:w-auto">
               {isLoadingProfile ? 'Verifying...' : 'Claim Receipt'}
             </Button>
           </form>
@@ -171,7 +185,7 @@ export const ClaimPreferencesPage: React.FC = () => {
 
               <div className="pt-2 flex justify-end">
                 <a
-                  href={`/api/v1/public/certificate/${claimProfile.receiptCode}?format=svg`}
+                  href={getCertificateSvgUrl(claimProfile.receiptCode)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 transition-colors"

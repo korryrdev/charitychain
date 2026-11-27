@@ -8,7 +8,6 @@ const unauthenticatedAuthPaths = new Set([
   '/api/v1/public/auth/register-student',
   '/api/v1/public/auth/verify-account',
   '/api/v1/public/auth/login',
-  '/api/v1/public/auth/demo-login',
   '/api/v1/public/auth/password-reset/request',
   '/api/v1/public/auth/password-reset/complete'
 ]);
@@ -26,7 +25,7 @@ function tokensMatch(first, second) {
 
 export function createCsrfProtection({
   cookieName = 'charitychain_csrf',
-  sessionCookieName = 'charitychain_session',
+  sessionCookieName = authenticationConfig.session.cookieName,
   headerName = 'x-csrf-token'
 } = {}) {
   return function csrfProtection(request, response, next) {

@@ -1,18 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useSyncExternalStore } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { api } from '@/lib/api';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { StatusChip } from '@/components/StatusChip';
 import { Money } from '@/components/Money';
 import { useAuth } from '@/app/auth/AuthContext';
+import { authStore } from '../../store/auth.store';
+import { hasPermission } from '../authorization/permissions';
 import { PlusCircle, Filter, ArrowRight, Eye } from 'lucide-react';
 import { CaseDetailModal } from './CaseDetailModal';
-import type { CaseRecord } from '@/types';
+import type { CaseRecord, PortalSession } from '@/types';
 
 export const CasesPage: React.FC = () => {
   const { role } = useAuth();
+  const location = useLocation();
+  const { session } = useSyncExternalStore(authStore.subscribe, authStore.get) as {
+    session: PortalSession | null;
+  };
+  const casesBasePath = location.pathname.startsWith('/app') ? '/app/cases' : '/committee/cases';
+  const canCreateCase = session
+    ? hasPermission(session, 'case:create')
+    : ['SUBGROUP_REP', 'ADMIN'].includes(role);
   const [filterState, setFilterState] = useState<string>('ALL');
   const [selectedCase, setSelectedCase] = useState<CaseRecord | null>(null);
 
@@ -36,8 +46,8 @@ export const CasesPage: React.FC = () => {
           </h1>
         </div>
 
-        {['SUBGROUP_REP', 'COMMITTEE', 'ADMIN'].includes(role) && (
-          <Link to="/app/cases/new">
+        {canCreateCase && (
+          <Link to={`${casesBasePath}/new`}>
             <Button variant="emerald" className="gap-2">
               <PlusCircle className="w-4 h-4" />
               Submit New Case

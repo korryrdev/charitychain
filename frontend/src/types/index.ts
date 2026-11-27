@@ -15,6 +15,7 @@ export type CaseState =
 
 export type UserRole =
   | 'DONOR'
+  | 'STUDENT'
   | 'SUBGROUP_REP'
   | 'COMMITTEE'
   | 'TREASURER'

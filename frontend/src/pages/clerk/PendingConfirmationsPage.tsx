@@ -41,15 +41,25 @@ export function PendingConfirmationsPage() {
         <section className="workflow-queue" key={status}>
           <h2>{status.replaceAll('_', ' ')}</h2>
           {donations.length ? (
-            donations.map((donation) => (
-              <Link key={donation.id} to={`/clerk/inspect/${donation.id}`}>
-                <strong>{donation.donorName}</strong>
-                <span>
-                  {donation.kind} · {donation.lines.length} line(s)
-                </span>
-                <small>{donation.status.replaceAll('_', ' ')}</small>
-              </Link>
-            ))
+            donations.map((donation) =>
+              ['CONFIRMED', 'INSPECTION'].includes(donation.status) && donation.kind !== 'CASH' ? (
+                <Link key={donation.id} to={`/clerk/inspect/${donation.id}`}>
+                  <strong>{donation.donorName}</strong>
+                  <span>
+                    {donation.kind} · {donation.lines.length} line(s)
+                  </span>
+                  <small>{donation.status.replaceAll('_', ' ')}</small>
+                </Link>
+              ) : (
+                <article key={donation.id} className="workflow-queue__item">
+                  <strong>{donation.donorName}</strong>
+                  <span>
+                    {donation.kind} · {donation.lines.length} line(s)
+                  </span>
+                  <small>{donation.status.replaceAll('_', ' ')}</small>
+                </article>
+              )
+            )
           ) : (
             <p className="muted">No entries in this state.</p>
           )}

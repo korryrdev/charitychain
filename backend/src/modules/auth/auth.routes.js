@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import { validateRequest } from '../../middleware/validateRequest.js';
 import { authController } from './auth.controller.js';
-import { authService } from './auth.service.js';
 import {
   emailSchema,
   loginSchema,
@@ -23,21 +22,6 @@ export function createAuthRouter(controller = authController) {
     controller.verifyAccount
   );
   router.post('/login', validateRequest({ body: loginSchema }), controller.login);
-  router.post('/demo-login', async (req, res, next) => {
-    try {
-      const { email, role } = req.body || {};
-      const result = await authService.demoLogin({ email, role });
-      res.cookie('charitychain_session', result.token, {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 730 * 24 * 60 * 60 * 1000,
-      });
-      res.status(200).json(result);
-    } catch (err) {
-      next(err);
-    }
-  });
   router.post('/logout', controller.logout);
   router.post(
     '/password-reset/request',

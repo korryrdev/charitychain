@@ -1,7 +1,10 @@
 import { httpClient } from '../../../services/httpClient';
 
 export const applicationsApi = Object.freeze({
-  create: (payload: Record<string, unknown>) => httpClient.post('/applications', payload),
+  create: (payload: Record<string, unknown>) =>
+    httpClient.post('/applications', payload, {
+      headers: { 'idempotency-key': crypto.randomUUID() },
+    }),
   mine: (query: Record<string, unknown> = {}) => {
     const entries = Object.entries(query)
       .filter(([, value]) => value !== undefined && value !== null && value !== '')

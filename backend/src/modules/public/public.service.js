@@ -35,6 +35,29 @@ export class PublicService {
 
     if (!lot) return null;
 
+    const [pref, badge] = await Promise.all([
+      prisma.donorPreferenceEvent.findFirst({
+        where: { donorRef: lot.donorRef },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.donorBadgeAward.findFirst({
+        where: { donorRef: lot.donorRef, isRevoked: false },
+        orderBy: { awardedAt: 'desc' },
+      }),
+    ]);
+
+    const donorDisplayMode =
+      pref && pref.isOptedIn !== false && ['ALIAS', 'NAMED'].includes(pref.displayMode)
+        ? pref.displayMode
+        : 'ANONYMOUS';
+    const donorAlias =
+      donorDisplayMode === 'ALIAS'
+        ? pref?.publicAlias ?? null
+        : donorDisplayMode === 'NAMED'
+          ? pref?.confirmedName ?? null
+          : null;
+    const donorBadge = donorDisplayMode === 'ANONYMOUS' ? null : (badge?.tier ?? null);
+
     let status = 'POOLED';
     if (lot.isExhausted || lot.remainingAmountMinor === 0n) {
       status = 'FULLY_ALLOCATED';
@@ -50,6 +73,9 @@ export class PublicService {
       currency: lot.currency,
       channel: lot.channel,
       earmark: lot.earmark,
+      donorDisplayMode,
+      donorAlias,
+      donorBadge,
       recordedAt: lot.createdAt.toISOString(),
       allocations: lot.allocations.map((a) => ({
         id: a.id,
@@ -82,14 +108,17 @@ export class PublicService {
     const distinctBeneficiaries = new Set(allocations.map((a) => a.case.id)).size;
 
     const categoriesMap = {};
+    const categoryCounts = {};
     for (const alloc of allocations) {
       const cat = alloc.case.needCategory;
       categoriesMap[cat] = (categoriesMap[cat] || 0n) + alloc.amountMinor;
+      categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
     }
 
     const categoryBreakdown = Object.entries(categoriesMap).map(([category, amountMinor]) => ({
       category,
       amountMinor,
+      count: categoryCounts[category] || 0,
     }));
 
     const channelsMap = {};
@@ -103,9 +132,14 @@ export class PublicService {
       count: lots.filter((l) => l.channel === channel).length,
     }));
 
-    const latestReport = await prisma.periodReport.findFirst({
-      orderBy: { createdAt: 'desc' },
-    });
+    const [latestReport, openAlertsCount] = await Promise.all([
+      prisma.periodReport.findFirst({
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.forensicAlert.count({
+        where: { status: { in: ['OPEN', 'INVESTIGATING'] } },
+      }),
+    ]);
 
     return {
       activePoolBalanceMinor,
@@ -114,6 +148,7 @@ export class PublicService {
       totalDonationsCount: lots.length,
       totalCasesDisbursed: allocations.length,
       totalBeneficiariesHelped: distinctBeneficiaries,
+      openAlertsCount,
       categoryBreakdown,
       channelBreakdown,
       latestReport: latestReport

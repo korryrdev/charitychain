@@ -11,7 +11,8 @@ export function InvestigationTimeline({ anomaly }: InvestigationTimelineProps) {
     <section className="investigation-timeline">
       <h2>Investigation</h2>
       <p>
-        <strong>{investigation.status}</strong> · {investigation.summary ?? 'No resolution summary yet.'}
+        <strong>{investigation.status}</strong> ·{' '}
+        {investigation.conclusion ?? investigation.summary ?? 'No resolution summary yet.'}
       </p>
       <small>Opened {investigation.openedAt ? new Date(investigation.openedAt).toLocaleString('en-KE') : '—'}</small>
     </section>

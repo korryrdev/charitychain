@@ -42,6 +42,7 @@ export const DonorPortalPage: React.FC = () => {
 
   // Receipt claim state
   const [claimReceiptCode, setClaimReceiptCode] = useState('');
+  const [claimDonorIdentity, setClaimDonorIdentity] = useState('');
   const [claimError, setClaimError] = useState<string | null>(null);
   const [claimSuccess, setClaimSuccess] = useState<string | null>(null);
 
@@ -73,10 +74,12 @@ export const DonorPortalPage: React.FC = () => {
 
   // Claim receipt mutation
   const claimMutation = useMutation({
-    mutationFn: (receiptCode: string) => api.claimReceiptToAccount(receiptCode),
+    mutationFn: ({ receiptCode, donorIdentity }: { receiptCode: string; donorIdentity?: string }) =>
+      api.claimReceiptToAccount(receiptCode, donorIdentity),
     onSuccess: (res) => {
       setClaimSuccess(res.message);
       setClaimReceiptCode('');
+      setClaimDonorIdentity('');
       setClaimError(null);
       queryClient.invalidateQueries({ queryKey: ['donor-dashboard'] });
       setTimeout(() => setClaimSuccess(null), 5000);
@@ -104,7 +107,10 @@ export const DonorPortalPage: React.FC = () => {
   const handleClaimSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!claimReceiptCode.trim()) return;
-    claimMutation.mutate(claimReceiptCode.trim());
+    claimMutation.mutate({
+      receiptCode: claimReceiptCode.trim(),
+      donorIdentity: claimDonorIdentity.trim() || undefined,
+    });
   };
 
   const handleSettingsSubmit = (e: React.FormEvent) => {
@@ -303,12 +309,19 @@ export const DonorPortalPage: React.FC = () => {
                   <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
                   <Input
                     type="text"
-                    placeholder="Enter receipt code (e.g. MLK-FIFO-1-8095 or MLK-7F3K-92QD)"
+                    placeholder="Enter receipt code (e.g. MLK-XXXX-XXXX)"
                     value={claimReceiptCode}
                     onChange={(e) => setClaimReceiptCode(e.target.value)}
                     className="pl-9 font-mono text-xs h-10 uppercase bg-white dark:bg-zinc-900"
                   />
                 </div>
+                <Input
+                  type="text"
+                  placeholder="Phone, email, or bank ref (verification)"
+                  value={claimDonorIdentity}
+                  onChange={(e) => setClaimDonorIdentity(e.target.value)}
+                  className="text-xs h-10 sm:w-64 bg-white dark:bg-zinc-900"
+                />
                 <Button
                   type="submit"
                   variant="emerald"

@@ -13,7 +13,16 @@ export function createRolesService(repository = rolesRepository) {
     setPermissions: (roleCode, permissions) =>
       repository.setPermissions(roleCode, [...new Set(permissions)]),
     replaceAssignments: (userId, roleCodes) => repository.replaceAssignments(userId, [...new Set(roleCodes)]),
-    replaceUserPermissionAccess: (userId, permissionCodes) => repository.replaceUserPermissionAccess(userId, [...new Set(permissionCodes)]),
+    async replaceUserPermissionAccess(userId, permissionCodes) {
+      const normalized = [...new Set(permissionCodes)];
+      if (!normalized.includes('system:administer') && repository.findUserRoleCodes) {
+        const userRoles = await repository.findUserRoleCodes(userId);
+        if (userRoles.includes('ADMINISTRATOR')) {
+          assertAdministratorRemains('ADMINISTRATOR', await repository.countAssignments('ADMINISTRATOR'));
+        }
+      }
+      return repository.replaceUserPermissionAccess(userId, normalized);
+    },
     deleteIfUnused: (roleCode) => repository.deleteIfUnused(roleCode)
   };
 }

@@ -12,7 +12,6 @@ import {
   Menu,
   X,
   LogOut,
-  ChevronDown,
   UserCheck,
   Network,
 } from 'lucide-react';
@@ -25,7 +24,7 @@ import { cn } from '@/lib/utils';
 import type { UserRole } from '@/types';
 
 export const AppLayout: React.FC = () => {
-  const { user, role, setRole, logout } = useAuth();
+  const { user, role, logout } = useAuth();
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
@@ -85,24 +84,16 @@ export const AppLayout: React.FC = () => {
 
   const filteredNav = navItems.filter((item) => item.roles.includes(role));
 
-  const roleOptions: { value: UserRole; label: string }[] = [
-    { value: 'COMMITTEE', label: 'Committee Member' },
-    { value: 'SIGNATORY', label: 'Signatory (Wallet Approver)' },
-    { value: 'SUBGROUP_REP', label: 'Sub-group Representative' },
-    { value: 'TREASURER', label: 'Treasurer (Bank & Inflows)' },
-    { value: 'CUSTODIAN', label: 'Pharmacy Custodian' },
-    { value: 'AUDITOR', label: 'Auditor (Read-Only)' },
-    { value: 'ADMIN', label: 'System Admin' },
-  ];
-
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/trace');
   };
 
   useEffect(() => {
     if (role === 'DONOR') {
       navigate('/donor', { replace: true });
+    } else if (role === 'STUDENT') {
+      navigate('/student', { replace: true });
     }
   }, [role, navigate]);
 
@@ -145,25 +136,17 @@ export const AppLayout: React.FC = () => {
             </Link>
           </div>
 
-          {/* Persona Switcher (For Evaluation & Demo) */}
+          {/* Authenticated User Summary */}
           <div className="p-4 border-b border-zinc-100 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-900/50">
-            <label className="block text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-1.5 flex items-center gap-1.5">
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-1 flex items-center gap-1.5">
               <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
-              Role
-            </label>
-            <div className="relative">
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value as UserRole)}
-                className="w-full text-xs font-medium rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 py-1.5 px-2.5 pr-8 appearance-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
-              >
-                {roleOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="w-3.5 h-3.5 text-zinc-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <span>Signed in</span>
+            </div>
+            <div className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 truncate">
+              {user?.name || user?.email}
+            </div>
+            <div className="text-[11px] font-mono text-zinc-500 dark:text-zinc-400 mt-0.5">
+              {role}
             </div>
           </div>
 

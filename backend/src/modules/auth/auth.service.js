@@ -1,4 +1,4 @@
-import { prisma } from '@charitychain/database';
+import { authenticationConfig } from '../../config/authentication.js';
 import { env } from '../../config/environment.js';
 import { STATUSES } from '../../constants/statuses.js';
 import { AuthenticationError } from '../../errors/AuthenticationError.js';
@@ -37,7 +37,11 @@ export function createAuthService({
       );
       try {
         await repository.assignDefaultRole(result.user.id, 'STUDENT');
-        await repository.ensureStudentProfile?.(result.user.id, input.name);
+        await repository.ensureStudentProfile?.(
+          result.user.id,
+          input.name,
+          input.registrationNumber
+        );
         const token = await verificationService.issue(input.email);
         await sendVerification({ email: input.email, token, user: result.user });
         return {
@@ -147,81 +151,39 @@ export function createAuthService({
       ];
       const primaryRole =
         roles.includes('DONOR') && roles.length === 1 ? 'DONOR' : roles[0] || 'DONOR';
+      const safeResponse = { ...(response ?? {}) };
+      delete safeResponse.token;
+      const requiresMfa = Boolean(safeResponse.twoFactorRedirect || safeResponse.requiresMfa);
       return {
         ...(result.response ? result : { response }),
         response: {
-          ...response,
+          ...safeResponse,
+          requiresMfa,
           role: primaryRole,
           roles,
           permissions,
-          mfaVerified: Boolean(user.twoFactorEnabled)
+          mfaVerified: !requiresMfa && Boolean(user.twoFactorEnabled)
         }
       };
     },
-    logout(headers) {
-      return engine.api.signOut({ headers, returnHeaders: true });
+    async logout(headers) {
+      const result = await engine.api.signOut({ headers, returnHeaders: true });
+      const rawCookie = headers?.get?.('cookie') ?? '';
+      const cookiePrefix = `${authenticationConfig.session.cookieName}=`;
+      const cookieEntry = rawCookie
+        .split(';')
+        .map((part) => part.trim())
+        .find((part) => part.startsWith(cookiePrefix));
+      const token = cookieEntry
+        ? decodeURIComponent(cookieEntry.slice(cookiePrefix.length)).split('.', 1)[0]
+        : null;
+      if (token) {
+        await repository.revokeSessionByToken?.(token).catch(() => {});
+      }
+      return result;
     },
     getSession(headers) {
       return engine.api.getSession({ headers });
-    },
-    async demoLogin({ email = 'pharmacy@malkia.charity', role } = {}) {
-      const normalizedEmail = email.toLowerCase().trim();
-      let user = await repository.findUserByEmail(normalizedEmail);
-      if (!user) {
-        user = await prisma.user.create({
-          data: {
-            name: email.split('@')[0],
-            email: normalizedEmail,
-            emailVerified: true,
-            status: STATUSES.USER.ACTIVE
-          }
-        });
-      }
-
-      if (role) {
-        const roleRecord = await prisma.role.findFirst({
-          where: {
-            OR: [{ code: role.toUpperCase() }, { code: 'CLERK' }, { code: 'ADMINISTRATOR' }]
-          }
-        });
-        if (roleRecord) {
-          const existing = await prisma.userRole.findFirst({
-            where: { userId: user.id, roleId: roleRecord.id }
-          });
-          if (!existing) {
-            await prisma.userRole.create({
-              data: { userId: user.id, roleId: roleRecord.id }
-            });
-          }
-        }
-      }
-
-      const token = `malkia-token-${Buffer.from(normalizedEmail).toString('hex').padEnd(32, '0')}`;
-      const expiresAt = new Date(Date.now() + 730 * 24 * 60 * 60 * 1000);
-
-      const existingSession = await prisma.session.findUnique({ where: { token } });
-      let session;
-      if (existingSession) {
-        session = await prisma.session.update({
-          where: { token },
-          data: { expiresAt }
-        });
-      } else {
-        session = await prisma.session.create({
-          data: { userId: user.id, token, expiresAt }
-        });
-      }
-
-      return {
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-          role: role || user.roles?.[0]?.role?.code || 'PHARMACY_CUSTODIAN'
-        },
-        token: session.token,
-        expiresAt: session.expiresAt
-      };
     },
     verifyCurrentPassword(password, headers) {
       return engine.api.verifyPassword({ body: { password }, headers });

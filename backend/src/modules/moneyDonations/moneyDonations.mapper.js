@@ -71,6 +71,7 @@ export function toTrackedDonation(donation) {
     currency: donation.currency,
     purpose: donation.purpose,
     status: donation.status,
+    createdAt: donation.createdAt,
     ...failureFields(donation),
     confirmedAt: donation.confirmedAt,
     reconciledAt: donation.reconciledAt,

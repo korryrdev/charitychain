@@ -3,14 +3,12 @@ import { betterAuth } from 'better-auth';
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { twoFactor } from 'better-auth/plugins';
 import { authenticationConfig } from '../../config/authentication.js';
+import { corsConfig } from '../../config/cors.js';
 import { env } from '../../config/environment.js';
 import { STATUSES } from '../../constants/statuses.js';
 
 const trustedOrigins = Object.freeze([
-  env.APP_URL,
-  ...(env.NODE_ENV === 'development'
-    ? ['http://localhost:5173', 'http://127.0.0.1:5173']
-    : [])
+  ...new Set([env.APP_URL, ...corsConfig.allowedOrigins])
 ]);
 
 export function createAuthEngine({ database = prisma } = {}) {

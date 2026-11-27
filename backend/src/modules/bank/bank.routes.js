@@ -5,7 +5,7 @@ import { bankService } from './bank.service.js';
 import { bankReconciliationService } from './bankReconciliation.service.js';
 import { validateRequest } from '../../middleware/validateRequest.js';
 import { createBankDepositSchema, verifyBankDepositSchema, importCsvSchema } from './bank.validation.js';
-import { authorize } from '../../middleware/authorize.js';
+import { authorize, authorizeAny } from '../../middleware/authorize.js';
 import { PERMISSIONS } from '../../constants/permissions.js';
 
 export function createBankRouter({
@@ -14,14 +14,22 @@ export function createBankRouter({
 } = {}) {
   const router = Router();
 
-  router.get('/', async (req, res, next) => {
-    try {
-      const deposits = await service.listDeposits(req.query.status);
-      res.status(200).json({ items: deposits });
-    } catch (err) {
-      next(err);
+  router.get(
+    '/',
+    authorizeAny(
+      PERMISSIONS.BANK_DEPOSIT_CREATE,
+      PERMISSIONS.BANK_DEPOSIT_VERIFY,
+      PERMISSIONS.DONATION_READ_ALL
+    ),
+    async (req, res, next) => {
+      try {
+        const deposits = await service.listDeposits(req.query.status);
+        res.status(200).json({ items: deposits });
+      } catch (err) {
+        next(err);
+      }
     }
-  });
+  );
 
   router.post(
     '/',

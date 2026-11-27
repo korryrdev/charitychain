@@ -15,7 +15,7 @@ import { PERMISSIONS } from '../../constants/permissions.js';
 export function createCasesRouter(service = casesService) {
   const router = Router();
 
-  router.get('/subgroups', async (_req, res, next) => {
+  router.get('/subgroups', authorize(PERMISSIONS.CASE_READ), async (_req, res, next) => {
     try {
       const items = await service.listSubgroups();
       res.status(200).json({ items });
@@ -24,7 +24,7 @@ export function createCasesRouter(service = casesService) {
     }
   });
 
-  router.get('/', async (req, res, next) => {
+  router.get('/', authorize(PERMISSIONS.CASE_READ), async (req, res, next) => {
     try {
       const cases = await service.listCases({
         subGroupId: req.query.subGroupId,
@@ -55,7 +55,7 @@ export function createCasesRouter(service = casesService) {
     }
   );
 
-  router.get('/:id', async (req, res, next) => {
+  router.get('/:id', authorize(PERMISSIONS.CASE_READ), async (req, res, next) => {
     try {
       const includePii = req.auth?.permissions?.includes(PERMISSIONS.CASE_READ) || false;
       const malkiaCase = await service.getCase(req.params.id, includePii);
@@ -68,7 +68,7 @@ export function createCasesRouter(service = casesService) {
     }
   });
 
-  router.post('/:id/submit', async (req, res, next) => {
+  router.post('/:id/submit', authorize(PERMISSIONS.CASE_SUBMIT), async (req, res, next) => {
     try {
       const updated = await service.submitCase(req.params.id, req.auth.user.id);
       res.status(200).json({ case: updated });

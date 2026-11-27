@@ -14,6 +14,7 @@ export const createBankDepositSchema = z.object({
 
 export const verifyBankDepositSchema = z.object({
   notes: z.string().trim().max(500).optional(),
+  earmark: z.enum(['FEES', 'UPKEEP', 'MEDICAL', 'EMERGENCY', 'BOOKS']).optional(),
 });
 
 export const importCsvSchema = z.object({

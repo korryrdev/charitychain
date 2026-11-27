@@ -1,4 +1,5 @@
 import { prisma } from '../client/prismaClient.js';
+import { hashPassword } from 'better-auth/crypto';
 
 const roles = [
   ['DONOR', 'Donor'],
@@ -240,8 +241,15 @@ await prisma.$transaction(
       });
     }
 
-    // Seed Demo Users with Permanent Active Sessions
-    const demoUsers = [
+    // Remove legacy deterministic demo tokens and provision real credential accounts for seeded staff
+    await transaction.session.deleteMany({
+      where: { token: { startsWith: 'malkia-token-' } }
+    });
+    const staffSeedPasswordHash = await hashPassword(
+      process.env.SEED_STAFF_PASSWORD || 'StaffPass12345!'
+    );
+
+    const seededStaffUsers = [
       {
         email: 'pharmacy@malkia.charity',
         name: 'Jane Atieno (Pharmacy)',
@@ -274,7 +282,7 @@ await prisma.$transaction(
       },
     ];
 
-    for (const u of demoUsers) {
+    for (const u of seededStaffUsers) {
       const user = await transaction.user.upsert({
         where: { email: u.email },
         update: {
@@ -290,6 +298,24 @@ await prisma.$transaction(
         },
       });
 
+      await transaction.account.upsert({
+        where: {
+          providerId_accountId: {
+            providerId: 'credential',
+            accountId: user.id,
+          },
+        },
+        update: {
+          password: staffSeedPasswordHash,
+        },
+        create: {
+          userId: user.id,
+          providerId: 'credential',
+          accountId: user.id,
+          password: staffSeedPasswordHash,
+        },
+      });
+
       for (const rCode of u.roles) {
         const role = await transaction.role.findUnique({ where: { code: rCode } });
         if (role) {
@@ -302,26 +328,6 @@ await prisma.$transaction(
             });
           }
         }
-      }
-
-      // Permanent active session token
-      const token = `malkia-token-${Buffer.from(u.email).toString('hex').padEnd(32, '0')}`;
-      const expiresAt = new Date(Date.now() + 730 * 24 * 60 * 60 * 1000);
-
-      const existingSession = await transaction.session.findUnique({ where: { token } });
-      if (existingSession) {
-        await transaction.session.update({
-          where: { token },
-          data: { expiresAt },
-        });
-      } else {
-        await transaction.session.create({
-          data: {
-            userId: user.id,
-            token,
-            expiresAt,
-          },
-        });
       }
     }
   },

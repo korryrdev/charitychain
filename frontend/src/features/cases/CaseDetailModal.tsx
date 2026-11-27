@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useSyncExternalStore } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/Card';
@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/Input';
 import { StatusChip } from '@/components/StatusChip';
 import { Money } from '@/components/Money';
 import { useAuth } from '@/app/auth/AuthContext';
+import { authStore } from '../../store/auth.store';
+import { hasPermission } from '../authorization/permissions';
 import {
   X,
   ShieldAlert,
@@ -17,7 +19,7 @@ import {
   AlertTriangle,
   Upload,
 } from 'lucide-react';
-import type { CaseRecord } from '@/types';
+import type { CaseRecord, PortalSession } from '@/types';
 
 interface CaseDetailModalProps {
   caseRecord: CaseRecord | null;
@@ -27,6 +29,9 @@ interface CaseDetailModalProps {
 export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({ caseRecord, onClose }) => {
   const queryClient = useQueryClient();
   const { user, role } = useAuth();
+  const { session } = useSyncExternalStore(authStore.subscribe, authStore.get) as {
+    session: PortalSession | null;
+  };
 
   const [approveAmountMajor, setApproveAmountMajor] = useState<string>(
     caseRecord ? (caseRecord.requestedAmountMinor / 100).toString() : '0'
@@ -89,10 +94,13 @@ export const CaseDetailModal: React.FC<CaseDetailModalProps> = ({ caseRecord, on
 
   if (!caseRecord) return null;
 
-  const isSubmitter = caseRecord.submitterId === (user?.id || 'current-user');
-  const canDecide = ['COMMITTEE', 'ADMIN'].includes(role) && caseRecord.state === 'SUBMITTED';
+  const isSubmitter = Boolean(user?.id) && caseRecord.submitterId === user?.id;
+  const canDecide =
+    (session ? hasPermission(session, 'case:decide') : ['COMMITTEE', 'ADMIN'].includes(role)) &&
+    caseRecord.state === 'SUBMITTED';
   const canDisburse =
-    ['COMMITTEE', 'TREASURER', 'ADMIN'].includes(role) && caseRecord.state === 'AUTHORIZED';
+    (session ? hasPermission(session, 'disbursement:create') : ['TREASURER', 'ADMIN'].includes(role)) &&
+    caseRecord.state === 'AUTHORIZED';
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">

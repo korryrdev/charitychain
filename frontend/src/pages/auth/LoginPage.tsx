@@ -11,11 +11,11 @@ function destinationFor(
   fallback: string | undefined,
   role: string | undefined
 ): string {
-  if (response?.requiresMfa) return '/auth/mfa';
+  if (response?.requiresMfa || response?.twoFactorRedirect) return '/auth/mfa';
   if (fallback) return fallback;
   const authorized = defaultAuthorizedPath(response);
   if (authorized !== '/') return authorized;
-  if (response?.roles?.includes('ADMIN')) return '/admin';
+  if (response?.roles?.includes('ADMINISTRATOR') || response?.roles?.includes('SYSTEM_ADMIN')) return '/admin';
   if (role === 'STUDENT') return '/student';
   if (role === 'DONOR') return '/donor';
   return '/';

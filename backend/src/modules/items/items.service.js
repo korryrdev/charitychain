@@ -7,6 +7,9 @@ import { ConflictError } from '../../errors/ConflictError.js';
 import { ValidationError } from '../../errors/ValidationError.js';
 import { logger } from '../../observability/logger.js';
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const isUuid = (value) => typeof value === 'string' && UUID_REGEX.test(value.trim());
+
 export class ItemsService {
   async listItems() {
     return prisma.donationLot.findMany({
@@ -98,32 +101,41 @@ export class ItemsService {
   }
 
   async issueItemsToCase({ caseId, itemId, quantity, notes, actorUserId }) {
+    const normalizedCaseId = String(caseId || '').trim();
+    const normalizedItemId = String(itemId || '').trim();
+
     const malkiaCase = await prisma.malkiaCase.findFirst({
-      where: {
-        OR: [{ id: caseId }, { caseNumber: caseId }],
-      },
+      where: isUuid(normalizedCaseId)
+        ? { OR: [{ id: normalizedCaseId }, { caseNumber: normalizedCaseId }] }
+        : { caseNumber: normalizedCaseId },
     });
     if (!malkiaCase) {
       throw new ConflictError(`Case with ID or Number "${caseId}" not found.`);
     }
 
+    const itemFilters = [
+      { sku: normalizedItemId },
+      { normalizedName: normalizedItemId.toLowerCase() },
+    ];
+    if (isUuid(normalizedItemId)) {
+      itemFilters.unshift({ id: normalizedItemId });
+    }
+
     let item = await prisma.inventoryItem.findFirst({
       where: {
-        OR: [
-          { id: itemId },
-          { sku: itemId },
-          { normalizedName: itemId.toLowerCase().trim() },
-        ],
+        OR: itemFilters,
       },
       include: { category: true },
     });
     if (!item) {
       const lot = await prisma.donationLot.findFirst({
-        where: { OR: [{ id: itemId }, { receiptCode: itemId }] },
+        where: isUuid(normalizedItemId)
+          ? { OR: [{ id: normalizedItemId }, { receiptCode: normalizedItemId }] }
+          : { receiptCode: normalizedItemId },
       });
       if (lot) {
         item = await prisma.inventoryItem.findFirst({
-          where: { category: { name: lot.earmark } },
+          where: { category: { name: { equals: lot.earmark, mode: 'insensitive' } } },
           include: { category: true },
         });
       }
@@ -172,7 +184,7 @@ export class ItemsService {
         const alloc = await tx.lotAllocation.create({
           data: {
             lotId: lot.id,
-            caseId,
+            caseId: malkiaCase.id,
             amountMinor: consume,
           },
         });
@@ -183,7 +195,7 @@ export class ItemsService {
 
       await tx.caseEvent.create({
         data: {
-          caseId,
+          caseId: malkiaCase.id,
           fromState: malkiaCase.state,
           toState: malkiaCase.state,
           actorUserId,
@@ -192,9 +204,19 @@ export class ItemsService {
       });
     });
 
-    logger.info({ caseId, itemId, quantity, actorUserId }, 'Inventory items issued to case.');
+    logger.info(
+      { caseId: malkiaCase.id, caseNumber: malkiaCase.caseNumber, itemId: item.id, quantity, actorUserId },
+      'Inventory items issued to case.'
+    );
 
-    return { success: true, caseId, itemId, quantityIssued: quantity, allocations };
+    return {
+      success: true,
+      caseId: malkiaCase.id,
+      caseNumber: malkiaCase.caseNumber,
+      itemId: item.id,
+      quantityIssued: quantity,
+      allocations,
+    };
   }
 }
 

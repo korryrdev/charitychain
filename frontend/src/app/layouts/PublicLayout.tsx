@@ -70,10 +70,22 @@ export const PublicLayout: React.FC = () => {
             <ThemeToggle />
             {user ? (
               <div className="flex items-center gap-2">
-                <Link to={user.role === 'DONOR' ? '/donor' : '/app'}>
+                <Link
+                  to={
+                    user.role === 'DONOR'
+                      ? '/donor'
+                      : user.role === 'STUDENT'
+                        ? '/student'
+                        : '/app'
+                  }
+                >
                   <Button variant="emerald" size="sm" className="gap-2">
                     <span className="hidden sm:inline">
-                      {user.role === 'DONOR' ? 'My Donor Portal' : 'Staff Portal'}
+                      {user.role === 'DONOR'
+                        ? 'My Donor Portal'
+                        : user.role === 'STUDENT'
+                          ? 'My Student Portal'
+                          : 'Staff Portal'}
                     </span>
                     <span className="sm:hidden">Portal</span>
                     <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />

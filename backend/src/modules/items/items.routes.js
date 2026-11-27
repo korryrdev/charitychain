@@ -4,20 +4,24 @@ import { Router } from 'express';
 import { itemsService } from './items.service.js';
 import { validateRequest } from '../../middleware/validateRequest.js';
 import { createItemDonationSchema, issueInventorySchema } from './items.validation.js';
-import { authorize } from '../../middleware/authorize.js';
+import { authorize, authorizeAny } from '../../middleware/authorize.js';
 import { PERMISSIONS } from '../../constants/permissions.js';
 
 export function createItemsRouter(service = itemsService) {
   const router = Router();
 
-  router.get('/', async (req, res, next) => {
-    try {
-      const items = await service.listItems();
-      res.status(200).json({ items });
-    } catch (err) {
-      next(err);
+  router.get(
+    '/',
+    authorizeAny(PERMISSIONS.INVENTORY_READ, PERMISSIONS.ITEM_LOG_CREATE, PERMISSIONS.ITEM_ISSUE),
+    async (req, res, next) => {
+      try {
+        const items = await service.listItems();
+        res.status(200).json({ items });
+      } catch (err) {
+        next(err);
+      }
     }
-  });
+  );
 
   router.post(
     '/',

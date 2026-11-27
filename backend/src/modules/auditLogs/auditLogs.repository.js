@@ -13,8 +13,12 @@ export function createAuditLogsRepository(database = prisma) {
     },
     list(filters) {
       const where = {
-        ...(filters.actorId ? { actorId: filters.actorId } : {}), ...(filters.action ? { action: filters.action } : {}),
-        ...(filters.entityType ? { entityType: filters.entityType } : {}), ...(filters.entityId ? { entityId: filters.entityId } : {}),
+        ...(filters.actorId ? { actorId: filters.actorId } : {}),
+        ...(filters.action ? { action: filters.action } : {}),
+        ...(filters.entityType
+          ? { entityType: { equals: filters.entityType, mode: 'insensitive' } }
+          : {}),
+        ...(filters.entityId ? { entityId: filters.entityId } : {}),
         ...(filters.requestId ? { requestId: filters.requestId } : {}),
         ...(filters.from || filters.to ? { createdAt: { ...(filters.from ? { gte: filters.from } : {}), ...(filters.to ? { lte: filters.to } : {}) } } : {})
       };

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
@@ -67,6 +67,12 @@ export interface GraphEdge {
 }
 
 export const FundFlowGraphPage: React.FC = () => {
+  const location = useLocation();
+  const inAppWorkspace = location.pathname.startsWith('/app');
+  const alertsPath = inAppWorkspace ? '/app/alerts' : '/auditor/forensic-rules';
+  const casesPath = inAppWorkspace ? '/app/cases' : '/committee/cases';
+  const signingPath = inAppWorkspace ? '/app/signing' : '/committee/signing';
+  const disbursementsPath = inAppWorkspace ? '/finance/disbursements' : '/auditor/money';
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [filterChannel, setFilterChannel] = useState<'ALL' | 'MPESA' | 'BANK' | 'IN_KIND'>('ALL');
   const [showFlaggedOnly, setShowFlaggedOnly] = useState(false);
@@ -177,7 +183,7 @@ export const FundFlowGraphPage: React.FC = () => {
             <RefreshCw className="w-3.5 h-3.5" />
             <span>Refresh Live Data</span>
           </Button>
-          <Link to="/app/alerts">
+          <Link to={alertsPath}>
             <Button size="sm" variant="outline" className="text-xs gap-1.5 text-amber-600 border-amber-300 dark:border-amber-800">
               <AlertTriangle className="w-3.5 h-3.5" />
               <span>Forensic Inbox ({summary?.openAlertsCount ?? 0})</span>
@@ -617,7 +623,7 @@ export const FundFlowGraphPage: React.FC = () => {
                         <span>Forensic Alert Triggered (Rule {selectedNode.alertRule})</span>
                       </div>
                       <p className="text-[11px] leading-relaxed">{selectedNode.alertText}</p>
-                      <Link to="/app/alerts" className="inline-block mt-1">
+                      <Link to={alertsPath} className="inline-block mt-1">
                         <Button size="sm" variant="outline" className="h-7 text-[11px] bg-white dark:bg-zinc-900 border-amber-300">
                           Resolve in Alert Triage
                         </Button>
@@ -748,7 +754,7 @@ export const FundFlowGraphPage: React.FC = () => {
                     )}
 
                     {selectedNode.type === 'CASE' && (
-                      <Link to="/app/cases">
+                      <Link to={casesPath}>
                         <Button variant="emerald" className="w-full text-xs gap-1.5">
                           <FileCheck2 className="w-3.5 h-3.5" />
                           <span>Inspect in Cases Queue</span>
@@ -757,7 +763,7 @@ export const FundFlowGraphPage: React.FC = () => {
                     )}
 
                     {selectedNode.type === 'SIGNATORY' && (
-                      <Link to="/app/signing">
+                      <Link to={signingPath}>
                         <Button variant="outline" className="w-full text-xs gap-1.5">
                           <ShieldCheck className="w-3.5 h-3.5" />
                           <span>View 2-of-3 Release Queue</span>
@@ -766,7 +772,7 @@ export const FundFlowGraphPage: React.FC = () => {
                     )}
 
                     {selectedNode.type === 'DISBURSEMENT' && (
-                      <Link to="/app/disbursements">
+                      <Link to={disbursementsPath}>
                         <Button variant="outline" className="w-full text-xs gap-1.5">
                           <CheckCircle2 className="w-3.5 h-3.5" />
                           <span>View Disbursement Logs</span>

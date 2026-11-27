@@ -57,10 +57,11 @@ export function ReceiveDonationPage() {
       const payload = {
         ...values,
         donorPhone: values.donorPhone.replace(/[\s+-]/g, ''),
-        lines: values.lines.map(({ id: _id, ...line }) => ({
+        lines: values.lines.map(({ id: _id, declaredValue, category, ...line }) => ({
           ...line,
+          ...(category.trim() ? { category: category.trim() } : {}),
           quantity: Number(line.quantity),
-          ...(line.declaredValue ? { declaredValue: Number(line.declaredValue) } : {})
+          ...(declaredValue.trim() ? { declaredValue: Number(declaredValue) } : {})
         }))
       };
       const { donation } = await inventoryApi.recordPhysicalDonation(payload);

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { Card, CardContent, CardFooter } from '@/components/ui/Card';
@@ -10,6 +10,8 @@ import type { NeedCategory } from '@/types';
 
 export const NewCasePage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const casesPath = location.pathname.startsWith('/app') ? '/app/cases' : '/committee/cases';
   const queryClient = useQueryClient();
 
   const { data: subgroups = [] } = useQuery({
@@ -44,7 +46,7 @@ export const NewCasePage: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cases'] });
-      navigate('/app/cases');
+      navigate(casesPath);
     },
   });
 
@@ -58,7 +60,7 @@ export const NewCasePage: React.FC = () => {
     <div className="max-w-2xl mx-auto space-y-6">
       <button
         type="button"
-        onClick={() => navigate('/app/cases')}
+        onClick={() => navigate(casesPath)}
         className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" /> Back to Cases Queue

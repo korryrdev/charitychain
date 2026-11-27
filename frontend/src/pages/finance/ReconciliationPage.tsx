@@ -25,10 +25,12 @@ export function ReconciliationPage() {
   const run = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     try {
+      const requestedEndMs = new Date(`${values.periodEnd}T23:59:59.999Z`).getTime();
+      const boundedEnd = new Date(Math.min(requestedEndMs, Date.now())).toISOString();
       const { reconciliation } = await disbursementsApi.reconcile({
         ...values,
         periodStart: new Date(`${values.periodStart}T00:00:00.000Z`).toISOString(),
-        periodEnd: new Date(`${values.periodEnd}T23:59:59.999Z`).toISOString()
+        periodEnd: boundedEnd
       });
       setResult(reconciliation as ReconciliationResult);
       setError(null);

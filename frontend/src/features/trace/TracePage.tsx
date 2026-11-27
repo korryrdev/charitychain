@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { api } from '@/lib/api';
+import { api, getCertificateSvgUrl } from '@/lib/api';
 import { useTranslation } from '@/app/i18n/I18nContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -29,12 +29,12 @@ import type { DonationTrace } from '@/types';
 
 export const TracePage: React.FC = () => {
   const { t } = useTranslation();
+  const { receiptCode: routeCode } = useParams<{ receiptCode?: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
-  const queryParam = searchParams.get('receipt') || searchParams.get('code') || '';
-  const initialCode = queryParam || 'MLK-7F3K-92QD';
+  const queryParam = searchParams.get('receipt') || searchParams.get('code') || routeCode || '';
 
-  const [searchInput, setSearchInput] = useState(initialCode);
-  const [submittedCode, setSubmittedCode] = useState(initialCode);
+  const [searchInput, setSearchInput] = useState(queryParam);
+  const [submittedCode, setSubmittedCode] = useState(queryParam);
   const [techDetailsOpen, setTechDetailsOpen] = useState(false);
 
   const activeCode = queryParam || submittedCode;
@@ -53,8 +53,6 @@ export const TracePage: React.FC = () => {
       setSearchParams({ code });
     }
   };
-
-  const quickSamples = ['MLK-7F3K-92QD', 'MLK-4B2N-88LK', 'MLK-ITEM-9201'];
 
   return (
     <div className="w-full space-y-8">
@@ -85,30 +83,18 @@ export const TracePage: React.FC = () => {
               {t('traceButton')}
             </Button>
           </form>
-
-          {/* Quick Demo Pickers */}
-          <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
-            <span className="font-medium">{t('quickSamples')}</span>
-            {quickSamples.map((sample) => (
-              <button
-                key={sample}
-                type="button"
-                onClick={() => {
-                  setSearchInput(sample);
-                  setSubmittedCode(sample);
-                  setSearchParams({ code: sample });
-                }}
-                className="font-mono px-2 py-1 rounded-md bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 transition-colors"
-              >
-                {sample}
-              </button>
-            ))}
-          </div>
         </CardContent>
       </Card>
 
+      {!activeCode && (
+        <EmptyState
+          title="Enter a receipt code to trace"
+          description="Paste the receipt code from your M-Pesa confirmation, bank slip, or pharmacy receipt (for example MLK-XXXX-XXXX) to view lot allocations and audit verification."
+        />
+      )}
+
       {/* Loading State */}
-      {isLoading && (
+      {Boolean(activeCode) && isLoading && (
         <Card className="p-12 text-center text-zinc-500">
           <div className="animate-pulse space-y-4">
             <div className="h-6 w-48 bg-zinc-200 dark:bg-zinc-800 rounded mx-auto" />
@@ -118,16 +104,10 @@ export const TracePage: React.FC = () => {
       )}
 
       {/* Not Found */}
-      {!isLoading && !donation && !isError && (
+      {Boolean(activeCode) && !isLoading && !donation && !isError && (
         <EmptyState
           title={t('receiptNotFound')}
           description={t('receiptNotFoundDesc')}
-          actionLabel="Try Sample Code MLK-7F3K-92QD"
-          onAction={() => {
-            setSearchInput('MLK-7F3K-92QD');
-            setSubmittedCode('MLK-7F3K-92QD');
-            setSearchParams({ code: 'MLK-7F3K-92QD' });
-          }}
         />
       )}
 
@@ -144,7 +124,7 @@ export const TracePage: React.FC = () => {
                     {donation.receiptCode}
                   </span>
                   <a
-                    href={`/api/v1/public/certificate/${donation.receiptCode}?format=svg`}
+                    href={getCertificateSvgUrl(donation.receiptCode)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-md bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700 hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors ml-2"

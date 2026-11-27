@@ -42,7 +42,7 @@ export function createAlertsRouter(service = alertsService) {
 
   router.patch(
     '/rules/:id',
-    authorize(PERMISSIONS.ALERT_RESOLVE),
+    authorize(PERMISSIONS.RULES_MANAGE),
     async (req, res, next) => {
       try {
         const updated = await service.updateRule(req.params.id, req.body);
