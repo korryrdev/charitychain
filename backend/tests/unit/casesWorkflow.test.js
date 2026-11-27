@@ -1,17 +1,21 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { CasesService } from '../../src/modules/cases/cases.service.js';
+import Web3 from 'web3';
+import { signMessageWithPrivateKey } from 'web3-eth-accounts';
+import { CasesService, computeReleaseAuthDigest } from '../../src/modules/cases/cases.service.js';
 import { AuthorizationError } from '../../src/errors/AuthorizationError.js';
 import { ConflictError } from '../../src/errors/ConflictError.js';
 import { prisma } from '@charitychain/database';
 import { randomUUID } from 'node:crypto';
+
+const web3 = new Web3();
 
 describe('G13–G16: Case State Machine, Decision, 2-of-3 Authorization & Disbursement (FR-CASE-01 to 07, R01–R03)', () => {
   let service;
   let testSubgroup;
   const submitterId = randomUUID();
   const approverId = randomUUID();
-  const signatory1 = '0x' + '11'.repeat(65);
-  const signatory2 = '0x' + '22'.repeat(65);
+  const wallet1 = web3.eth.accounts.create();
+  const wallet2 = web3.eth.accounts.create();
 
   beforeEach(async () => {
     service = new CasesService();
@@ -73,14 +77,24 @@ describe('G13–G16: Case State Machine, Decision, 2-of-3 Authorization & Disbur
     expect(approved.state).toBe('APPROVED');
     expect(approved.approvedAmountMinor).toBe(300000n);
 
-    // 5. 2-of-3 Signatories Authorize Release
+    // 5. 2-of-3 Signatories Authorize Release using real EIP-712 digests
+    const deadline = Math.floor(Date.now() / 1000) + 3600;
+    const digest = computeReleaseAuthDigest({
+      caseId: created.id,
+      amountMinor: 300000n,
+      nonce: 0,
+      deadline,
+    });
+    const sig1 = signMessageWithPrivateKey(digest, wallet1.privateKey).signature;
+    const sig2 = signMessageWithPrivateKey(digest, wallet2.privateKey).signature;
+
     const authorized = await service.authorizeRelease(
       created.id,
       {
         amountMinor: 300000n,
         nonce: 0,
-        deadline: Math.floor(Date.now() / 1000) + 3600,
-        signatures: [signatory1, signatory2],
+        deadline,
+        signatures: [sig1, sig2],
       },
       approverId
     );

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api, getCertificateSvgUrl } from '@/lib/api';
+import { verifyDonationOnChain, type OnChainVerifyResult } from '@/lib/web3Verify';
 import { useTranslation } from '@/app/i18n/I18nContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -36,8 +37,14 @@ export const TracePage: React.FC = () => {
   const [searchInput, setSearchInput] = useState(queryParam);
   const [submittedCode, setSubmittedCode] = useState(queryParam);
   const [techDetailsOpen, setTechDetailsOpen] = useState(false);
+  const [chainVerifyState, setChainVerifyState] = useState<{
+    code: string;
+    result: OnChainVerifyResult;
+  } | null>(null);
+  const [verifyingChain, setVerifyingChain] = useState(false);
 
   const activeCode = queryParam || submittedCode;
+  const chainVerify = chainVerifyState?.code === activeCode ? chainVerifyState.result : null;
 
   const { data: donation, isLoading, isError } = useQuery<DonationTrace | null>({
     queryKey: ['trace', activeCode],
@@ -258,17 +265,61 @@ export const TracePage: React.FC = () => {
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setTechDetailsOpen(!techDetailsOpen)}
-                    className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:underline shrink-0"
-                  >
-                    <span>{techDetailsOpen ? 'Hide audit details' : 'View audit fingerprint'}</span>
-                    <ChevronDown
-                      className={`w-3.5 h-3.5 transition-transform ${techDetailsOpen ? 'rotate-180' : ''}`}
-                    />
-                  </button>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      disabled={verifyingChain}
+                      onClick={async () => {
+                        setVerifyingChain(true);
+                        const res = await verifyDonationOnChain({
+                          lotId: donation.lotId,
+                          recordHash: donation.recordHash,
+                        });
+                        setChainVerifyState({ code: activeCode, result: res });
+                        setVerifyingChain(false);
+                      }}
+                      className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-zinc-900 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/60"
+                    >
+                      {verifyingChain ? 'Checking RPC...' : 'Verify on DonationLedger (Web3.js)'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTechDetailsOpen(!techDetailsOpen)}
+                      className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:underline shrink-0"
+                    >
+                      <span>{techDetailsOpen ? 'Hide audit details' : 'View audit fingerprint'}</span>
+                      <ChevronDown
+                        className={`w-3.5 h-3.5 transition-transform ${techDetailsOpen ? 'rotate-180' : ''}`}
+                      />
+                    </button>
+                  </div>
                 </div>
+
+                {chainVerify && (
+                  <div
+                    className={`p-3 rounded-lg border text-xs space-y-1 ${
+                      chainVerify.status === 'VERIFIED'
+                        ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-300 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200'
+                        : chainVerify.status === 'MISMATCH'
+                          ? 'bg-rose-50 dark:bg-rose-950/60 border-rose-300 dark:border-rose-800 text-rose-900 dark:text-rose-200'
+                          : 'bg-amber-50 dark:bg-amber-950/50 border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200'
+                    }`}
+                  >
+                    <div className="font-semibold">
+                      On-Chain Status ({chainVerify.status}): {chainVerify.message}
+                    </div>
+                    {chainVerify.contractAddress && (
+                      <div className="font-mono text-[11px] break-all">
+                        Contract: {chainVerify.contractAddress}
+                      </div>
+                    )}
+                    {chainVerify.onChainHash && (
+                      <div className="font-mono text-[11px] break-all">
+                        On-Chain recordHash: {chainVerify.onChainHash}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Collapsible Technical Details */}
                 {techDetailsOpen && (

@@ -46,6 +46,7 @@ export interface Allocation {
 
 export interface DonationTrace {
   id: string;
+  lotId?: string;
   receiptCode: string;
   sourceRef: string;
   channel: Channel;
@@ -172,4 +173,63 @@ export interface QuarterlyReport {
   periodRoot: string;
   canonicalJson: any;
   createdAt: string;
+}
+
+export interface UploadedCaseEvidence {
+  evidenceCid: string;
+  evidenceHash: string;
+  size: number;
+  pinnedAt: string;
+}
+
+export interface BenfordDigitStat {
+  observed: number;
+  expected: number;
+  observedPct: number;
+  expectedPct: number;
+}
+
+export interface BenfordSampleResult {
+  isAnomalous: boolean;
+  sampleSize: number;
+  chiSquare: number;
+  criticalValue?: number;
+  distribution?: Record<string, BenfordDigitStat>;
+}
+
+export interface BenfordAnalysisResponse {
+  disbursements: BenfordSampleResult;
+  donations: BenfordSampleResult;
+  combined: BenfordSampleResult;
+  criticalValue: number;
+  expectedDistribution: { digit: number; expectedPct: number }[];
+}
+
+export interface ForensicRuleConfig {
+  id: string;
+  name: string;
+  description: string;
+  severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' | string;
+  isEnabled: boolean;
+  phase?: number;
+  thresholdParams?: Record<string, any> | null;
+}
+
+export interface BankReconciliationReport {
+  matchedCount: number;
+  unmatchedStatementCount: number;
+  unmatchedDepositCount: number;
+  matched: { statementLineId: string; depositId: string }[];
+  unmatchedStatementLines: {
+    id: string;
+    reference: string;
+    amountMinor: string;
+    statementDate: string;
+  }[];
+  unmatchedLedgerDeposits: {
+    id: string;
+    reference: string;
+    amountMinor: string;
+    createdAt: string;
+  }[];
 }

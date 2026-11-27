@@ -8,6 +8,7 @@ import {
   caseDecisionSchema,
   authorizeReleaseSchema,
   recordDisbursementSchema,
+  uploadCaseEvidenceSchema,
 } from './cases.validation.js';
 import { authorize } from '../../middleware/authorize.js';
 import { PERMISSIONS } from '../../constants/permissions.js';
@@ -99,6 +100,20 @@ export function createCasesRouter(service = casesService) {
       try {
         const updated = await service.authorizeRelease(req.params.id, req.body, req.auth.user.id);
         res.status(200).json({ case: updated });
+      } catch (err) {
+        next(err);
+      }
+    }
+  );
+
+  router.post(
+    '/:id/evidence',
+    authorize(PERMISSIONS.DISBURSEMENT_CREATE),
+    validateRequest({ body: uploadCaseEvidenceSchema }),
+    async (req, res, next) => {
+      try {
+        const result = await service.uploadEvidence(req.params.id, req.body, req.auth.user.id);
+        res.status(201).json(result);
       } catch (err) {
         next(err);
       }

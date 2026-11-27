@@ -1,14 +1,18 @@
 import type {
-  DonationTrace,
-  CaseRecord,
-  ForensicAlert,
-  TransparencyStats,
-  NeedCategory,
-  RecognitionEntry,
-  DonorClaimProfile,
-  DisplayMode,
   BankDeposit,
+  BankReconciliationReport,
+  BenfordAnalysisResponse,
+  CaseRecord,
+  DisplayMode,
+  DonationTrace,
+  DonorClaimProfile,
+  ForensicAlert,
+  ForensicRuleConfig,
+  NeedCategory,
   QuarterlyReport,
+  RecognitionEntry,
+  TransparencyStats,
+  UploadedCaseEvidence,
 } from '@/types';
 
 const API_BASE = (import.meta.env?.VITE_API_BASE_URL ?? '/api/v1').replace(/\/$/, '');
@@ -93,6 +97,7 @@ export const api = {
 
       return {
         id: data.receiptCode,
+        lotId: data.lotId || undefined,
         receiptCode: data.receiptCode,
         sourceRef: data.recordHash || data.receiptCode,
         channel: data.channel || 'MPESA',
@@ -281,13 +286,22 @@ export const api = {
   },
 
   // Committee Decisions
-  approveCase: async (caseId: string, approvedAmountMinor: number, approverId: string): Promise<CaseRecord> => {
+  decideCase: async (
+    caseId: string,
+    payload: {
+      decision: 'APPROVED' | 'REJECTED' | 'NEEDS_INFO' | 'UNDER_REVIEW';
+      approvedAmountMinor?: number;
+      notes?: string;
+    }
+  ): Promise<CaseRecord> => {
     const data = await fetchApi<{ case: any }>(`/api/v1/cases/${caseId}/decision`, {
       method: 'POST',
       body: JSON.stringify({
-        decision: 'APPROVED',
-        approvedAmount: (approvedAmountMinor / 100).toFixed(2),
-        notes: `Approved by committee member ${approverId}`,
+        decision: payload.decision,
+        ...(payload.decision === 'APPROVED' && payload.approvedAmountMinor
+          ? { approvedAmount: (payload.approvedAmountMinor / 100).toFixed(2) }
+          : {}),
+        ...(payload.notes?.trim() ? { notes: payload.notes.trim() } : {}),
       }),
     });
     const c = data.case;
@@ -298,72 +312,55 @@ export const api = {
       subGroupName: 'General Subgroup',
       needCategory: c.needCategory,
       requestedAmountMinor: Number(c.requestedAmountMinor || 0),
-      approvedAmountMinor: Number(c.approvedAmountMinor || approvedAmountMinor),
+      approvedAmountMinor: c.approvedAmountMinor ? Number(c.approvedAmountMinor) : undefined,
       state: c.state || c.status,
-      justification: 'Approved',
+      justification: payload.notes?.trim() || c.justification || payload.decision,
       signatorySignatures: [],
       submitterId: c.createdByUserId,
       createdAt: c.createdAt,
       updatedAt: c.updatedAt,
     };
+  },
+
+  approveCase: async (caseId: string, approvedAmountMinor: number, approverId: string): Promise<CaseRecord> => {
+    return api.decideCase(caseId, {
+      decision: 'APPROVED',
+      approvedAmountMinor,
+      notes: `Approved by committee member ${approverId}`,
+    });
   },
 
   rejectCase: async (caseId: string, reason: string): Promise<CaseRecord> => {
-    const data = await fetchApi<{ case: any }>(`/api/v1/cases/${caseId}/decision`, {
-      method: 'POST',
-      body: JSON.stringify({
-        decision: 'REJECTED',
-        notes: reason,
-      }),
+    return api.decideCase(caseId, {
+      decision: 'REJECTED',
+      notes: reason,
     });
-    const c = data.case;
-    return {
-      id: c.id,
-      caseNumber: c.caseNumber,
-      subGroupId: c.subGroupId,
-      subGroupName: 'General Subgroup',
-      needCategory: c.needCategory,
-      requestedAmountMinor: Number(c.requestedAmountMinor || 0),
-      state: c.state || c.status,
-      justification: reason,
-      signatorySignatures: [],
-      submitterId: c.createdByUserId,
-      createdAt: c.createdAt,
-      updatedAt: c.updatedAt,
-    };
   },
 
-  // Signatory Sign Action (EIP-712 2-of-3 Release)
+  // Signatory Sign Action (EIP-712 2-of-3 Release — real Web3.js signature only)
   signReleaseAuthorization: async (
     caseId: string,
-    payload:
-      | string
-      | {
-          signer: string;
-          signature: string;
-          amountMinor: number;
-          nonce?: number;
-          deadline?: number;
-          signMethod?: 'METAMASK_EIP712' | 'DEMO_SIGNATORY';
-        }
+    payload: {
+      signer: string;
+      signature: string;
+      amountMinor: number;
+      nonce?: number;
+      deadline?: number;
+      chainId?: number;
+      verifyingContract?: string;
+      signMethod?: 'METAMASK_EIP712';
+    }
   ): Promise<CaseRecord> => {
-    const body =
-      typeof payload === 'string'
-        ? {
-            signer: payload,
-            signature: `0x${payload.replace(/^0x/, '').padEnd(130, 'a').slice(0, 130)}`,
-            nonce: 0,
-            deadline: Math.floor(Date.now() / 1000) + 7 * 86400,
-            signMethod: 'DEMO_SIGNATORY' as const,
-          }
-        : {
-            signer: payload.signer,
-            signature: payload.signature,
-            amountMinor: payload.amountMinor,
-            nonce: payload.nonce ?? 0,
-            deadline: payload.deadline ?? Math.floor(Date.now() / 1000) + 7 * 86400,
-            signMethod: payload.signMethod ?? 'METAMASK_EIP712',
-          };
+    const body = {
+      signer: payload.signer,
+      signature: payload.signature,
+      amountMinor: payload.amountMinor,
+      nonce: payload.nonce ?? 0,
+      deadline: payload.deadline ?? Math.floor(Date.now() / 1000) + 7 * 86400,
+      ...(payload.chainId ? { chainId: payload.chainId } : {}),
+      ...(payload.verifyingContract ? { verifyingContract: payload.verifyingContract } : {}),
+      signMethod: payload.signMethod ?? 'METAMASK_EIP712',
+    };
 
     const data = await fetchApi<{ case: any }>(`/api/v1/cases/${caseId}/authorize`, {
       method: 'POST',
@@ -387,20 +384,43 @@ export const api = {
     };
   },
 
+  // Upload & Encrypt Receipt Evidence to IPFS
+  uploadCaseEvidence: async (
+    caseId: string,
+    payload: {
+      filename: string;
+      mimeType: string;
+      base64Content: string;
+      notes?: string;
+    }
+  ): Promise<UploadedCaseEvidence> => {
+    return fetchApi<UploadedCaseEvidence>(`/api/v1/cases/${caseId}/evidence`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
   // Record Disbursement
   recordDisbursement: async (
     caseId: string,
-    amountMinor: number,
-    methodRef: string,
-    evidenceCid: string
+    payload: {
+      amountMinor: number;
+      method: 'MPESA' | 'BANK' | 'CASH' | 'DIRECT_INSTITUTION' | 'ITEMS';
+      methodReference: string;
+      evidenceCid: string;
+      evidenceHash?: string;
+      notes?: string;
+    }
   ): Promise<CaseRecord> => {
     const data = await fetchApi<{ case: any }>(`/api/v1/cases/${caseId}/disburse`, {
       method: 'POST',
       body: JSON.stringify({
-        amount: (amountMinor / 100).toFixed(2),
-        method: 'MPESA',
-        methodReference: methodRef,
-        evidenceCid,
+        amount: (payload.amountMinor / 100).toFixed(2),
+        method: payload.method,
+        methodReference: payload.methodReference,
+        evidenceCid: payload.evidenceCid,
+        ...(payload.evidenceHash ? { evidenceHash: payload.evidenceHash } : {}),
+        ...(payload.notes ? { notes: payload.notes } : {}),
       }),
     });
     const c = data.case;
@@ -412,12 +432,12 @@ export const api = {
       needCategory: c.needCategory,
       requestedAmountMinor: Number(c.requestedAmountMinor || 0),
       approvedAmountMinor: c.approvedAmountMinor ? Number(c.approvedAmountMinor) : undefined,
-      disbursedAmountMinor: Number(c.disbursedAmountMinor || amountMinor),
+      disbursedAmountMinor: Number(c.disbursedAmountMinor || payload.amountMinor),
       state: c.state || c.status,
       justification: 'Disbursed',
       signatorySignatures: [],
       submitterId: c.createdByUserId,
-      evidenceCid,
+      evidenceCid: payload.evidenceCid,
       createdAt: c.createdAt,
       updatedAt: c.updatedAt,
     };
@@ -451,6 +471,37 @@ export const api = {
         status: 'RESOLVED',
       }),
     });
+  },
+
+  runForensicScan: async (): Promise<{
+    rulesRun: number;
+    alertsGeneratedCount: number;
+    alerts: any[];
+  }> => {
+    return fetchApi('/api/v1/alerts/scan', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+  },
+
+  getAlertRules: async (): Promise<ForensicRuleConfig[]> => {
+    const data = await fetchApi<{ items: ForensicRuleConfig[] }>('/api/v1/alerts/rules');
+    return data.items || [];
+  },
+
+  updateAlertRule: async (
+    ruleId: string,
+    payload: { isEnabled?: boolean; thresholdParams?: Record<string, any> }
+  ): Promise<ForensicRuleConfig> => {
+    const data = await fetchApi<{ rule: ForensicRuleConfig }>(`/api/v1/alerts/rules/${encodeURIComponent(ruleId)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+    return data.rule;
+  },
+
+  getBenfordAnalysis: async (): Promise<BenfordAnalysisResponse> => {
+    return fetchApi<BenfordAnalysisResponse>('/api/v1/alerts/benford');
   },
 
   getInKindItems: async (): Promise<any[]> => {
@@ -621,6 +672,7 @@ export const api = {
     donorIdentity: string;
     amount: number;
     currency?: string;
+    fxRate?: number;
     earmark?: NeedCategory;
   }): Promise<any> => {
     return fetchApi('/api/v1/donations/bank', {
@@ -632,8 +684,23 @@ export const api = {
   verifyBankDeposit: async (id: string, earmark?: NeedCategory): Promise<any> => {
     return fetchApi(`/api/v1/donations/bank/${id}/verify`, {
       method: 'POST',
-      body: JSON.stringify({ earmark }),
+      body: JSON.stringify(earmark ? { earmark } : {}),
     });
+  },
+
+  importBankStatementCsv: async (
+    csv: string
+  ): Promise<{ importedCount: number; lines: any[] }> => {
+    return fetchApi('/api/v1/donations/bank/statements/import', {
+      method: 'POST',
+      body: JSON.stringify({ csv }),
+    });
+  },
+
+  reconcileBankStatements: async (windowDays = 7): Promise<BankReconciliationReport> => {
+    return fetchApi<BankReconciliationReport>(
+      `/api/v1/donations/bank/reconciliation?windowDays=${encodeURIComponent(String(windowDays))}`
+    );
   },
 
   // Fund Flow Graph
@@ -669,6 +736,26 @@ export const api = {
       return [];
     }
   },
+
+  generateQuarterlyReport: async (year: number, quarter: number): Promise<QuarterlyReport> => {
+    const data = await fetchApi<{ report: any }>('/api/v1/reports/quarterly', {
+      method: 'POST',
+      body: JSON.stringify({ year, quarter }),
+    });
+    return {
+      id: data.report.id,
+      year: data.report.year,
+      quarter: data.report.quarter,
+      version: data.report.version || 1,
+      reportHash: data.report.reportHash,
+      periodRoot: data.report.periodRoot,
+      canonicalJson: data.report.canonicalJson,
+      createdAt: data.report.createdAt,
+    };
+  },
+
+  getReportPdfUrl: (reportId: string): string =>
+    resolveApiUrl(`/api/v1/public/reports/${encodeURIComponent(reportId)}/pdf`),
 
   // Donor Registration & Auth
   register: async (data: { name: string; email: string; password: string }): Promise<{

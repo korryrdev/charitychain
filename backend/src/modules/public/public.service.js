@@ -35,7 +35,7 @@ export class PublicService {
 
     if (!lot) return null;
 
-    const [pref, badge] = await Promise.all([
+    const [pref, badge, anchor] = await Promise.all([
       prisma.donorPreferenceEvent.findFirst({
         where: { donorRef: lot.donorRef },
         orderBy: { createdAt: 'desc' },
@@ -43,6 +43,13 @@ export class PublicService {
       prisma.donorBadgeAward.findFirst({
         where: { donorRef: lot.donorRef, isRevoked: false },
         orderBy: { awardedAt: 'desc' },
+      }),
+      prisma.blockchainAnchor.findFirst({
+        where: {
+          OR: [{ subjectKey: `DONATION:${lot.id}` }, { commitment: lot.sourceRefHash }],
+          status: { in: ['SUBMITTED', 'CONFIRMED'] },
+        },
+        orderBy: { createdAt: 'desc' },
       }),
     ]);
 
@@ -66,6 +73,7 @@ export class PublicService {
     }
 
     return {
+      lotId: lot.id,
       receiptCode: lot.receiptCode,
       status,
       amountMinor: lot.totalAmountMinor,
@@ -85,8 +93,8 @@ export class PublicService {
         caseCategory: a.case.needCategory,
       })),
       recordHash: lot.sourceRefHash,
-      txHash: null,
-      blockNumber: null,
+      txHash: anchor?.transactionHash ?? null,
+      blockNumber: anchor?.blockNumber ? Number(anchor.blockNumber) : null,
     };
   }
 

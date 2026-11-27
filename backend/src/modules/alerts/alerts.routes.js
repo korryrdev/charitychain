@@ -67,6 +67,19 @@ export function createAlertsRouter(service = alertsService) {
   );
 
   router.get(
+    '/benford',
+    authorize(PERMISSIONS.ALERT_READ),
+    async (_req, res, next) => {
+      try {
+        const analysis = await service.getBenfordAnalysis();
+        res.status(200).json(analysis);
+      } catch (err) {
+        next(err);
+      }
+    }
+  );
+
+  router.get(
     '/:id',
     authorize(PERMISSIONS.ALERT_READ),
     async (req, res, next) => {

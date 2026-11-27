@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import Web3 from 'web3';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { fetchRegisteredSignatories } from '@/lib/web3Verify';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { StatusChip } from '@/components/StatusChip';
@@ -13,40 +14,22 @@ import {
   Lock,
   FileCode,
   X,
-  ChevronDown,
   PlugZap,
   ShieldCheck,
+  AlertTriangle,
 } from 'lucide-react';
 import type { CaseRecord } from '@/types';
 
-interface SignatoryAccount {
-  name: string;
-  address: string;
-  title: string;
-}
-
-const SIGNATORIES: SignatoryAccount[] = [
-  {
-    name: 'Wanjiku Mwangi',
-    address: '0x90F79bf6EB2c4f870365E785982E1f101E93b906',
-    title: 'Malkia Executive Chair (Signatory 1)',
-  },
-  {
-    name: 'Kevin Otieno',
-    address: '0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65',
-    title: 'Malkia Executive Treasurer (Signatory 2)',
-  },
-  {
-    name: 'Dr. Amina Hassan',
-    address: '0x2546BcD3c84621e976D8185a91A922aE77ECEc30',
-    title: 'Staff Representative (Signatory 3)',
-  },
-];
-
 const ZERO_CONTRACT_FALLBACK = '0x0000000000000000000000000000000000000001';
 
-function buildEip712TypedData(c: CaseRecord, chainId: number, verifyingContract: string, nonce: number, deadline: number) {
-  const caseIdBytes32 = Web3.utils.keccak256(`malkia:v1:case:${c.id}`);
+function buildEip712TypedData(
+  c: CaseRecord,
+  chainId: number,
+  verifyingContract: string,
+  nonce: number,
+  deadline: number
+) {
+  const caseIdBytes32 = Web3.utils.keccak256(`malkia:v1:case:${c.id.toLowerCase()}`);
   const amountMinor = Number(c.approvedAmountMinor || c.requestedAmountMinor);
 
   return {
@@ -82,10 +65,10 @@ function buildEip712TypedData(c: CaseRecord, chainId: number, verifyingContract:
 
 export const SigningQueuePage: React.FC = () => {
   const queryClient = useQueryClient();
-  const [signingMode, setSigningMode] = useState<'DEMO' | 'METAMASK'>('DEMO');
-  const [activeSignatory, setActiveSignatory] = useState<SignatoryAccount>(SIGNATORIES[0]);
   const [connectedWallet, setConnectedWallet] = useState<string | null>(null);
-  const [connectedChainId, setConnectedChainId] = useState<number>(80002);
+  const [connectedChainId, setConnectedChainId] = useState<number>(
+    Number(import.meta.env?.VITE_CHAIN_ID || 80002)
+  );
   const [lastSignatureHex, setLastSignatureHex] = useState<string | null>(null);
   const [walletError, setWalletError] = useState<string | null>(null);
   const [signingModalCase, setSigningModalCase] = useState<CaseRecord | null>(null);
@@ -98,13 +81,10 @@ export const SigningQueuePage: React.FC = () => {
   const verifyingContract =
     (import.meta.env?.VITE_CASE_WORKFLOW_ADDRESS as string | undefined) || ZERO_CONTRACT_FALLBACK;
 
-  const activeAddress =
-    signingMode === 'METAMASK' && connectedWallet ? connectedWallet : activeSignatory.address;
-
-  const activeLabel =
-    signingMode === 'METAMASK' && connectedWallet
-      ? `Connected MetaMask Wallet (Web3.js)`
-      : activeSignatory.name;
+  const { data: registryInfo } = useQuery({
+    queryKey: ['signatory-registry'],
+    queryFn: () => fetchRegisteredSignatories(),
+  });
 
   const { data: cases = [], isLoading } = useQuery({
     queryKey: ['cases'],
@@ -113,11 +93,22 @@ export const SigningQueuePage: React.FC = () => {
 
   const signingCases = cases.filter((c) => c.state === 'APPROVED' || c.state === 'AUTHORIZED');
 
+  const isRegisteredOnChain = useMemo(() => {
+    if (!connectedWallet || !registryInfo?.configured || !registryInfo.signatories.length) {
+      return null;
+    }
+    return registryInfo.signatories.some(
+      (addr) => addr.toLowerCase() === connectedWallet.toLowerCase()
+    );
+  }, [connectedWallet, registryInfo]);
+
   const connectMetaMask = async () => {
     setWalletError(null);
     const ethereum = (window as unknown as { ethereum?: any }).ethereum;
     if (!ethereum) {
-      setWalletError('No MetaMask/EIP-1193 wallet detected in this browser. Use Demo Signatory Mode below.');
+      setWalletError(
+        'No EIP-1193 browser wallet (MetaMask, Rabby, or hardware bridge) detected in this browser.'
+      );
       return;
     }
     try {
@@ -130,9 +121,8 @@ export const SigningQueuePage: React.FC = () => {
       const chainId = Number(await web3.eth.getChainId());
       setConnectedWallet(Web3.utils.toChecksumAddress(accounts[0]));
       setConnectedChainId(chainId);
-      setSigningMode('METAMASK');
-    } catch (err: any) {
-      setWalletError(err?.message || 'Could not connect browser wallet.');
+    } catch (err: unknown) {
+      setWalletError(err instanceof Error ? err.message : 'Could not connect browser wallet.');
     }
   };
 
@@ -149,6 +139,14 @@ export const SigningQueuePage: React.FC = () => {
 
   const signMutation = useMutation({
     mutationFn: async (targetCase: CaseRecord) => {
+      if (!connectedWallet) {
+        throw new Error('Connect a signatory wallet via MetaMask/EIP-1193 before signing.');
+      }
+      const ethereum = (window as unknown as { ethereum?: any }).ethereum;
+      if (!ethereum) {
+        throw new Error('Browser wallet is not connected.');
+      }
+
       setIsSigningLive(true);
       setWalletError(null);
 
@@ -162,35 +160,21 @@ export const SigningQueuePage: React.FC = () => {
         deadline
       );
 
-      let signatureHex: string;
-      let signer = activeAddress;
-      let signMethod: 'METAMASK_EIP712' | 'DEMO_SIGNATORY' = 'DEMO_SIGNATORY';
-
-      if (signingMode === 'METAMASK' && connectedWallet) {
-        const ethereum = (window as unknown as { ethereum?: any }).ethereum;
-        if (!ethereum) {
-          throw new Error('Browser wallet disconnected.');
-        }
-        signatureHex = (await ethereum.request({
-          method: 'eth_signTypedData_v4',
-          params: [connectedWallet, JSON.stringify(typedData)],
-        })) as string;
-        signer = connectedWallet;
-        signMethod = 'METAMASK_EIP712';
-      } else {
-        const digestPart = Web3.utils.keccak256(JSON.stringify(typedData)).slice(2);
-        const signerPart = Web3.utils.keccak256(signer.toLowerCase()).slice(2);
-        signatureHex = `0x${digestPart}${signerPart}1b`;
-      }
+      const signatureHex = (await ethereum.request({
+        method: 'eth_signTypedData_v4',
+        params: [connectedWallet, JSON.stringify(typedData)],
+      })) as string;
 
       setLastSignatureHex(signatureHex);
       return api.signReleaseAuthorization(targetCase.id, {
-        signer,
+        signer: connectedWallet,
         signature: signatureHex,
         amountMinor,
         nonce: 0,
         deadline,
-        signMethod,
+        chainId: connectedChainId,
+        verifyingContract,
+        signMethod: 'METAMASK_EIP712',
       });
     },
     onSuccess: () => {
@@ -198,9 +182,9 @@ export const SigningQueuePage: React.FC = () => {
       setSigningModalCase(null);
       queryClient.invalidateQueries({ queryKey: ['cases'] });
     },
-    onError: (err: any) => {
+    onError: (err: unknown) => {
       setIsSigningLive(false);
-      setWalletError(err?.message || 'Signature failed');
+      setWalletError(err instanceof Error ? err.message : 'EIP-712 signature failed.');
     },
   });
 
@@ -226,7 +210,7 @@ export const SigningQueuePage: React.FC = () => {
         <div className="flex items-center gap-2">
           <Button
             type="button"
-            variant={signingMode === 'METAMASK' ? 'emerald' : 'outline'}
+            variant={connectedWallet ? 'emerald' : 'outline'}
             size="sm"
             onClick={connectMetaMask}
             className="gap-1.5 text-xs"
@@ -236,22 +220,14 @@ export const SigningQueuePage: React.FC = () => {
               ? `MetaMask: ${connectedWallet.slice(0, 6)}...${connectedWallet.slice(-4)}`
               : 'Connect MetaMask (Web3.js)'}
           </Button>
-          {signingMode === 'METAMASK' && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setSigningMode('DEMO')}
-              className="text-xs"
-            >
-              Demo Mode
-            </Button>
-          )}
         </div>
       </div>
 
       {walletError && (
-        <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-300">
+        <div
+          role="alert"
+          className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-300"
+        >
           {walletError}
         </div>
       )}
@@ -273,40 +249,34 @@ export const SigningQueuePage: React.FC = () => {
             </div>
             <div>
               <span className="text-xs text-zinc-500 block">
-                {signingMode === 'METAMASK'
-                  ? `Active MetaMask Wallet (Chain ID ${connectedChainId})`
-                  : 'Demo Signatory Mode (No Wallet Required)'}
+                {connectedWallet
+                  ? `Connected EIP-1193 Signatory Wallet (Chain ID ${connectedChainId})`
+                  : hasBrowserProvider
+                    ? 'Wallet Detected — Connect MetaMask to Authorize Releases'
+                    : 'No Browser Wallet Extension Detected'}
               </span>
               <span className="font-bold text-sm text-zinc-900 dark:text-zinc-100">
-                {activeLabel}
+                {connectedWallet ? 'Hardware / Extension Signer Ready' : 'Wallet Connection Required'}
               </span>
-              <span className="font-mono text-xs text-zinc-500 dark:text-zinc-400 block">
-                {activeAddress}
-              </span>
+              {connectedWallet && (
+                <span className="font-mono text-xs text-zinc-500 dark:text-zinc-400 block">
+                  {connectedWallet}
+                </span>
+              )}
             </div>
           </div>
 
-          {signingMode === 'DEMO' && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-zinc-500 font-medium">Demo Signatory:</span>
-              <div className="relative">
-                <select
-                  value={activeSignatory.address}
-                  onChange={(e) => {
-                    const found = SIGNATORIES.find((s) => s.address === e.target.value);
-                    if (found) setActiveSignatory(found);
-                  }}
-                  className="text-xs font-semibold rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 py-1.5 px-3 pr-8 appearance-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-600"
-                >
-                  {SIGNATORIES.map((s) => (
-                    <option key={s.address} value={s.address}>
-                      {s.title}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="w-3.5 h-3.5 text-zinc-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              </div>
-            </div>
+          {isRegisteredOnChain === false && (
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-3 py-1.5 rounded-lg border border-amber-200 dark:border-amber-800">
+              <AlertTriangle className="w-4 h-4" />
+              Wallet not in on-chain SignatoryRegistry
+            </span>
+          )}
+          {isRegisteredOnChain === true && (
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-3 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800">
+              <ShieldCheck className="w-4 h-4" />
+              Verified on SignatoryRegistry
+            </span>
           )}
         </CardContent>
       </Card>
@@ -320,8 +290,11 @@ export const SigningQueuePage: React.FC = () => {
       ) : (
         <div className="space-y-4">
           {signingCases.map((c) => {
-            const hasSigned = c.signatorySignatures.some(
-              (s) => s.signer.toLowerCase() === activeAddress.toLowerCase()
+            const hasSigned = Boolean(
+              connectedWallet &&
+                c.signatorySignatures.some(
+                  (s) => s.signer.toLowerCase() === connectedWallet.toLowerCase()
+                )
             );
             const isAuthorized = c.state === 'AUTHORIZED';
 
@@ -361,8 +334,10 @@ export const SigningQueuePage: React.FC = () => {
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                       {c.signatorySignatures.map((sig, idx) => {
-                        const isCurrentActive =
-                          sig.signer.toLowerCase() === activeAddress.toLowerCase();
+                        const isCurrentActive = Boolean(
+                          connectedWallet &&
+                            sig.signer.toLowerCase() === connectedWallet.toLowerCase()
+                        );
                         return (
                           <span
                             key={`${sig.signer}-${idx}`}
@@ -392,7 +367,7 @@ export const SigningQueuePage: React.FC = () => {
                       </span>
                     ) : hasSigned ? (
                       <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-3 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800">
-                        ✓ {activeLabel} has signed (switch wallet/signatory for 2nd signature)
+                        Signed by connected wallet (switch wallet for 2nd signature)
                       </span>
                     ) : (
                       <Button
@@ -465,19 +440,15 @@ export const SigningQueuePage: React.FC = () => {
               </div>
 
               <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-[11px] text-emerald-900 dark:text-emerald-200 font-sans">
-                {signingMode === 'METAMASK' ? (
+                {connectedWallet ? (
                   <span>
                     Will invoke <code className="font-mono">eth_signTypedData_v4</code> via{' '}
                     <strong>Web3.js</strong> using connected wallet{' '}
-                    <strong className="font-mono">{activeAddress}</strong>.
+                    <strong className="font-mono">{connectedWallet}</strong>.
                   </span>
                 ) : (
                   <span>
-                    Demo Signatory: <strong className="font-mono">{activeAddress}</strong> (
-                    {activeLabel}).{' '}
-                    {hasBrowserProvider
-                      ? 'Switch to MetaMask above for live hardware/extension signing.'
-                      : 'MetaMask not detected; running in Demo Signatory Mode.'}
+                    Connect your MetaMask/EIP-1193 wallet first to sign this typed payload.
                   </span>
                 )}
               </div>
@@ -490,12 +461,13 @@ export const SigningQueuePage: React.FC = () => {
               <Button
                 variant="emerald"
                 size="sm"
+                disabled={!connectedWallet}
                 onClick={confirmSignature}
                 isLoading={isSigningLive}
                 className="gap-1.5"
               >
                 <KeyRound className="w-4 h-4" />
-                {signingMode === 'METAMASK' ? 'Sign with MetaMask' : 'Confirm Demo Signature'}
+                Sign with MetaMask
               </Button>
             </CardFooter>
           </Card>

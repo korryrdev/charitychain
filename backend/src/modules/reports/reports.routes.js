@@ -2,6 +2,7 @@
 
 import { Router } from 'express';
 import { reportsService } from './reports.service.js';
+import { renderQuarterlyReportPdf } from './reportPdf.service.js';
 import { authorize } from '../../middleware/authorize.js';
 import { PERMISSIONS } from '../../constants/permissions.js';
 
@@ -34,6 +35,21 @@ export function createReportsRouter(service = reportsService) {
       }
     }
   );
+
+  router.get('/:id/pdf', async (req, res, next) => {
+    try {
+      const report = await service.getReport(req.params.id);
+      const pdfBuffer = renderQuarterlyReportPdf(report);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="charitychain-report-${report.year}-Q${report.quarter}-v${report.version}.pdf"`
+      );
+      res.status(200).send(pdfBuffer);
+    } catch (err) {
+      next(err);
+    }
+  });
 
   router.get('/:id', async (req, res, next) => {
     try {

@@ -252,6 +252,7 @@ export const routeConfig = Object.freeze([
     ),
     children: [
       { index: true, element: createElement(FinanceDashboardPage) },
+      { path: 'bank-deposits', element: createElement(BankDepositsPage) },
       { path: 'disbursements', element: createElement(ApprovedDisbursementsPage) },
       { path: 'disbursements/:disbursementId', element: createElement(PayoutDetailPage) },
       { path: 'exceptions', element: createElement(PaymentExceptionsPage) },

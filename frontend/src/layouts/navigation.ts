@@ -58,6 +58,12 @@ export const NAVIGATION: Readonly<Record<'community' | 'student' | 'operations' 
         icon: 'fa-building-columns',
         permissions: ['disbursement:create', 'disbursement:execute', 'disbursement:read', 'reconciliation:execute', 'reconciliation:read'],
       },
+      {
+        to: '/finance/bank-deposits',
+        label: 'Bank deposits & CSV',
+        icon: 'fa-building-columns',
+        permissions: ['bank-deposit:create', 'bank-deposit:verify', 'donation:read:all'],
+      },
       { to: '/finance/disbursements', label: 'Disbursements', icon: 'fa-money-bill-transfer', permissions: ['disbursement:read'] },
       { to: '/finance/exceptions', label: 'Payment exceptions', icon: 'fa-triangle-exclamation', roles: ['FINANCE_OPERATOR', 'TREASURER'] },
       { to: '/finance/reconciliation', label: 'Reconciliation', icon: 'fa-scale-balanced', permissions: ['reconciliation:read'] },

@@ -1,12 +1,97 @@
 'use strict';
 
+import { createHash } from 'node:crypto';
+import Web3 from 'web3';
 import { prisma } from '@charitychain/database';
 import { toMinorUnits } from '../../utils/money.js';
+import { canonicalJson } from '../../utils/canonicalJson.js';
 import { encryptString, decryptString, blindIndex } from '../../security/encryption.js';
 import { assertSegregation, assertState } from '../../utils/assertions.js';
 import { lotsService } from '../lots/lots.service.js';
+import { evidenceEncryptionService } from '../evidence/evidenceEncryption.service.js';
+import { uploadToIpfs } from '../../integrations/ipfs/ipfsUploader.js';
+import { AppError } from '../../errors/AppError.js';
+import { ERROR_CODES } from '../../errors/errorCodes.js';
 import { ConflictError } from '../../errors/ConflictError.js';
 import { ValidationError } from '../../errors/ValidationError.js';
+
+const web3Instance = new Web3();
+const EIP712_DOMAIN_TYPEHASH = Web3.utils.keccak256(
+  'EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)'
+);
+const RELEASE_AUTH_TYPEHASH = Web3.utils.keccak256(
+  'ReleaseAuthorization(bytes32 caseId,uint64 amountMinor,uint64 nonce,uint64 deadline)'
+);
+const CASE_WORKFLOW_NAME_HASH = Web3.utils.keccak256('CharityChain CaseWorkflow');
+const CASE_WORKFLOW_VERSION_HASH = Web3.utils.keccak256('1');
+const DEFAULT_VERIFYING_CONTRACT =
+  process.env.CASE_WORKFLOW_ADDRESS || '0x0000000000000000000000000000000000000001';
+
+export function computeReleaseAuthDigest({
+  caseId,
+  amountMinor,
+  nonce = 0,
+  deadline,
+  chainId = Number(process.env.CHAIN_ID || 80002),
+  verifyingContract = DEFAULT_VERIFYING_CONTRACT,
+}) {
+  const caseIdBytes32 = Web3.utils.keccak256(`malkia:v1:case:${String(caseId).toLowerCase()}`);
+  const domainSeparator = Web3.utils.keccak256(
+    web3Instance.eth.abi.encodeParameters(
+      ['bytes32', 'bytes32', 'bytes32', 'uint256', 'address'],
+      [
+        EIP712_DOMAIN_TYPEHASH,
+        CASE_WORKFLOW_NAME_HASH,
+        CASE_WORKFLOW_VERSION_HASH,
+        BigInt(chainId),
+        verifyingContract,
+      ]
+    )
+  );
+  const structHash = Web3.utils.keccak256(
+    web3Instance.eth.abi.encodeParameters(
+      ['bytes32', 'bytes32', 'uint64', 'uint64', 'uint64'],
+      [RELEASE_AUTH_TYPEHASH, caseIdBytes32, BigInt(amountMinor), BigInt(nonce), BigInt(deadline)]
+    )
+  );
+  return Web3.utils.keccak256(`0x1901${domainSeparator.slice(2)}${structHash.slice(2)}`);
+}
+
+export function recoverReleaseSigner(digest, signature) {
+  try {
+    return web3Instance.eth.accounts.recover(digest, signature, true);
+  } catch {
+    throw new ValidationError('Invalid EIP-712 release authorization signature.');
+  }
+}
+
+function extractCaseMetadata(events = []) {
+  const ordered = [...events].sort(
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+  );
+  const signatorySignatures = [];
+  let evidenceCid;
+
+  for (const ev of ordered) {
+    if (ev.toState === 'APPROVED' && ev.payload?.signer) {
+      const addr = String(ev.payload.signer);
+      if (!signatorySignatures.some((s) => s.signer.toLowerCase() === addr.toLowerCase())) {
+        signatorySignatures.push({ signer: addr, signedAt: ev.createdAt });
+      }
+    } else if (ev.toState === 'AUTHORIZED' && Array.isArray(ev.payload?.signers)) {
+      for (const addr of ev.payload.signers) {
+        if (addr && !signatorySignatures.some((s) => s.signer.toLowerCase() === String(addr).toLowerCase())) {
+          signatorySignatures.push({ signer: String(addr), signedAt: ev.createdAt });
+        }
+      }
+    }
+    if (ev.payload?.evidenceCid) {
+      evidenceCid = String(ev.payload.evidenceCid);
+    }
+  }
+
+  return { signatorySignatures, evidenceCid };
+}
 
 export class CasesService {
   async createCase({ subGroupId, studentName, studentRegNo, studentPhone, needCategory, requestedAmount, justification, hasConsent = true, createdByUserId }) {
@@ -187,7 +272,17 @@ export class CasesService {
 
   async authorizeRelease(
     caseId,
-    { amountMinor, nonce = 0, deadline, signatures, signer, signature, signMethod },
+    {
+      amountMinor,
+      nonce = 0,
+      deadline,
+      chainId,
+      verifyingContract,
+      signatures,
+      signer,
+      signature,
+      signMethod,
+    },
     actorUserId
   ) {
     const malkiaCase = await prisma.malkiaCase.findUnique({
@@ -199,6 +294,20 @@ export class CasesService {
 
     const effectiveAmountMinor = amountMinor ?? malkiaCase.approvedAmountMinor;
     const effectiveDeadline = deadline ?? Math.floor(Date.now() / 1000) + 7 * 86400;
+    if (Number(effectiveDeadline) <= Math.floor(Date.now() / 1000)) {
+      throw new ValidationError('Release authorization signature has expired.');
+    }
+
+    const effectiveChainId = chainId ?? Number(process.env.CHAIN_ID || 80002);
+    const effectiveVerifyingContract = verifyingContract ?? DEFAULT_VERIFYING_CONTRACT;
+    const digest = computeReleaseAuthDigest({
+      caseId,
+      amountMinor: effectiveAmountMinor,
+      nonce,
+      deadline: effectiveDeadline,
+      chainId: effectiveChainId,
+      verifyingContract: effectiveVerifyingContract,
+    });
 
     let finalSignatures = signatures;
     let finalSigners = [];
@@ -207,7 +316,12 @@ export class CasesService {
       if (!signer || !signature) {
         throw new ValidationError('2 valid signatory signatures are required for release authorization.');
       }
-      const normalizedSigner = signer.toLowerCase();
+      const recovered = recoverReleaseSigner(digest, signature);
+      if (recovered.toLowerCase() !== signer.toLowerCase()) {
+        throw new ValidationError('EIP-712 signature does not match the claimed signatory wallet address.');
+      }
+
+      const normalizedSigner = recovered.toLowerCase();
       const priorEvents = malkiaCase.events.filter(
         (e) => e.fromState === 'APPROVED' && e.toState === 'APPROVED' && e.payload?.signer
       );
@@ -221,13 +335,15 @@ export class CasesService {
             fromState: 'APPROVED',
             toState: 'APPROVED',
             actorUserId,
-            notes: `EIP-712 release signature 1 of 2 collected from ${signer}.`,
+            notes: `EIP-712 release signature 1 of 2 collected from ${recovered}.`,
             payload: {
-              signer,
+              signer: recovered,
               signature,
               signMethod: signMethod || 'METAMASK_EIP712',
               nonce,
               deadline: effectiveDeadline,
+              chainId: effectiveChainId,
+              verifyingContract: effectiveVerifyingContract,
             },
           },
         });
@@ -236,7 +352,14 @@ export class CasesService {
 
       const firstSig = priorEvents[0].payload.signature;
       finalSignatures = [firstSig, signature];
-      finalSigners = [priorEvents[0].payload.signer, signer];
+      finalSigners = [priorEvents[0].payload.signer, recovered];
+    } else {
+      const recovered1 = recoverReleaseSigner(digest, finalSignatures[0]);
+      const recovered2 = recoverReleaseSigner(digest, finalSignatures[1]);
+      if (recovered1.toLowerCase() === recovered2.toLowerCase()) {
+        throw new ConflictError('Signatures must come from two distinct signatories.');
+      }
+      finalSigners = [recovered1, recovered2];
     }
 
     if (finalSignatures.length !== 2) {
@@ -264,6 +387,8 @@ export class CasesService {
           signMethod: signMethod || 'METAMASK_EIP712',
           nonce,
           deadline: effectiveDeadline,
+          chainId: effectiveChainId,
+          verifyingContract: effectiveVerifyingContract,
         },
       },
     });
@@ -278,6 +403,7 @@ export class CasesService {
           caseId,
           amountMinor: effectiveAmountMinor.toString(),
           signatures: finalSignatures,
+          signers: finalSigners,
           nonce,
           deadline: effectiveDeadline,
         },
@@ -285,6 +411,53 @@ export class CasesService {
     });
 
     return updated;
+  }
+
+  async uploadEvidence(
+    caseId,
+    { filename, mimeType, base64Content, notes },
+    actorUserId,
+    { uploader = uploadToIpfs, encryption = evidenceEncryptionService } = {}
+  ) {
+    const malkiaCase = await prisma.malkiaCase.findUnique({ where: { id: caseId } });
+    if (!malkiaCase) throw new ConflictError(`Case "${caseId}" not found.`);
+    assertState(malkiaCase.state, ['AUTHORIZED', 'DISBURSED'], 'Case');
+
+    const canonical = canonicalJson({
+      caseId: malkiaCase.id,
+      caseNumber: malkiaCase.caseNumber,
+      filename,
+      mimeType,
+      base64Content,
+      notes: notes || null,
+      uploadedByUserId: actorUserId,
+      uploadedAt: new Date().toISOString(),
+    });
+    const evidenceHash = `0x${createHash('sha256').update(canonical, 'utf8').digest('hex')}`;
+    const encrypted = encryption.encrypt(canonical, evidenceHash);
+    const envelope = { ...encrypted, digest: evidenceHash };
+
+    let uploaded;
+    try {
+      uploaded = await uploader(
+        JSON.stringify(envelope),
+        `${malkiaCase.caseNumber.toLowerCase()}-evidence.enc.json`
+      );
+    } catch (error) {
+      throw new AppError({
+        message: 'Encrypted evidence could not be pinned to IPFS.',
+        code: ERROR_CODES.INTEGRATION_UNAVAILABLE,
+        statusCode: 503,
+        cause: error,
+      });
+    }
+
+    return {
+      evidenceCid: uploaded.cid,
+      evidenceHash,
+      size: uploaded.size,
+      pinnedAt: new Date().toISOString(),
+    };
   }
 
   async disburse(caseId, { amount, method, methodReference, evidenceCid, evidenceHash, notes }, actorUserId) {
@@ -379,6 +552,7 @@ export class CasesService {
 
     return {
       ...malkiaCase,
+      ...extractCaseMetadata(malkiaCase.events),
       student,
       encryptedStudentData: undefined, // Never expose raw encrypted blob
     };
@@ -407,6 +581,7 @@ export class CasesService {
 
     return cases.map((c) => ({
       ...c,
+      ...extractCaseMetadata(c.events),
       encryptedStudentData: undefined,
     }));
   }

@@ -1,2 +1,20 @@
 import { Link } from 'react-router-dom';
-export function FinanceDashboardPage() { return <main className="portal-page finance-page"><p className="section-kicker">Finance operations</p><h1>Execute approved support and reconcile evidence.</h1><p className="portal-page__lead">Finance can create and execute a payout only from a committee-approved application. The amount and destination are derived from the approval; they are not editable here.</p><div className="finance-actions"><Link to="/finance/disbursements">Create or inspect payout</Link><Link to="/finance/exceptions">Payment exceptions</Link><Link to="/finance/reconciliation">Run reconciliation</Link></div></main>; }
+
+export function FinanceDashboardPage() {
+  return (
+    <main className="portal-page finance-page">
+      <p className="section-kicker">Finance operations</p>
+      <h1>Execute approved support and reconcile evidence.</h1>
+      <p className="portal-page__lead">
+        Finance can create and execute a payout only from a committee-approved application. The
+        amount and destination are derived from the approval; they are not editable here.
+      </p>
+      <div className="finance-actions">
+        <Link to="/finance/bank-deposits">Bank deposits &amp; CSV import</Link>
+        <Link to="/finance/disbursements">Create or inspect payout</Link>
+        <Link to="/finance/exceptions">Payment exceptions</Link>
+        <Link to="/finance/reconciliation">Run reconciliation</Link>
+      </div>
+    </main>
+  );
+}

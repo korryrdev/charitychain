@@ -17,6 +17,81 @@ export const BENFORD_PROBABILITIES = Object.freeze({
   9: 0.04576
 });
 
+export const DEFAULT_FORENSIC_RULES = Object.freeze([
+  {
+    id: 'R01',
+    name: 'Disbursement Evidence Completeness',
+    description: 'Flags disbursements recorded without an IPFS evidence CID.',
+    severity: 'HIGH',
+    isEnabled: true,
+    phase: 1,
+    thresholdParams: { requireEvidenceCid: true },
+  },
+  {
+    id: 'R02',
+    name: 'Authorized Ceiling Enforcement',
+    description: 'Detects payouts exceeding committee-approved case ceilings.',
+    severity: 'CRITICAL',
+    isEnabled: true,
+    phase: 1,
+    thresholdParams: { maxOverrunMinor: 0 },
+  },
+  {
+    id: 'R03',
+    name: 'Maker-Checker Segregation',
+    description: 'Flags self-approval or single-actor overrides on cases and deposits.',
+    severity: 'CRITICAL',
+    isEnabled: true,
+    phase: 1,
+    thresholdParams: { strictSegregation: true },
+  },
+  {
+    id: 'R04',
+    name: 'Case Velocity & Split Requests',
+    description: 'Detects rapid repeated case creation below approval thresholds.',
+    severity: 'MEDIUM',
+    isEnabled: true,
+    phase: 1,
+    thresholdParams: { windowHours: 24, maxCasesPerDay: 5 },
+  },
+  {
+    id: 'R05',
+    name: 'Pre-Signatory Quorum Anomaly',
+    description: 'Verifies 2-of-3 distinct EIP-712 signatory authorizations.',
+    severity: 'CRITICAL',
+    isEnabled: true,
+    phase: 1,
+    thresholdParams: { requiredSignatures: 2 },
+  },
+  {
+    id: 'R06',
+    name: 'Duplicate Provider Callback Digest',
+    description: 'Detects replayed webhook payloads or settlement references.',
+    severity: 'HIGH',
+    isEnabled: true,
+    phase: 1,
+    thresholdParams: { blockReplays: true },
+  },
+  {
+    id: 'R07',
+    name: 'Bank Reconciliation Mismatch',
+    description: 'Flags bank statement exceptions or stale unmatched deposits.',
+    severity: 'HIGH',
+    isEnabled: true,
+    phase: 1,
+    thresholdParams: { unmatchedWindowDays: 7 },
+  },
+  {
+    id: 'R08',
+    name: 'Inventory Shrinkage & Unconfirmed Handovers',
+    description: 'Tracks in-kind lot conservation and expired confirmations.',
+    severity: 'HIGH',
+    isEnabled: true,
+    phase: 2,
+    thresholdParams: { maxShrinkagePct: 2 },
+  },
+]);
+
 export class AlertsService {
   async listAlerts({ status, severity, ruleId, page = 1, pageSize = 50 } = {}) {
     const where = {
@@ -99,12 +174,21 @@ export class AlertsService {
   }
 
   async listRules() {
-    return prisma.forensicRuleConfig.findMany({
+    const persisted = await prisma.forensicRuleConfig.findMany({
       orderBy: { id: 'asc' }
     });
+    const byId = new Map(persisted.map((rule) => [rule.id, rule]));
+    const merged = DEFAULT_FORENSIC_RULES.map((def) => byId.get(def.id) ?? def);
+    for (const row of persisted) {
+      if (!DEFAULT_FORENSIC_RULES.some((def) => def.id === row.id)) {
+        merged.push(row);
+      }
+    }
+    return merged.sort((a, b) => a.id.localeCompare(b.id));
   }
 
   async updateRule(ruleId, { isEnabled, thresholdParams }) {
+    const fallback = DEFAULT_FORENSIC_RULES.find((r) => r.id === ruleId);
     return prisma.forensicRuleConfig.upsert({
       where: { id: ruleId },
       update: {
@@ -113,13 +197,41 @@ export class AlertsService {
       },
       create: {
         id: ruleId,
-        name: `Rule ${ruleId}`,
-        description: `Configurable forensic rule ${ruleId}`,
-        severity: 'HIGH',
-        isEnabled: isEnabled ?? true,
-        thresholdParams: thresholdParams ?? {}
+        name: fallback?.name ?? `Rule ${ruleId}`,
+        description: fallback?.description ?? `Configurable forensic rule ${ruleId}`,
+        severity: fallback?.severity ?? 'HIGH',
+        isEnabled: isEnabled ?? fallback?.isEnabled ?? true,
+        thresholdParams: thresholdParams ?? fallback?.thresholdParams ?? {}
       }
     });
+  }
+
+  async getBenfordAnalysis() {
+    const [cases, lots] = await Promise.all([
+      prisma.malkiaCase.findMany({
+        where: { disbursedAmountMinor: { gt: 0n } },
+        select: { disbursedAmountMinor: true }
+      }),
+      prisma.donationLot.findMany({
+        where: { currency: 'KES', totalAmountMinor: { gt: 0n } },
+        select: { totalAmountMinor: true }
+      })
+    ]);
+
+    const disbursementAmounts = cases.map((c) => c.disbursedAmountMinor.toString());
+    const donationAmounts = lots.map((l) => l.totalAmountMinor.toString());
+    const combinedAmounts = [...disbursementAmounts, ...donationAmounts];
+
+    return {
+      disbursements: this.checkBenfordsLaw(disbursementAmounts),
+      donations: this.checkBenfordsLaw(donationAmounts),
+      combined: this.checkBenfordsLaw(combinedAmounts),
+      criticalValue: 15.51,
+      expectedDistribution: Object.entries(BENFORD_PROBABILITIES).map(([digit, prob]) => ({
+        digit: Number(digit),
+        expectedPct: Math.round(prob * 1000) / 10
+      }))
+    };
   }
 
   checkBenfordsLaw(amounts) {
@@ -131,7 +243,7 @@ export class AlertsService {
     let totalValid = 0;
 
     for (const val of amounts) {
-      const numStr = String(val).replace(/[^0-9]/g, '');
+      const numStr = String(val).replace(/[^0-9]/g, '').replace(/^0+/, '');
       const firstDigit = parseInt(numStr[0], 10);
       if (firstDigit >= 1 && firstDigit <= 9) {
         counts[firstDigit]++;
