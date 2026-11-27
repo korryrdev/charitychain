@@ -37,7 +37,7 @@ export const NewCasePage: React.FC = () => {
         subGroupId: effectiveSubGroup || undefined,
         subGroupName: selectedSubgroupObj?.name || 'Campus Sub-group',
         studentName: studentName.trim(),
-        studentRegNo: studentRegNo.trim(),
+        studentRegNo: studentRegNo.trim().toUpperCase(),
         needCategory,
         requestedAmountMinor: amountMinor,
         justification,
@@ -113,7 +113,7 @@ export const NewCasePage: React.FC = () => {
               />
               <Input
                 label="Student Registration No."
-                placeholder="e.g. MUST/SIM/2026/001"
+                placeholder="e.g. CT206/204483/24"
                 value={studentRegNo}
                 onChange={(e) => setStudentRegNo(e.target.value)}
                 required

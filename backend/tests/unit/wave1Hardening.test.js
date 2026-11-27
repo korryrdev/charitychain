@@ -8,13 +8,16 @@ import { notFound } from '../../src/middleware/notFound.js';
 import { createAlertsRouter } from '../../src/modules/alerts/alerts.routes.js';
 import { createAuthRouter } from '../../src/modules/auth/auth.routes.js';
 import { createAuthService } from '../../src/modules/auth/auth.service.js';
+import { studentRegisterSchema } from '../../src/modules/auth/auth.validation.js';
 import { createBankRouter } from '../../src/modules/bank/bank.routes.js';
 import { verifyBankDepositSchema } from '../../src/modules/bank/bank.validation.js';
 import { createCasesRouter } from '../../src/modules/cases/cases.routes.js';
+import { createCaseSchema } from '../../src/modules/cases/cases.validation.js';
 import { createDonorClaimService } from '../../src/modules/donors/donorClaim.service.js';
 import { createDonorPortalRouter } from '../../src/modules/donors/donorPortal.routes.js';
 import { createItemsRouter } from '../../src/modules/items/items.routes.js';
 import { toTrackedDonation } from '../../src/modules/moneyDonations/moneyDonations.mapper.js';
+import { claimStudentSchema } from '../../src/modules/students/students.validation.js';
 import { transparencyAggregationService } from '../../src/modules/transparency/transparencyAggregation.service.js';
 import { computeDonorRef } from '../../src/security/donorReference.js';
 import { createHealthRouter } from '../../src/routes/health.routes.js';
@@ -191,5 +194,49 @@ describe('Wave 1 security & API contract hardening', () => {
       audit: []
     });
     expect(board.recognition).toEqual([{ name: 'Real Donor' }]);
+  });
+
+  it('validates and uppercases CTxxx/xxxxxx/yy registration numbers while rejecting legacy MUST/SIM format', () => {
+    const regParsed = studentRegisterSchema.parse({
+      name: 'Korir Student',
+      email: 'korir204483@students.must.ac.ke',
+      password: 'StrongPassword123!',
+      registrationNumber: 'ct206/204483/24'
+    });
+    expect(regParsed.registrationNumber).toBe('CT206/204483/24');
+
+    expect(claimStudentSchema.parse({ registrationNumber: 'CT201/000001/23' }).registrationNumber).toBe(
+      'CT201/000001/23'
+    );
+
+    const caseParsed = createCaseSchema.parse({
+      subGroupId: '11111111-1111-4111-8111-111111111111',
+      studentName: 'Student Applicant',
+      studentRegNo: 'ct201/000001/23',
+      needCategory: 'FEES',
+      requestedAmount: '3500.00',
+      justification: 'Verified semester fee shortfall.'
+    });
+    expect(caseParsed.studentRegNo).toBe('CT201/000001/23');
+
+    expect(() =>
+      studentRegisterSchema.parse({
+        name: 'Korir Student',
+        email: 'korir204483@students.must.ac.ke',
+        password: 'StrongPassword123!',
+        registrationNumber: 'MUST/SIM/2026/001'
+      })
+    ).toThrow(/CT206/);
+    expect(() => claimStudentSchema.parse({ registrationNumber: 'MUST/SIM/2026/001' })).toThrow(/CT206/);
+    const legacyCaseResult = createCaseSchema.safeParse({
+      subGroupId: '11111111-1111-4111-8111-111111111111',
+      studentName: 'Student Applicant',
+      studentRegNo: 'MUST/SIM/2026/001',
+      needCategory: 'FEES',
+      requestedAmount: '3500.00',
+      justification: 'Verified semester fee shortfall.'
+    });
+    expect(legacyCaseResult.success).toBe(false);
+    expect(legacyCaseResult.error.issues[0].path).toEqual(['studentRegNo']);
   });
 });

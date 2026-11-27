@@ -18,7 +18,7 @@ Welcome to the single authoritative documentation directory for **CharityChain**
 
 ### Overview & Top-Level Guides
 * [Root README](../README.md) — Quick start, architecture diagram, workspace scripts
-* [Setup and Running Guide](./setup-and-running.md) — Docker Compose, Prisma migrations, `db:seed:all`, dev servers, Super Admin provisioning
+* [Setup and Running Guide](./setup-and-running.md) — Docker Compose, Prisma migrations, `db:seed`, dev servers, Super Admin provisioning
 * [System Dashboards](./system-dashboards.md) — All 9 role portals, public trace, recognition privacy rules, and `.tsx` governance screens
 * [Project Structure](./project-structure.md) — Complete monorepo directory layout and file inventory
 
@@ -45,10 +45,10 @@ Welcome to the single authoritative documentation directory for **CharityChain**
 * [Webhooks & Daraja Callbacks](./api/webhooks.md) — Tokenized C2B ingestion, raw immutability, STK/B2C/B2B result codes
 * [Error Envelope & Error Codes](./api/error-codes.md) — Standard response format & all 42 `ERROR_CODES`
 * [Database Data Model](./database/data-model.md) — ER overview, 86 Prisma models, UUID & minor-unit conventions
-* [Migrations & Modular Seeders](./database/migrations.md) — 26 migrations, `db:seed:all`, Prisma CLI wrapper
+* [Migrations & Admin Seeder](./database/migrations.md) — 26 migrations, `db:seed` / `db:seed:admin`, Prisma CLI wrapper
 * [Append-Only Ledger & Triggers](./database/ledger.md) — PostgreSQL `BEFORE UPDATE OR DELETE` triggers, FIFO lots, outbox
 * [Data Retention & Compliance](./database/retention.md) — Kenya Data Protection Act 2019 boundaries
-* [University Simulation Rules](./database/university-simulation-rules.md) — Deterministic `MUST/SIM/2026/*` dataset rules
+* [University Simulation Rules](./database/university-simulation-rules.md) — Deterministic `CTxxx/xxxxxx/yy` dataset & test fixture rules
 
 ### Blockchain, Security, Deployment & Operations (`blockchain/`, `security/`, `deployment/`, `operations/`)
 * [Smart Contracts Specification](./blockchain/contracts.md) — All 7 Solidity `0.8.28` contracts & EIP-712 `"CharityChain CaseWorkflow"` v1 domain

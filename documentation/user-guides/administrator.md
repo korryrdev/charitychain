@@ -6,7 +6,7 @@ The CharityChain Super Administrator dashboard (`ADMINISTRATOR` / `SYSTEM_ADMIN`
 
 ## 1. Signing In & Console Access
 
-1. Ensure core and admin seeds have run (`npm run db:seed:all` or `npm run db:seed:admin`).
+1. Ensure database roles and the Super Administrator account are seeded (`npm run db:seed` or `npm run db:seed:admin`).
 2. Navigate to `http://localhost:5173/auth/login`.
 3. Sign in with the seeded Super Administrator credentials:
    * **Email:** `admin@charitychain.org`
@@ -22,7 +22,7 @@ The CharityChain Super Administrator dashboard (`ADMINISTRATOR` / `SYSTEM_ADMIN`
 3. **Invitations**: Create staff accounts (`POST /api/v1/users/staff` or `POST /api/v1/users`) with role bundles and single-use expiring activation credentials; invited staff change temporary passwords on first sign-in and configure mandatory TOTP MFA when holding sensitive roles (`COMMITTEE_MEMBER`, `TREASURER`, `SIGNATORY`).
 4. **Committee Membership**: Appoint/retire committee seats and signatory rosters with effective dates, quorum enforcement, and conflict-of-interest records without rewriting historical decisions.
 5. **Contributions**: Read-only operational oversight of money & physical donations, confirmations, `MLK-XXXX-XXXX` receipts, FIFO allocations, reversals, and reconciliation outcomes (cannot manually forge or alter settled inflows).
-6. **Students (`/admin/university`)**: Manage simulated university records (`MUST/SIM/2026/001..030`), programmes, fee balances, payment plans, HELB/scholarship entries, exam blocks, and financial-block status with logged reason & before/after versioning. These records are simulated prototype data, not a live university ERP link.
+6. **Students (`/admin/university`)**: Manage simulated university records (`CTxxx/xxxxxx/yy`, e.g. `CT206/204483/24` or `CT201/000001/23`), programmes, fee balances, payment plans, HELB/scholarship entries, exam blocks, and financial-block status with logged reason & before/after versioning. These records are simulated prototype data, not a live university ERP link.
 7. **Assistance and Vetting**: Inspect application volumes, Need-Index vetting explanations, duplicate checks, pending reviews, and appeals without substituting committee decisions.
 8. **Inventory (`/admin/inventory`)**: Configure accepted physical categories, units, per-category limits, storage locations, expiry handling, low-stock thresholds, and approved valuation rules. Adjustments always require a logged reason.
 9. **Goods Collection Policy**: Configure student eligibility rules, collection frequencies, category/total limits, and reservation expiries while preserving independent student handover confirmation.

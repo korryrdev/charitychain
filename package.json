@@ -26,10 +26,7 @@
     "db:validate": "npm run validate -w @charitychain/database",
     "db:migrate": "npm run migrate:dev -w @charitychain/database",
     "db:seed": "npm run seed -w @charitychain/database",
-    "db:seed:university": "npm run seed:university -w @charitychain/database",
-    "db:seed:inventory": "npm run seed:inventory -w @charitychain/database",
     "db:seed:admin": "npm run seed:admin -w @charitychain/database",
-    "db:seed:all": "npm run seed:all -w @charitychain/database",
     "contracts:compile": "npm run compile -w @charitychain/blockchain",
     "verify": "npm run lint && npm run format:check && npm run db:validate && npm run build && npm run test"
   },

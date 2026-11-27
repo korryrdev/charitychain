@@ -132,7 +132,7 @@ npm ci
 docker compose up -d postgres ipfs
 npm run db:generate
 npm run migrate:deploy -w @charitychain/database
-npm run db:seed:all
+npm run db:seed
 npm run contracts:compile
 npm run dev                     # starts API (3000) and frontend (5173) concurrently
 ```

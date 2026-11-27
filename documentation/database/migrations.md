@@ -36,14 +36,11 @@ node database/scripts/prisma.js migrate status --schema database/prisma/schema.p
 
 ---
 
-## 3. Idempotent Modular Seeders
+## 3. Idempotent Seeders (Admin Only)
 
-Run all seeders together or selectively from the workspace root:
+Only the structural RBAC catalog and the initial Super Administrator account are seeded from the workspace root:
 
 | Command | Script | What It Provisions |
 | --- | --- | --- |
-| `npm run db:seed:all` | Combined runner | Runs all four seeders sequentially (recommended for local setup). |
-| `npm run db:seed` | `database/prisma/seed.js` | All **14** roles, **55** permissions, role-permission mappings, institutional tiers (`Silver/Gold/Diamond/Platinum`), sub-groups, and seeded Malkia demo accounts. |
-| `npm run db:seed:university` | `database/prisma/seedUniversityRecords.js` | Deterministic **30** student records (`MUST/SIM/2026/001` through `030`, configurable `6..500` via `SIMULATED_STUDENT_COUNT`) with 4 semesters each ([University Simulation Rules](./university-simulation-rules.md)). |
-| `npm run db:seed:inventory` | `database/prisma/seedInventory.js` | Hygiene/sanitary inventory categories, initial batches, demo desk location, collection policy, and demo clerk. |
-| `npm run db:seed:admin` | `database/prisma/seedAdmin.js` | Super Administrator account `admin@charitychain.org` / `Admin123456!`. |
+| `npm run db:seed` | `database/prisma/seed.js` | All **14** roles, **55** permissions, role-permission mappings, institutional tiers (`Silver/Gold/Diamond/Platinum`), purges legacy demo sessions, and delegates to `seedAdmin.js`. |
+| `npm run db:seed:admin` | `database/prisma/seedAdmin.js` | Single Super Administrator account (`admin@charitychain.org` / `Admin123456!`, configurable via `ADMIN_EMAIL` / `ADMIN_PASSWORD`). |

@@ -105,41 +105,20 @@ npm run db:generate
 npm run migrate:deploy -w @charitychain/database
 ```
 
-### Step 4: Seed the Database
-CharityChain provides modular seed scripts. You can run all of them at once or individually:
+### Step 4: Seed the Database (Admin + RBAC Catalog Only)
+CharityChain seeds only the required RBAC catalog (**14** roles, **55** permissions, role-permission matrices, and **4** recognition tiers) plus a single Super Administrator account (`admin@charitychain.org`). Additional staff, donor, clerk, and student accounts are created dynamically through registration or the admin console.
 
-#### Option A: Seed Everything in One Command (Recommended)
 ```powershell
-npm run db:seed:all
+npm run db:seed
 ```
 
-#### Option B: Run Seeds Individually
-1. **Core Roles & Permissions Seed:**
-   ```bash
-   npm run db:seed
-   ```
-   *Creates all **14** system & PRD roles, **55** assignable permissions, role-permission matrices, Malkia demo governance accounts/sub-groups, and recognition tiers.*
-
-2. **Simulated University Records Seed:**
-   ```powershell
-   npm run db:seed:university
-   ```
-   *Creates 30 deterministic university student records (`MUST/SIM/2026/001` through `030`), academic semesters, fee balances, HELB loan disbursements, exam blocks, and payment plans required for student vetting workflows.*
-
-3. **Inventory & Goods Seed:**
-   ```powershell
-   npm run db:seed:inventory
-   ```
-   *Creates initial inventory categories (Sanitary Care, Personal Hygiene), stock batches (soap, pads, toothpaste, tissue), demonstration desk location, active goods collection policy, and a demo clerk account.*
-
-4. **Super Administrator Seed:**
-   ```powershell
-   npm run db:seed:admin
-   ```
-   *Provisions an initial Super Administrator account:*
-   * **Email:** `admin@charitychain.org`
-   * **Password:** `Admin123456!`
-   * **Role:** `ADMINISTRATOR`
+*To re-provision or reset only the Super Administrator account without re-running the RBAC matrix:*
+```powershell
+npm run db:seed:admin
+```
+* **Email:** `admin@charitychain.org` (override via `ADMIN_EMAIL`)
+* **Password:** `Admin123456!` (override via `ADMIN_PASSWORD`)
+* **Role:** `ADMINISTRATOR`
 
 ### Step 5: Start the Development Servers
 Start both the Express API and Vite React frontend concurrently:
@@ -192,7 +171,7 @@ From the **Users & Roles** directory:
 ### Student Onboarding
 1. Students register with their university email (`name123456@students.must.ac.ke`) via `http://localhost:5173/auth/register` (Student tab) or `http://localhost:5173/student/auth/register`.
 2. The registration assigns the `STUDENT` role.
-3. To link their student profile, the student supplies their university registration number matching one of the seeded records (e.g. `MUST/SIM/2026/001` through `MUST/SIM/2026/030`).
+3. To link their student profile, the student supplies their university registration number matching `^[A-Z]{2}\d{3}\/\d{6}\/\d{2}$` (e.g. `CT206/204483/24` or `CT201/000001/23`).
 4. Once linked, their academic semester, fee balance, and eligibility data populate automatically on `/student`.
 
 ---
@@ -209,14 +188,9 @@ docker compose ps
 This starts:
 * `postgres`: Database on port `5435`
 * `ipfs`: Kubo node on ports `5001` and `8080`
-* `bootstrap`: Automatically executes migrations and seeds roles/permissions
+* `bootstrap`: Automatically executes migrations and seeds roles/permissions + the Super Administrator account
 * `backend`: Express API on port `3000`
 * `frontend`: Nginx serving production build on port `5173`
-
-To seed simulated university students inside Docker:
-```powershell
-docker compose --profile tools run --rm simulator
-```
 
 To stop containers:
 ```powershell
@@ -267,14 +241,11 @@ Prisma schema: `database/prisma/schema.prisma`.
 | Validate Prisma schema | `npm run db:validate` |
 | Create a new local migration during schema development | `npm run db:migrate` |
 | Apply committed migrations in a deployment | `npm run migrate:deploy -w @charitychain/database` |
-| Seed core roles, permissions, and recognition tiers | `npm run db:seed` |
-| Seed simulated university records | `npm run db:seed:university` |
-| Seed sample inventory categories, batches, and desk | `npm run db:seed:inventory` |
-| Seed initial Super Administrator account | `npm run db:seed:admin` |
-| Run all seed scripts together | `npm run db:seed:all` |
+| Seed core roles, permissions, tiers, and Admin account | `npm run db:seed` |
+| Seed/update only the initial Super Administrator account | `npm run db:seed:admin` |
 | Check migration state | `npx prisma migrate status --schema database/prisma/schema.prisma` |
 
-Fresh databases must receive both migrations and the core seed before accounts can be created because registration assigns the `DONOR` (or `STUDENT`) role. Student-support workflows also need the simulated university-record seed.
+Fresh databases must receive both migrations and `npm run db:seed` before accounts can be created because registration assigns roles (`DONOR`, `STUDENT`) and provisions the Super Administrator (`admin@charitychain.org`).
 
 ---
 
@@ -312,12 +283,8 @@ npm run db:seed:admin
 ```
 Log in at `http://localhost:5173/auth/login` with `admin@charitychain.org` / `Admin123456!`.
 
-### Student record not found
-Ensure you ran the university simulation seed:
-```powershell
-npm run db:seed:university
-```
-Valid test registration numbers range from `MUST/SIM/2026/001` to `MUST/SIM/2026/030`.
+### Invalid university registration number
+Use the `CTxxx/xxxxxx/yy` format (`^[A-Z]{2}\d{3}\/\d{6}\/\d{2}$`), such as `CT206/204483/24` or `CT201/000001/23`.
 
 ---
 

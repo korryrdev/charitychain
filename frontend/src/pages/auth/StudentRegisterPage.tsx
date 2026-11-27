@@ -21,7 +21,11 @@ export function StudentRegisterPage() {
     setPending(true);
     setError(null);
     try {
-      const result = await httpClient.post('/public/auth/register-student', values);
+      const normalizedRegistrationNumber = values.registrationNumber.trim().toUpperCase();
+      const result = await httpClient.post('/public/auth/register-student', {
+        ...values,
+        registrationNumber: normalizedRegistrationNumber,
+      });
       if (!result.developmentVerificationToken) {
         navigate('/auth/verify-account', { state: { email: values.email } });
         return;
@@ -29,7 +33,7 @@ export function StudentRegisterPage() {
       await verifyAccount({ email: values.email, token: result.developmentVerificationToken });
       await login({ email: values.email, password: values.password });
       await httpClient.post('/students/claim', {
-        registrationNumber: values.registrationNumber.trim().toUpperCase(),
+        registrationNumber: normalizedRegistrationNumber,
       });
       navigate('/student', { replace: true });
     } catch (cause: unknown) {
@@ -45,7 +49,7 @@ export function StudentRegisterPage() {
         <p className="section-kicker">Student access</p>
         <h1>Create student account</h1>
         <p className="student-auth-form__lead">
-          Create a separate student account, then verify it against your simulated university registration number.
+          Create a separate student account and link your university registration number (e.g. CT206/204483/24 or CT201/000001/23).
         </p>
         {error && (
           <p className="form-error" role="alert">
@@ -84,7 +88,7 @@ export function StudentRegisterPage() {
           <input
             value={values.registrationNumber}
             onChange={(event) => setValues({ ...values, registrationNumber: event.target.value })}
-            placeholder="MUST/SIM/2026/001"
+            placeholder="CT206/204483/24"
             required
           />
         </label>

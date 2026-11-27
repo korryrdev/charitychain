@@ -1,11 +1,19 @@
 'use strict';
 
 import { z } from 'zod';
+import { STUDENT_REG_NO_REGEX } from '../auth/auth.validation.js';
 
 export const createCaseSchema = z.object({
   subGroupId: z.string().uuid(),
   studentName: z.string().trim().min(2).max(120),
-  studentRegNo: z.string().trim().min(3).max(64),
+  studentRegNo: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(
+      STUDENT_REG_NO_REGEX,
+      'Use a valid university registration number (e.g. CT206/204483/24 or CT201/000001/23).'
+    ),
   studentPhone: z.string().trim().optional(),
   needCategory: z.enum(['FEES', 'UPKEEP', 'MEDICAL', 'EMERGENCY', 'BOOKS']),
   requestedAmount: z.union([z.number().positive(), z.string().trim()]),

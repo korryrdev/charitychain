@@ -4,31 +4,13 @@
 
 The simulated university dataset provides deterministic, explainable records for development, demonstrations, and automated vetting tests without accessing a real university database or exposing real student information.
 
-## Generation Command
+## Test Fixture Generation
 
-From the project root:
-
-```bash
-npm run db:seed:university
-```
-
-The default command creates 30 students. A controlled size may be supplied without changing the rules:
-
-```bash
-# Linux / macOS
-SIMULATED_STUDENT_COUNT=60 npm run db:seed:university
-```
-```powershell
-# Windows PowerShell
-$env:SIMULATED_STUDENT_COUNT = "60"
-npm run db:seed:university
-```
-
-The accepted size is 6 to 500 students. Registration numbers, payment references, aid references, dates, profiles, and amounts are deterministic, so rerunning the same command updates the same records instead of creating duplicates.
+Deterministic simulated student scenarios are generated strictly inside integration tests via `backend/tests/helpers/universityRecordsFixture.js` (`npm run test -w @charitychain/backend`). Runtime seeding via `npm run db:seed` provisions only the RBAC catalog and Super Administrator account; real or manually created student accounts register and claim their own `CTxxx/xxxxxx/yy` registration numbers directly.
 
 ## Dataset Invariants
 
-- Registration numbers follow `MUST/SIM/2026/NNN`.
+- Registration numbers follow `^[A-Z]{2}\d{3}\/\d{6}\/\d{2}$` (e.g. `CT206/204483/24`, `CT201/000001/23`).
 - Every generated student has four semesters of financial records.
 - Every financial record satisfies `outstanding balance = invoiced amount - total payments`.
 - Aid payments have corresponding HELB, scholarship, NGO, or waiver evidence.

@@ -42,7 +42,7 @@ describe('G13–G16: Case State Machine, Decision, 2-of-3 Authorization & Disbur
     const created = await service.createCase({
       subGroupId: testSubgroup.id,
       studentName: 'Alice Muthoni',
-      studentRegNo: `MUST/TEST/${Date.now()}`,
+      studentRegNo: `CT201/${String(Date.now()).slice(-6)}/24`,
       studentPhone: '0712345678',
       needCategory: 'FEES',
       requestedAmount: '3500.00',

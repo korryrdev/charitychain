@@ -1,5 +1,5 @@
 import { prisma } from '../client/prismaClient.js';
-import { hashPassword } from 'better-auth/crypto';
+import { seedAdmin } from './seedAdmin.js';
 
 const roles = [
   ['DONOR', 'Donor'],
@@ -241,97 +241,13 @@ await prisma.$transaction(
       });
     }
 
-    // Remove legacy deterministic demo tokens and provision real credential accounts for seeded staff
+    // Remove legacy deterministic demo tokens
     await transaction.session.deleteMany({
       where: { token: { startsWith: 'malkia-token-' } }
     });
-    const staffSeedPasswordHash = await hashPassword(
-      process.env.SEED_STAFF_PASSWORD || 'StaffPass12345!'
-    );
-
-    const seededStaffUsers = [
-      {
-        email: 'pharmacy@malkia.charity',
-        name: 'Jane Atieno (Pharmacy)',
-        roles: ['PHARMACY_CUSTODIAN', 'CLERK', 'INVENTORY_SUPERVISOR'],
-      },
-      {
-        email: 'committee@malkia.charity',
-        name: 'David Kimani (Committee)',
-        roles: ['COMMITTEE_MEMBER'],
-      },
-      {
-        email: 'chair@malkia.charity',
-        name: 'Malkia Committee Chair',
-        roles: ['COMMITTEE_MEMBER', 'SIGNATORY'],
-      },
-      {
-        email: 'signatory1@malkia.charity',
-        name: 'Wanjiku Mwangi (Signatory)',
-        roles: ['SIGNATORY'],
-      },
-      {
-        email: 'treasurer@malkia.charity',
-        name: 'Kevin Otieno (Treasurer)',
-        roles: ['TREASURER'],
-      },
-      {
-        email: 'kipyegonaldo@gmail.com',
-        name: 'Kipyegon Aldo (Admin)',
-        roles: ['ADMINISTRATOR', 'PHARMACY_CUSTODIAN', 'COMMITTEE_MEMBER', 'TREASURER', 'SIGNATORY', 'CLERK'],
-      },
-    ];
-
-    for (const u of seededStaffUsers) {
-      const user = await transaction.user.upsert({
-        where: { email: u.email },
-        update: {
-          status: 'ACTIVE',
-          name: u.name,
-          emailVerified: true,
-        },
-        create: {
-          email: u.email,
-          name: u.name,
-          status: 'ACTIVE',
-          emailVerified: true,
-        },
-      });
-
-      await transaction.account.upsert({
-        where: {
-          providerId_accountId: {
-            providerId: 'credential',
-            accountId: user.id,
-          },
-        },
-        update: {
-          password: staffSeedPasswordHash,
-        },
-        create: {
-          userId: user.id,
-          providerId: 'credential',
-          accountId: user.id,
-          password: staffSeedPasswordHash,
-        },
-      });
-
-      for (const rCode of u.roles) {
-        const role = await transaction.role.findUnique({ where: { code: rCode } });
-        if (role) {
-          const existing = await transaction.userRole.findFirst({
-            where: { userId: user.id, roleId: role.id },
-          });
-          if (!existing) {
-            await transaction.userRole.create({
-              data: { userId: user.id, roleId: role.id },
-            });
-          }
-        }
-      }
-    }
   },
   { timeout: 30_000 }
 );
 
+await seedAdmin();
 await prisma.$disconnect();

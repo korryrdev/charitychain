@@ -252,7 +252,7 @@ export const api = {
       body: JSON.stringify({
         subGroupId: subGroupId || '00000000-0000-0000-0000-000000000001',
         studentName: payload.studentName || 'Student Applicant',
-        studentRegNo: payload.studentRegNo || `MUST/SIM/${Math.floor(1000 + Math.random() * 9000)}`,
+        studentRegNo: (payload.studentRegNo || '').trim().toUpperCase(),
         studentPhone: payload.studentPhone || '254700000000',
         needCategory: payload.needCategory,
         requestedAmount: (payload.requestedAmountMinor / 100).toFixed(2),

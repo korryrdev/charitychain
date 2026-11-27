@@ -74,25 +74,47 @@ export function createAuthRepository(database = prisma) {
     ensureStudentProfile(userId, fullName, registrationNumber) {
       return database.$transaction(async (transaction) => {
         const existing = await transaction.student.findUnique({ where: { userId } });
-        if (registrationNumber) {
-          const requested = await transaction.student.findUnique({ where: { registrationNumber } });
-          if (!requested || requested.academicStatus !== 'ACTIVE') {
-            throw new AppError({
-              message: 'Student record not found.',
-              code: ERROR_CODES.STUDENT_NOT_FOUND,
-              statusCode: 404
+        const normalizedReg = registrationNumber?.trim().toUpperCase();
+        if (normalizedReg) {
+          const requested = await transaction.student.findUnique({
+            where: { registrationNumber: normalizedReg }
+          });
+          if (requested) {
+            if (requested.academicStatus !== 'ACTIVE') {
+              throw new AppError({
+                message: 'Student record not found.',
+                code: ERROR_CODES.STUDENT_NOT_FOUND,
+                statusCode: 404
+              });
+            }
+            if (requested.userId && requested.userId !== userId) {
+              throw new ConflictError('Student record is already linked to another account.');
+            }
+            if (existing && existing.id !== requested.id) {
+              throw new ConflictError('This account is already linked to another student record.');
+            }
+            if (requested.userId === userId) return requested;
+            return transaction.student.update({
+              where: { id: requested.id },
+              data: { userId, ...(fullName ? { fullName } : {}) }
             });
           }
-          if (requested.userId && requested.userId !== userId) {
-            throw new ConflictError('Student record is already linked to another account.');
-          }
-          if (existing && existing.id !== requested.id) {
+          if (existing) {
             throw new ConflictError('This account is already linked to another student record.');
           }
-          if (requested.userId === userId) return requested;
-          return transaction.student.update({
-            where: { id: requested.id },
-            data: { userId, ...(fullName ? { fullName } : {}) }
+          return transaction.student.create({
+            data: {
+              userId,
+              registrationNumber: normalizedReg,
+              fullName: fullName || normalizedReg,
+              programme: 'BSC-COMPUTER-SCIENCE',
+              school: 'School of Computing and Informatics',
+              yearOfStudy: 1,
+              academicStatus: 'ACTIVE',
+              simulationProfile: 'MIXED_CONTROL',
+              admittedAt: new Date(),
+              expectedGraduation: new Date(Date.now() + 4 * 365 * 86400000)
+            }
           });
         }
         if (existing) return existing;

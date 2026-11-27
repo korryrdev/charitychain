@@ -8,7 +8,7 @@ Eligible campus students register using their university email, link a simulated
 
 1. Navigate to `/student/auth/register` (or the Student tab on `/auth/register`).
 2. Register using a valid student email (`name123456@students.must.ac.ke`), which provisions the `STUDENT` role (`auth.service.js`).
-3. Link your university registration number against the deterministic seeded registry (`MUST/SIM/2026/001` through `MUST/SIM/2026/030`, configurable up to `500`; see [University Simulation Rules](../database/university-simulation-rules.md)).
+3. Link your university registration number using the `CTxxx/xxxxxx/yy` format (`^[A-Z]{2}\d{3}\/\d{6}\/\d{2}$`, e.g. `CT206/204483/24` or `CT201/000001/23`; see [University Simulation Rules](../database/university-simulation-rules.md)).
 4. Sign in at `/student/auth/login` or `/auth/login`.
 
 ---

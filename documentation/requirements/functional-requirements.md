@@ -22,7 +22,7 @@ All stable requirement identifiers (`FR-*`) below originate in [Product Requirem
 
 ## 2. Cases, Student Vetting & Approvals (`FR-CASE`)
 
-* **FR-CASE-01:** Allow `SUBGROUP_REP` users to raise `MalkiaCase` entries (`/committee/cases/new`, `POST /api/v1/cases`) and authenticated MUST students (`/student/apply`) to submit assistance applications linked to `MUST/SIM/2026/*` records. Keep beneficiary PII encrypted off-chain.
+* **FR-CASE-01:** Allow `SUBGROUP_REP` users to raise `MalkiaCase` entries (`/committee/cases/new`, `POST /api/v1/cases`) and authenticated MUST students (`/student/apply`) to submit assistance applications linked to `CTxxx/xxxxxx/yy` (e.g. `CT206/204483/24`) student records. Keep beneficiary PII encrypted off-chain.
 * **FR-CASE-02:** Enforce valid state transitions (`DRAFT -> SUBMITTED -> UNDER_REVIEW <-> NEEDS_INFO -> APPROVED/REJECTED -> AUTHORIZED -> DISBURSED -> CLOSED`) across API services and `CaseWorkflow.sol`.
 * **FR-CASE-03:** Allow `COMMITTEE_MEMBER` decisions (approve with exact approved amount, decline, or request additional info) alongside explainable automated Need-Index vetting and student appeals (`StudentAppeal`).
 * **FR-CASE-04:** Enforce code-level segregation so a submitter/creator cannot approve their own case (`R03`).
