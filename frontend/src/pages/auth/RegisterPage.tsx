@@ -1,45 +1,49 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthShell } from '../../features/authentication/components/AuthShell';
-import { RegisterForm } from '../../features/authentication/components/RegisterForm';
+import { RegisterForm, type RegisterFormValues } from '../../features/authentication/components/RegisterForm';
 import { useAuth } from '../../features/authentication/hooks/useAuth';
-import { getErrorMessage } from '../../services/errorMapper';
+import { useCountdown } from '../../features/authentication/hooks/useCountdown';
+import { getErrorMessage, getRetryAfterSeconds, isRateLimited } from '../../services/errorMapper';
 
 export function RegisterPage() {
-  const { register, verifyAccount, login } = useAuth();
+  const { register } = useAuth();
   const navigate = useNavigate();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const cooldown = useCountdown();
 
-  const submit = async (
-    values: Record<string, any> & { email: string; role?: string }
-  ) => {
+  const submit = async (values: RegisterFormValues) => {
     setPending(true);
     setError(null);
     try {
-      const result = await register(values);
-      if (result.developmentVerificationToken) {
-        await verifyAccount({ email: values.email, token: result.developmentVerificationToken });
-        const session = await login(values);
-        const destination =
-          session.roles?.includes('STUDENT') || values.role === 'STUDENT'
-            ? '/student'
-            : session.roles?.includes('DONOR')
-              ? '/donor'
-              : '/';
-        navigate(destination, { replace: true });
-        return;
-      }
-      navigate('/auth/verify-account', { state: { email: values.email } });
+      const normalizedEmail = values.email.trim().toLowerCase();
+      await register({ ...values, email: normalizedEmail });
+      navigate('/auth/check-email', {
+        replace: true,
+        state: { email: normalizedEmail },
+      });
     } catch (cause: unknown) {
-      setError(getErrorMessage(cause, 'Unable to create account.'));
+      if (isRateLimited(cause)) {
+        const seconds = getRetryAfterSeconds(cause) ?? 60;
+        cooldown.start(seconds);
+        setError(`Too many registration attempts. Please try again in ${seconds} seconds.`);
+      } else {
+        setError(getErrorMessage(cause, 'Unable to create account.'));
+      }
     } finally {
       setPending(false);
     }
   };
+
   return (
-    <AuthShell>
-      <RegisterForm onSubmit={submit} pending={pending} error={error} />
+    <AuthShell portal="donor">
+      <RegisterForm
+        onSubmit={submit}
+        pending={pending}
+        error={error}
+        cooldownSeconds={cooldown.remaining}
+      />
     </AuthShell>
   );
 }

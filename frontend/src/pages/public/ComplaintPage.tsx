@@ -182,7 +182,7 @@ export function ComplaintPage() {
                 type="text"
                 value={reference}
                 onChange={(e) => setReference(e.target.value)}
-                placeholder="e.g. Receipt, Case No., or CT206/204483/24"
+                placeholder="e.g. Receipt, Case No., or CTxxx/xxxxxx/yy"
                 className="w-full h-10 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 text-xs"
               />
             </div>

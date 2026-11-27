@@ -9,7 +9,7 @@ CharityChain separates low-friction donor access (`MLK-XXXX-XXXX` receipt code +
 | Actor | Auth Endpoint | Rules & Constraints |
 | --- | --- | --- |
 | **Donor** | `POST /api/v1/public/auth/register` (`/auth/register`) | Assigns `DONOR` role automatically. Not required to trace receipts (`GET /api/v1/public/trace/:receipt`). |
-| **Student** | `POST /api/v1/public/auth/register-student` (`/student/auth/register`) | Validates campus email (`name123456@students.must.ac.ke`) and registration format (`CT206/204483/24` / `CT201/000001/23`), assigns `STUDENT`, links or initializes the student record. |
+| **Student** | `POST /api/v1/public/auth/register-student` (`/student/auth/register`) | Validates campus email (`name123456@students.must.ac.ke`) and registration format (`CTxxx/xxxxxx/yy` / `CT201/000001/23`), assigns `STUDENT`, links or initializes the student record. |
 | **Internal Staff** | Admin provisions via `POST /api/v1/users/staff` or `POST /api/v1/users` | Staff roles (`CLERK`, `PHARMACY_CUSTODIAN`, `INVENTORY_SUPERVISOR`, `SUBGROUP_REP`, `COMMITTEE_MEMBER`, `TREASURER`, `SIGNATORY`, `FINANCE_OPERATOR`, `AUDITOR`, `ADMINISTRATOR`) cannot be self-selected during public registration. |
 | **Standard Login** | `POST /api/v1/public/auth/login` (`/auth/login` & `/login`) | Issues HTTP-only `charitychain_session` cookie + `charitychain_csrf` cookie (no raw token leaked in JSON), plus `role`, `roles`, `permissions`, `requiresMfa`, `mfaVerified`. |
 

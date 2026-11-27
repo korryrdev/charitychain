@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { PERMISSIONS } from '../../constants/permissions.js';
 import { authorize } from '../../middleware/authorize.js';
 import { validateRequest } from '../../middleware/validateRequest.js';
+import { changePasswordSchema } from '../auth/auth.validation.js';
 import { usersController } from './users.controller.js';
 import {
   closeOwnAccountSchema,
@@ -17,6 +18,11 @@ import {
 export function createUsersRouter(controller = usersController) {
   const router = Router();
   router.get('/me', controller.me);
+  router.post(
+    '/me/password',
+    validateRequest({ body: changePasswordSchema }),
+    controller.changeOwnPassword
+  );
   router.post(
     '/me/close-account',
     validateRequest({ body: closeOwnAccountSchema }),

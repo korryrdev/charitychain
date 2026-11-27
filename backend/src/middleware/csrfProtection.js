@@ -7,6 +7,7 @@ const unauthenticatedAuthPaths = new Set([
   '/api/v1/public/auth/register',
   '/api/v1/public/auth/register-student',
   '/api/v1/public/auth/verify-account',
+  '/api/v1/public/auth/resend-verification',
   '/api/v1/public/auth/login',
   '/api/v1/public/auth/password-reset/request',
   '/api/v1/public/auth/password-reset/complete'

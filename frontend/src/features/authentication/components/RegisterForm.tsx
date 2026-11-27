@@ -2,92 +2,99 @@ import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { CircleAlert, Info } from 'lucide-react';
 import { AuthField } from './AuthField';
-import { PortalSelector } from './PortalSelector';
+import { AuthPortalNav } from './AuthPortalNav';
 import { passwordStrength } from '../passwordStrength';
-import { validatePortalEmail, validateRegistration, type PortalRoleCode } from '../validation/auth.schema';
+import { PORTALS } from '../portals';
+import { validatePortalEmail, validateRegistration } from '../validation/auth.schema';
 
-type RegisterRoleCode = 'STUDENT' | 'DONOR';
 type RegisterField = 'name' | 'email' | 'password' | 'confirmPassword';
-
-const SUBTITLES: Record<RegisterRoleCode, string> = {
-  STUDENT: 'Sign up with your MUST student email address.',
-  DONOR: 'Create a donor account to give and follow your impact.',
-};
 
 export type RegisterFormValues = {
   name: string;
   email: string;
   password: string;
-  role: RegisterRoleCode;
+  role: 'DONOR';
 };
 
 export interface RegisterFormProps {
   onSubmit: (values: RegisterFormValues) => void | Promise<void>;
   pending?: boolean;
   error?: string | null;
-  defaultRole?: PortalRoleCode;
+  cooldownSeconds?: number;
 }
 
-export function RegisterForm({ onSubmit, pending = false, error = null, defaultRole = 'STUDENT' }: RegisterFormProps) {
-  const [role, setRole] = useState<RegisterRoleCode>(defaultRole === 'DONOR' ? 'DONOR' : 'STUDENT');
+export function RegisterForm({
+  onSubmit,
+  pending = false,
+  error = null,
+  cooldownSeconds = 0,
+}: RegisterFormProps) {
+  const config = PORTALS.donor;
   const [values, setValues] = useState({ name: '', email: '', password: '', confirmPassword: '' });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const isStudent = role === 'STUDENT';
   const emailValue = values.email.trim();
-  const emailValid = Boolean(emailValue) && !validatePortalEmail(emailValue, role);
+  const emailValid = Boolean(emailValue) && !validatePortalEmail(emailValue, 'DONOR');
   const strength = passwordStrength(values.password);
   const passwordsMatch = Boolean(values.confirmPassword) && values.confirmPassword === values.password;
-
-  const withEmailError = (
-    current: Record<string, string>,
-    email: string,
-    nextRole: PortalRoleCode,
-  ): Record<string, string> => {
-    const message = validatePortalEmail(email, nextRole);
-    const next = { ...current };
-    if (message) next.email = message;
-    else delete next.email;
-    return next;
-  };
-
-  const selectRole = (nextRole: PortalRoleCode) => {
-    setRole(nextRole === 'DONOR' ? 'DONOR' : 'STUDENT');
-    setErrors({});
-  };
 
   const set = (field: RegisterField) => (value: string) => setValues({ ...values, [field]: value });
 
   const changeEmail = (email: string) => {
     setValues({ ...values, email });
-    if (errors.email) setErrors((current) => withEmailError(current, email, role));
+    if (errors.email) {
+      const msg = validatePortalEmail(email, 'DONOR');
+      setErrors((current) => {
+        const next = { ...current };
+        if (msg) next.email = msg;
+        else delete next.email;
+        return next;
+      });
+    }
   };
 
   const blurEmail = () => {
-    if (values.email.trim()) setErrors((current) => withEmailError(current, values.email, role));
+    if (values.email.trim()) {
+      const msg = validatePortalEmail(values.email, 'DONOR');
+      setErrors((current) => {
+        const next = { ...current };
+        if (msg) next.email = msg;
+        else delete next.email;
+        return next;
+      });
+    }
   };
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const nextErrors = validateRegistration({ ...values, role }, { role });
+    if (cooldownSeconds > 0) return;
+    const nextErrors = validateRegistration({ ...values, role: 'DONOR' }, { role: 'DONOR' });
     setErrors(nextErrors);
     const firstInvalid = Object.keys(nextErrors)[0];
     if (firstInvalid) {
       document.getElementById(firstInvalid)?.focus();
       return;
     }
-    await onSubmit({ name: values.name, email: values.email, password: values.password, role });
+    await onSubmit({
+      name: values.name.trim(),
+      email: values.email.trim().toLowerCase(),
+      password: values.password,
+      role: 'DONOR',
+    });
   };
+
+  const disabled = pending || cooldownSeconds > 0;
 
   return (
     <form className="cc-form" noValidate onSubmit={submit}>
       <header className="cc-form__header">
-        <h1>Create your account</h1>
-        <p>{SUBTITLES[role]}</p>
+        <p className="cc-eyebrow">{config.kicker}</p>
+        <h1>{config.registerTitle}</h1>
+        <p>{config.registerSubtitle}</p>
       </header>
 
-      <PortalSelector role={role} onChange={selectRole} idPrefix="register" allowStaff={false} />
+      <AuthPortalNav mode="register" active="donor" />
 
-      <div className="cc-form__panel" role="tabpanel" id="register-panel" aria-labelledby={`register-tab-${role}`}>
+      <div className="cc-form__panel">
         {error && (
           <div className="cc-notice cc-notice--danger" role="alert">
             <CircleAlert size={20} strokeWidth={1.75} aria-hidden="true" />
@@ -112,8 +119,11 @@ export function RegisterForm({ onSubmit, pending = false, error = null, defaultR
           label="Email address"
           type="email"
           autoComplete="email"
-          placeholder={isStudent ? 'name123456@students.must.ac.ke' : 'you@example.org'}
-          hint={isStudent ? 'Format: name123456@students.must.ac.ke' : undefined}
+          autoCorrect="off"
+          autoCapitalize="none"
+          spellCheck={false}
+          enterKeyHint="next"
+          placeholder={config.emailPlaceholder}
           value={values.email}
           onChange={changeEmail}
           onBlur={blurEmail}
@@ -160,14 +170,32 @@ export function RegisterForm({ onSubmit, pending = false, error = null, defaultR
           <span>Staff and committee accounts are created by an administrator, so they are not available here.</span>
         </p>
 
-        <button type="submit" className="cc-btn cc-btn--primary cc-btn--lg cc-btn--block" disabled={pending} aria-busy={pending || undefined}>
+        <button
+          type="submit"
+          className="cc-btn cc-btn--primary cc-btn--lg cc-btn--block"
+          disabled={disabled}
+          aria-busy={pending || undefined}
+        >
           {pending && <span className="cc-spinner" aria-hidden="true" />}
-          {pending ? 'Creating account…' : 'Create account'}
+          {cooldownSeconds > 0
+            ? `Try again in ${cooldownSeconds}s`
+            : pending
+              ? 'Creating account…'
+              : 'Create donor account'}
         </button>
       </div>
 
       <p className="cc-form__alt">
-        Already registered? <Link className="cc-link" to="/auth/login">Sign in</Link>
+        Already registered?{' '}
+        <Link className="cc-link" to="/auth/login">
+          Sign in
+        </Link>
+      </p>
+      <p className="cc-form__links">
+        <span>Are you a student?</span>
+        <Link className="cc-link" to="/student/auth/register">
+          Create a student account
+        </Link>
       </p>
     </form>
   );

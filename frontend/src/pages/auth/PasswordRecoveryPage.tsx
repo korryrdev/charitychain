@@ -1,11 +1,12 @@
 import { useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Button } from '../../components/common/Button';
 import { FormField } from '../../components/forms/FormField';
 import { Alert } from '../../components/feedback/Alert';
 import { useAuth } from '../../features/authentication/hooks/useAuth';
+import { useCountdown } from '../../features/authentication/hooks/useCountdown';
 import { validateEmail } from '../../features/authentication/validation/auth.schema';
-import { getErrorMessage } from '../../services/errorMapper';
+import { getErrorMessage, getRetryAfterSeconds, isRateLimited } from '../../services/errorMapper';
 
 interface RecoveryState {
   pending: boolean;
@@ -15,7 +16,7 @@ interface RecoveryState {
 
 export function PasswordRecoveryPage() {
   const { requestPasswordReset } = useAuth();
-  const navigate = useNavigate();
+  const cooldown = useCountdown();
   const [email, setEmail] = useState('');
   const [state, setState] = useState<RecoveryState>({
     pending: false,
@@ -25,24 +26,20 @@ export function PasswordRecoveryPage() {
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (cooldown.active) return;
+
     if (Object.keys(validateEmail({ email })).length) {
       return setState({ ...state, error: 'Enter a valid email address.' });
     }
     setState({ pending: true, error: null, complete: false });
     try {
-      const response = await requestPasswordReset(email);
-      if (response?.developmentResetToken) {
-        navigate('/auth/reset-password', {
-          state: {
-            email: email.trim().toLowerCase(),
-            userId: response.userId,
-            developmentResetToken: response.developmentResetToken
-          }
-        });
-        return;
-      }
+      await requestPasswordReset(email);
       setState({ pending: false, error: null, complete: true });
     } catch (cause: unknown) {
+      if (isRateLimited(cause)) {
+        const seconds = getRetryAfterSeconds(cause) ?? 60;
+        cooldown.start(seconds);
+      }
       setState({
         pending: false,
         error: getErrorMessage(cause, 'Request failed.'),
@@ -62,8 +59,8 @@ export function PasswordRecoveryPage() {
           </Alert>
         )}
         {state.complete && (
-          <Alert tone="success" title="Request accepted">
-            Check your email for the next step.
+          <Alert tone="success" title="Check your email">
+            If an eligible account matches that address, we sent a password-reset link.
           </Alert>
         )}
         <FormField id="recovery-email" label="Email address">
@@ -75,9 +72,14 @@ export function PasswordRecoveryPage() {
             onChange={(event) => setEmail(event.target.value)}
           />
         </FormField>
-        <Button type="submit" loading={state.pending}>
-          Send reset instructions
+        <Button type="submit" loading={state.pending} disabled={cooldown.active}>
+          {cooldown.active ? `Try again in ${cooldown.remaining}s` : 'Send reset instructions'}
         </Button>
+        <p className="cc-form__links" style={{ marginTop: '1rem' }}>
+          <Link to="/auth/login">Donor sign in</Link>
+          <Link to="/student/auth/login">Student sign in</Link>
+          <Link to="/staff/login">Staff sign in</Link>
+        </p>
       </form>
     </main>
   );

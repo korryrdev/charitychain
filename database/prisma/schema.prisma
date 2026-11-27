@@ -15,6 +15,8 @@ model User {
   image                       String?
   status                      UserStatus                   @default(PENDING_VERIFICATION)
   twoFactorEnabled            Boolean                      @default(false)
+  mustChangePassword          Boolean                      @default(false)
+  temporaryPasswordExpiresAt  DateTime?
   createdAt                   DateTime                     @default(now())
   updatedAt                   DateTime                     @updatedAt
   roles                       UserRole[]
@@ -101,7 +103,7 @@ model AssistanceApplication {
   currency                   String                         @default("KES")
   reason                     String
   status                     AssistanceApplicationStatus    @default(DRAFT)
-  financialRecordId          String                         @db.Uuid
+  financialRecordId          String?                        @db.Uuid
   outstandingBalanceSnapshot Decimal                        @db.Decimal(18, 2)
   financialSnapshotAt        DateTime                       @default(now())
   version                    Int                            @default(1)
@@ -112,7 +114,7 @@ model AssistanceApplication {
   updatedAt                  DateTime                       @updatedAt
   student                    Student                        @relation(fields: [studentId], references: [id], onDelete: Restrict)
   semester                   AcademicSemester               @relation(fields: [semesterId], references: [id], onDelete: Restrict)
-  financialRecord            StudentFinancialRecord         @relation(fields: [financialRecordId], references: [id], onDelete: Restrict)
+  financialRecord            StudentFinancialRecord?        @relation(fields: [financialRecordId], references: [id], onDelete: Restrict)
   history                    AssistanceApplicationHistory[]
   vettingRuns                VettingRun[]
   committeeConflicts         CommitteeConflict[]
@@ -1349,6 +1351,18 @@ model Account {
   @@unique([providerId, accountId])
   @@index([userId])
   @@map("accounts")
+}
+
+model AuthThrottle {
+  key             String    @id
+  kind            String
+  failures        Int       @default(0)
+  windowStartedAt DateTime  @default(now())
+  lockedUntil     DateTime?
+  updatedAt       DateTime  @default(now()) @updatedAt
+
+  @@index([updatedAt])
+  @@map("auth_throttles")
 }
 
 model Verification {

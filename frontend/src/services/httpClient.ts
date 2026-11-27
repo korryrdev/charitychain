@@ -33,7 +33,7 @@ export interface HttpClient {
 
 export function createHttpClient({
   baseUrl = defaultApiBaseUrl,
-  fetchImpl = fetch,
+  fetchImpl = (...args: Parameters<typeof fetch>) => fetch(...args),
 }: CreateHttpClientOptions = {}): HttpClient {
   return Object.freeze({
     async request<T = Record<string, any>>(

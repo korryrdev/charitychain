@@ -47,7 +47,7 @@ export function UniversityRecordPage() {
       <p className="section-kicker">Read-only university record</p>
       <h1>{record.student.fullName}</h1>
       <p className="portal-page__lead">
-        This is simulated institutional data used for the prototype. It is authoritative for eligibility and cannot be edited from this page.
+        This institutional record is used to assess eligibility and cannot be edited directly from this page.
       </p>
       <section className="record-identity">
         <dl>
@@ -62,6 +62,10 @@ export function UniversityRecordPage() {
           <div>
             <dt>School</dt>
             <dd>{record.student.school}</dd>
+          </div>
+          <div>
+            <dt>Year of study</dt>
+            <dd>Year {record.student.yearOfStudy}</dd>
           </div>
           <div>
             <dt>Academic status</dt>

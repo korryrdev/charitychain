@@ -77,32 +77,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const registerDonor = useCallback(async (name: string, email: string, password: string) => {
-    const res = await api.register({ name, email, password });
-    let loginResult: any = res;
-    if (res.requiresVerification && res.developmentVerificationToken) {
-      await authApi.verifyAccount({ email, token: res.developmentVerificationToken });
-      loginResult = await api.login({ email, password });
-    } else if (res.requiresVerification) {
-      throw new Error('Account created! Please check your email to verify your account before signing in.');
-    }
-
-    const roles = loginResult.roles?.length ? loginResult.roles : ['DONOR'];
-    const mappedRole = mapBackendRoleToUiRole(roles);
-    const session: UserSession = {
-      id: loginResult.user?.id || res.user?.id || '',
-      email: loginResult.user?.email || res.user?.email || email,
-      name: loginResult.user?.name || res.user?.name || name,
-      role: mappedRole,
-    };
-    setUser(session);
-    setRoleState(mappedRole);
-    authStore.setSession({
-      user: loginResult.user || res.user,
-      session: loginResult.session ?? null,
-      roles,
-      permissions: loginResult.permissions ?? ['donation:create', 'donation:read:self'],
-      mfaVerified: Boolean(loginResult.mfaVerified),
-    });
+    await api.register({ name, email, password });
+    throw new Error('Account created! Please check your email to verify your account before signing in.');
   }, []);
 
   const loginWithPassword = useCallback(async (email: string, password: string) => {

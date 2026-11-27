@@ -1,4 +1,7 @@
+import { requiresMfaEnrollment } from '../auth/auth.policy.js';
+
 export function toUserResponse(user) {
+  const roles = Object.freeze(user.roles?.map((item) => item.role?.code ?? item.code) ?? []);
   return Object.freeze({
     id: user.id,
     name: user.name,
@@ -7,8 +10,14 @@ export function toUserResponse(user) {
     image: user.image,
     status: user.status,
     twoFactorEnabled: user.twoFactorEnabled,
-    roles: Object.freeze(user.roles?.map((item) => item.role?.code ?? item.code) ?? []),
-    permissions: Object.freeze([...new Set(user.roles?.flatMap((item) => item.role?.permissions?.map((entry) => entry.permission.code) ?? []) ?? [])]),
+    mustChangePassword: Boolean(user.mustChangePassword),
+    mfaEnrollmentRequired: requiresMfaEnrollment(user, roles),
+    roles,
+    permissions: Object.freeze([
+      ...new Set(
+        user.roles?.flatMap((item) => item.role?.permissions?.map((entry) => entry.permission.code) ?? []) ?? []
+      )
+    ]),
     createdAt: user.createdAt,
     updatedAt: user.updatedAt
   });

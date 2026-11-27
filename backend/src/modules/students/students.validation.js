@@ -8,7 +8,7 @@ export const claimStudentSchema = z
       .toUpperCase()
       .regex(
         STUDENT_REG_NO_REGEX,
-        'Use a valid university registration number (e.g. CT206/204483/24 or CT201/000001/23).'
+        'Use a valid university registration number (format: CTxxx/xxxxxx/yy).'
       )
   })
   .strict();

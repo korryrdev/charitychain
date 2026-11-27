@@ -3,10 +3,9 @@ import { ArrowLeft } from 'lucide-react';
 import { LanguageToggle } from '../components/LanguageToggle';
 import { SkipLink } from '../components/SkipLink';
 import { ThemeToggle } from '../components/common/ThemeToggle';
-import { GlobalSearch } from '../components/navigation/GlobalSearch';
 import { HelpFab } from '../components/navigation/HelpFab';
 
-// Account access is a focused task: minimal chrome, no marketing navigation or footer.
+// Account access is a focused task: minimal chrome, no marketing navigation, search, or footer.
 export function AuthLayout() {
   return (
     <div className="cc-authlayout">
@@ -20,7 +19,6 @@ export function AuthLayout() {
             <span>CharityChain</span>
           </Link>
           <div className="cc-authbar__actions">
-            <GlobalSearch />
             <LanguageToggle />
             <ThemeToggle />
             <Link className="cc-btn cc-btn--ghost cc-btn--sm" to="/">

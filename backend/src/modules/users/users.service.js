@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import { prisma } from '@charitychain/database';
+import { authenticationConfig } from '../../config/authentication.js';
 import { env } from '../../config/environment.js';
 import { AppError } from '../../errors/AppError.js';
 import { ConflictError } from '../../errors/ConflictError.js';
@@ -132,8 +133,10 @@ export function createUsersService({
             'That email already belongs to a CharityChain account. Use a different email for this staff invitation.'
           );
         }
+        const tempPasswordExpiresAt = new Date(Date.now() + authenticationConfig.temporaryPasswordTtlMs);
+        await authRepository.markTemporaryPassword(activatedUser.id, tempPasswordExpiresAt);
         const assigned = await repository.assignRoles(activatedUser.id, [...new Set(input.roles)]);
-        const activationUrl = `${env.APP_URL}/auth/login`;
+        const activationUrl = `${env.APP_URL}/staff/login`;
         const dashboardUrl = input.dashboardUrl ?? activationUrl;
         const invitation = {
           user: toUserResponse(assigned),
@@ -148,13 +151,27 @@ export function createUsersService({
           activationUrl,
           dashboardUrl,
           roleName: input.roleName ?? 'CharityChain staff',
-          permissions: invitation.user.permissions
+          permissions: invitation.user.permissions,
+          temporaryPasswordExpiresInHours: Math.max(
+            1,
+            Math.round(authenticationConfig.temporaryPasswordTtlMs / 3_600_000)
+          )
         });
         return { ...invitation, delivery };
       } catch (error) {
         await authRepository.deleteUser(user.id).catch(() => {});
         throw error;
       }
+    },
+    async changeOwnPassword(auth, input, context) {
+      const result = await authentication.changePassword(auth, input, context);
+      return {
+        user: toUserResponse(result.user),
+        roles: result.roles,
+        permissions: result.permissions,
+        mustChangePassword: false,
+        mfaEnrollmentRequired: Boolean(result.mfaEnrollmentRequired)
+      };
     },
     async closeOwnAccount(auth, password, headers) {
       await authentication.verifyCurrentPassword(password, headers);

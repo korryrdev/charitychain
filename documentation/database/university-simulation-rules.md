@@ -10,7 +10,7 @@ Deterministic simulated student scenarios are generated strictly inside integrat
 
 ## Dataset Invariants
 
-- Registration numbers follow `^[A-Z]{2}\d{3}\/\d{6}\/\d{2}$` (e.g. `CT206/204483/24`, `CT201/000001/23`).
+- Registration numbers follow `^[A-Z]{2}\d{3}\/\d{6}\/\d{2}$` (e.g. `CTxxx/xxxxxx/yy`, `CT201/000001/23`).
 - Every generated student has four semesters of financial records.
 - Every financial record satisfies `outstanding balance = invoiced amount - total payments`.
 - Aid payments have corresponding HELB, scholarship, NGO, or waiver evidence.

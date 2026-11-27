@@ -28,7 +28,7 @@ describe('database seeds', () => {
     expect(await prisma.permission.count()).toBeGreaterThanOrEqual(50);
     expect(await prisma.recognitionTier.count()).toBeGreaterThanOrEqual(4);
 
-    const adminEmail = (process.env.ADMIN_EMAIL || 'admin@charitychain.org').trim().toLowerCase();
+    const adminEmail = (process.env.ADMIN_EMAIL || 'kotlin.hustlehub@gmail.com').trim().toLowerCase();
     const admin = await prisma.user.findUnique({
       where: { email: adminEmail },
       include: { roles: { include: { role: true } } }
@@ -40,6 +40,7 @@ describe('database seeds', () => {
       where: {
         email: {
           in: [
+            'admin@charitychain.org',
             'pharmacy@malkia.charity',
             'committee@malkia.charity',
             'chair@malkia.charity',

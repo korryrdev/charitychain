@@ -71,7 +71,7 @@ export const FAQ_ITEMS = Object.freeze([
     category: 'STUDENTS',
     question: 'How is student financial need assessed?',
     answer:
-      'Eligibility is evaluated using an explainable Need Index grounded in your verified university fee balance, payment history, aid records, and academic status. You do not upload fee statements in the prototype, and every Need Index factor is explained on your vetting screen.'
+      'Eligibility is evaluated using an explainable Need Index grounded in your verified university fee balance, payment history, aid records, and academic status. You do not need to upload fee statements, and every Need Index factor is explained on your vetting screen.'
   },
   {
     id: 'record-discrepancy',
@@ -176,7 +176,7 @@ export const HELP_GUIDES = Object.freeze([
     id: 'ADMIN',
     roleLabel: 'Administrator',
     title: 'Roles, policies, and system health',
-    summary: 'Manage staff roles, vetting thresholds, inventory categories, integration health, and simulated university data.',
+    summary: 'Manage staff roles, vetting thresholds, inventory categories, integration health, and university records.',
     primaryRoute: '/admin',
     steps: [
       'Assign or revoke staff and committee roles under Users and roles (/admin/users).',
@@ -362,7 +362,7 @@ const CONTEXTUAL_HELP_ROUTES = [
   {
     match: '/admin',
     title: 'Administrator help',
-    summary: 'Manage roles, policy configuration, simulated records, and integration readiness.',
+    summary: 'Manage roles, policy configuration, university records, and integration readiness.',
     steps: [
       'Assign staff and committee roles carefully; administrators cannot approve payouts alone.',
       'Verify integration readiness (database, IPFS, Daraja, RPC) under Integration health.',

@@ -78,7 +78,7 @@ export function VettingResultPage() {
           <section>
             <h2>Evidence factors</h2>
             <p className="muted">
-              These factors are derived from the simulated university record; they are not a label of a student’s worth or character.
+              These factors are derived from your university record; they are not a label of a student’s worth or character.
             </p>
             <VettingFactors factors={run.factors} />
           </section>

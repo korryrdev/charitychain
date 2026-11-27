@@ -2,7 +2,7 @@ import { prisma } from '../client/prismaClient.js';
 import { hashPassword } from 'better-auth/crypto';
 
 export async function seedAdmin({
-  email = process.env.ADMIN_EMAIL || 'admin@charitychain.org',
+  email = process.env.ADMIN_EMAIL || 'kotlin.hustlehub@gmail.com',
   name = 'System Administrator',
   password = process.env.ADMIN_PASSWORD || 'Admin123456!'
 } = {}) {

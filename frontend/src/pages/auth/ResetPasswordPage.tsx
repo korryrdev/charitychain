@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { Button } from '../../components/common/Button';
 import { FormField } from '../../components/forms/FormField';
 import { Alert } from '../../components/feedback/Alert';
@@ -16,13 +16,18 @@ interface ResetPasswordState {
 export function ResetPasswordPage() {
   const { resetPassword } = useAuth();
   const location = useLocation();
-  const developmentResetToken = location.state?.developmentResetToken;
+  const [searchParams] = useSearchParams();
+  const locationState = (location.state as { userId?: string; token?: string } | null) ?? null;
+
+  const queryUserId = searchParams.get('userId')?.trim() ?? '';
+  const queryToken = searchParams.get('token')?.trim() ?? '';
+  const hasQueryLink = Boolean(queryUserId && queryToken);
+
   const [values, setValues] = useState({
-    email: location.state?.email ?? '',
-    userId: location.state?.userId ?? '',
-    token: developmentResetToken ?? '',
+    userId: queryUserId || locationState?.userId || '',
+    token: queryToken || locationState?.token || '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
   });
   const [state, setState] = useState<ResetPasswordState>({
     pending: false,
@@ -38,7 +43,11 @@ export function ResetPasswordPage() {
     }
     setState({ pending: true, error: null, complete: false });
     try {
-      await resetPassword({ userId: values.userId, token: values.token, password: values.password });
+      await resetPassword({
+        userId: values.userId.trim(),
+        token: values.token.trim(),
+        password: values.password,
+      });
       setState({ pending: false, error: null, complete: true });
     } catch (cause: unknown) {
       setState({
@@ -53,11 +62,7 @@ export function ResetPasswordPage() {
     <main className="auth-page">
       <form noValidate onSubmit={submit}>
         <h1>Choose a new password</h1>
-        {developmentResetToken && (
-          <Alert tone="warning" title="Local development token">
-            Email delivery is not configured locally, so the reset token has been filled in for testing.
-          </Alert>
-        )}
+        <p>Enter a new password of at least 12 characters for your account.</p>
         {state.error && (
           <Alert tone="danger" title="Password reset failed">
             {state.error}
@@ -65,31 +70,31 @@ export function ResetPasswordPage() {
         )}
         {state.complete && (
           <Alert tone="success" title="Password reset">
-            <Link to="/auth/login">Sign in with your new password.</Link>
+            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginTop: '0.25rem' }}>
+              <Link to="/auth/login">Donor sign in</Link>
+              <Link to="/student/auth/login">Student sign in</Link>
+              <Link to="/staff/login">Staff sign in</Link>
+            </div>
           </Alert>
         )}
-        <FormField id="reset-email" label="Email address">
-          <input
-            id="reset-email"
-            type="email"
-            value={values.email}
-            onChange={(event) => setValues({ ...values, email: event.target.value })}
-          />
-        </FormField>
-        <FormField id="user-id" label="User ID">
-          <input
-            id="user-id"
-            value={values.userId}
-            onChange={(event) => setValues({ ...values, userId: event.target.value })}
-          />
-        </FormField>
-        <FormField id="reset-token" label="Reset token">
-          <input
-            id="reset-token"
-            value={values.token}
-            onChange={(event) => setValues({ ...values, token: event.target.value })}
-          />
-        </FormField>
+        {!hasQueryLink && (
+          <>
+            <FormField id="user-id" label="User ID">
+              <input
+                id="user-id"
+                value={values.userId}
+                onChange={(event) => setValues({ ...values, userId: event.target.value })}
+              />
+            </FormField>
+            <FormField id="reset-token" label="Reset token">
+              <input
+                id="reset-token"
+                value={values.token}
+                onChange={(event) => setValues({ ...values, token: event.target.value })}
+              />
+            </FormField>
+          </>
+        )}
         <FormField id="reset-password" label="New password" hint="At least 12 characters.">
           <input
             id="reset-password"

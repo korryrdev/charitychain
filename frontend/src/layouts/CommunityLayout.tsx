@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { useTranslation } from '../app/i18n/I18nContext';
 import { SkipLink } from '../components/SkipLink';
+import { HelpFab } from '../components/navigation/HelpFab';
 import { useSession } from '../features/authentication/hooks/useSession';
 import { NAVIGATION, allowedNavigation } from './navigation';
 import { AppHeader } from './components/AppHeader';
@@ -43,6 +44,7 @@ export function CommunityLayout() {
         <Outlet />
       </main>
       <MobileNavigation items={items} />
+      <HelpFab />
     </div>
   );
 }

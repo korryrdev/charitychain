@@ -241,6 +241,25 @@ await prisma.$transaction(
       });
     }
 
+    const activeSemester = await transaction.academicSemester.findFirst({
+      where: { active: true }
+    });
+    if (!activeSemester) {
+      await transaction.academicSemester.upsert({
+        where: { code: '2026-2027-S1' },
+        update: { active: true },
+        create: {
+          code: '2026-2027-S1',
+          name: 'Semester 1',
+          academicYear: '2026/2027',
+          startsAt: new Date('2026-09-01T00:00:00.000Z'),
+          endsAt: new Date('2026-12-18T23:59:59.000Z'),
+          feeDueAt: new Date('2026-09-18T23:59:59.000Z'),
+          active: true
+        }
+      });
+    }
+
     // Remove legacy deterministic demo tokens
     await transaction.session.deleteMany({
       where: { token: { startsWith: 'malkia-token-' } }

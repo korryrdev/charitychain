@@ -198,12 +198,50 @@ describe('Wave 1 security & API contract hardening', () => {
 
   it('validates and uppercases CTxxx/xxxxxx/yy registration numbers while rejecting legacy MUST/SIM format', () => {
     const regParsed = studentRegisterSchema.parse({
-      name: 'Korir Student',
-      email: 'korir204483@students.must.ac.ke',
+      name: 'Demo Student',
+      email: 'student123456@students.must.ac.ke',
       password: 'StrongPassword123!',
-      registrationNumber: 'ct206/204483/24'
+      registrationNumber: 'ct201/000001/24',
+      school: 'School of Computing and Informatics',
+      programme: 'BSc. in Computer Security and Forensics (BCSF)',
+      yearOfStudy: 3
     });
-    expect(regParsed.registrationNumber).toBe('CT206/204483/24');
+    expect(regParsed.registrationNumber).toBe('CT201/000001/24');
+    expect(regParsed.yearOfStudy).toBe(3);
+
+    // 3-year diploma rejects Year 4; 5-year engineering degree accepts Year 5.
+    expect(() =>
+      studentRegisterSchema.parse({
+        name: 'Diploma Student',
+        email: 'dip123456@students.must.ac.ke',
+        password: 'StrongPassword123!',
+        registrationNumber: 'CT201/000002/24',
+        school: 'School of Computing and Informatics',
+        programme: 'Diploma in Information Technology (IT)',
+        yearOfStudy: 4
+      })
+    ).toThrow(/exceed 3/);
+
+    expect(
+      studentRegisterSchema.parse({
+        name: 'Eng Student',
+        email: 'eng123456@students.must.ac.ke',
+        password: 'StrongPassword123!',
+        registrationNumber: 'EN201/000003/22',
+        school: 'School of Engineering and Architecture',
+        programme: 'Bachelor of Technology in Civil Engineering',
+        yearOfStudy: 5
+      }).yearOfStudy
+    ).toBe(5);
+
+    expect(() =>
+      studentRegisterSchema.parse({
+        name: 'Missing Fields',
+        email: 'missing123456@students.must.ac.ke',
+        password: 'StrongPassword123!',
+        registrationNumber: 'CT201/000004/24'
+      })
+    ).toThrow();
 
     expect(claimStudentSchema.parse({ registrationNumber: 'CT201/000001/23' }).registrationNumber).toBe(
       'CT201/000001/23'
@@ -221,13 +259,16 @@ describe('Wave 1 security & API contract hardening', () => {
 
     expect(() =>
       studentRegisterSchema.parse({
-        name: 'Korir Student',
-        email: 'korir204483@students.must.ac.ke',
+        name: 'Demo Student',
+        email: 'student123456@students.must.ac.ke',
         password: 'StrongPassword123!',
-        registrationNumber: 'MUST/SIM/2026/001'
+        registrationNumber: 'MUST/SIM/2026/001',
+        school: 'School of Computing and Informatics',
+        programme: 'BSc. in Computer Science (BCS)',
+        yearOfStudy: 2
       })
-    ).toThrow(/CT206/);
-    expect(() => claimStudentSchema.parse({ registrationNumber: 'MUST/SIM/2026/001' })).toThrow(/CT206/);
+    ).toThrow(/CTxxx\/xxxxxx\/yy/);
+    expect(() => claimStudentSchema.parse({ registrationNumber: 'MUST/SIM/2026/001' })).toThrow(/CTxxx\/xxxxxx\/yy/);
     const legacyCaseResult = createCaseSchema.safeParse({
       subGroupId: '11111111-1111-4111-8111-111111111111',
       studentName: 'Student Applicant',
