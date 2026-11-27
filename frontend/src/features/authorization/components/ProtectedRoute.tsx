@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
+import { CHANGE_PASSWORD_PATH, MFA_SETUP_PATH } from '../../authentication/nextStep';
+import { loginPathForPath } from '../../authentication/portals';
 import { useSession } from '../../authentication/hooks/useSession';
 import { hasAnyPermission, hasEveryPermission, hasRole } from '../permissions';
 
@@ -26,7 +28,19 @@ export function ProtectedRoute({
     );
   }
   if (!authenticated) {
-    return <Navigate to="/auth/login" replace state={{ from: location.pathname }} />;
+    return (
+      <Navigate
+        to={loginPathForPath(location.pathname)}
+        replace
+        state={{ from: location.pathname }}
+      />
+    );
+  }
+  if (session?.user?.mustChangePassword) {
+    return <Navigate to={CHANGE_PASSWORD_PATH} replace />;
+  }
+  if (session?.user?.mfaEnrollmentRequired) {
+    return <Navigate to={MFA_SETUP_PATH} replace />;
   }
   const permissionAllowed =
     !permissions.length ||

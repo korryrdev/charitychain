@@ -3,6 +3,7 @@ import { CircleAlert, CircleCheck, Eye, EyeOff } from 'lucide-react';
 
 export interface AuthFieldProps {
   id: string;
+  name?: string;
   label: ReactNode;
   type?: InputHTMLAttributes<HTMLInputElement>['type'];
   value: string;
@@ -13,6 +14,12 @@ export interface AuthFieldProps {
   valid?: boolean;
   placeholder?: string;
   autoComplete?: InputHTMLAttributes<HTMLInputElement>['autoComplete'];
+  inputMode?: InputHTMLAttributes<HTMLInputElement>['inputMode'];
+  autoCorrect?: 'on' | 'off';
+  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+  spellCheck?: boolean;
+  enterKeyHint?: InputHTMLAttributes<HTMLInputElement>['enterKeyHint'];
+  uppercase?: boolean;
   children?: ReactNode;
 }
 
@@ -23,6 +30,7 @@ export interface AuthFieldProps {
  */
 export function AuthField({
   id,
+  name,
   label,
   type = 'text',
   value,
@@ -33,6 +41,12 @@ export function AuthField({
   valid = false,
   placeholder,
   autoComplete,
+  inputMode,
+  autoCorrect,
+  autoCapitalize,
+  spellCheck,
+  enterKeyHint,
+  uppercase = false,
   children,
 }: AuthFieldProps) {
   const reactId = useId();
@@ -51,11 +65,17 @@ export function AuthField({
       <div className={`cc-field__control${state}`}>
         <input
           id={id}
-          className="cc-input"
+          name={name ?? id}
+          className={`cc-input${uppercase ? ' cc-input--upper' : ''}`}
           type={isPassword && revealed ? 'text' : type}
           value={value}
           placeholder={placeholder}
           autoComplete={autoComplete}
+          inputMode={inputMode}
+          autoCorrect={autoCorrect}
+          autoCapitalize={autoCapitalize}
+          spellCheck={spellCheck}
+          enterKeyHint={enterKeyHint}
           aria-invalid={error ? 'true' : undefined}
           aria-describedby={describedBy}
           onChange={(event) => onChange(event.target.value)}

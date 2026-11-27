@@ -21,6 +21,16 @@ export function createUsersController(service = usersService) {
     me: handle(async (req, res) =>
       res.json({ user: await service.get(req.auth, req.auth.user.id) })
     ),
+    changeOwnPassword: handle(async (req, res) => {
+      const context = {
+        ip: req.ip,
+        requestId: req.id,
+        requestMethod: req.method,
+        requestPath: req.originalUrl?.split('?')[0],
+        userAgent: req.get('user-agent')
+      };
+      res.status(200).json(await service.changeOwnPassword(req.auth, req.body, context));
+    }),
     closeOwnAccount: handle(async (req, res) => {
       await service.closeOwnAccount(req.auth, req.body.password, requestHeaders(req));
       res.status(204).end();

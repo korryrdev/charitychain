@@ -35,7 +35,7 @@ export function VettingExplanation({ run }: VettingExplanationProps) {
       )}
       <p>
         {run.explanation ??
-          'The system assessed the available simulated university record using the active vetting policy.'}
+          'The system assessed the available university record using the active vetting policy.'}
       </p>
       {run.policy && (
         <small>

@@ -65,7 +65,7 @@ export function UniversityRecordsAdminPage() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by CT206/204483/24, name, or programme…"
+            placeholder="Search by CTxxx/xxxxxx/yy, name, or programme…"
             aria-label="Search student records"
             className="w-full h-9 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 pl-8 pr-3 text-xs"
           />

@@ -113,7 +113,7 @@ export const NewCasePage: React.FC = () => {
               />
               <Input
                 label="Student Registration No."
-                placeholder="e.g. CT206/204483/24"
+                placeholder="e.g. CTxxx/xxxxxx/yy"
                 value={studentRegNo}
                 onChange={(e) => setStudentRegNo(e.target.value)}
                 required

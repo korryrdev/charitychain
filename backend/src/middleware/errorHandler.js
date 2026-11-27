@@ -21,5 +21,10 @@ export function errorHandler(error, request, response, _next) {
           ...(request.id ? { requestId: request.id } : {})
         };
 
+  const retryAfter = error?.retryAfterSeconds ?? error?.details?.retryAfterSeconds;
+  if (Number.isFinite(retryAfter) && retryAfter > 0 && !response.getHeader('Retry-After')) {
+    response.set('Retry-After', String(Math.max(1, Math.ceil(retryAfter))));
+  }
+
   response.status(statusCode).json({ error: safeError });
 }

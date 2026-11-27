@@ -21,6 +21,11 @@ export function createAuthRouter(controller = authController) {
     validateRequest({ body: verifyAccountSchema }),
     controller.verifyAccount
   );
+  router.post(
+    '/resend-verification',
+    validateRequest({ body: emailSchema }),
+    controller.resendVerification
+  );
   router.post('/login', validateRequest({ body: loginSchema }), controller.login);
   router.post('/logout', controller.logout);
   router.post(

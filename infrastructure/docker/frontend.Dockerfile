@@ -8,7 +8,14 @@ COPY backend/package.json backend/package.json
 COPY database/package.json database/package.json
 COPY blockchain/package.json blockchain/package.json
 COPY shared/package.json shared/package.json
-RUN npm ci --legacy-peer-deps
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --legacy-peer-deps \
+    --fetch-retries=5 \
+    --fetch-retry-mintimeout=20000 \
+    --fetch-retry-maxtimeout=120000 \
+    --maxsockets=5 \
+    --no-audit \
+    --no-fund
 
 COPY . .
 RUN npm run build -w @charitychain/frontend

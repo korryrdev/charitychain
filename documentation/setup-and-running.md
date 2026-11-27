@@ -171,7 +171,7 @@ From the **Users & Roles** directory:
 ### Student Onboarding
 1. Students register with their university email (`name123456@students.must.ac.ke`) via `http://localhost:5173/auth/register` (Student tab) or `http://localhost:5173/student/auth/register`.
 2. The registration assigns the `STUDENT` role.
-3. To link their student profile, the student supplies their university registration number matching `^[A-Z]{2}\d{3}\/\d{6}\/\d{2}$` (e.g. `CT206/204483/24` or `CT201/000001/23`).
+3. To link their student profile, the student supplies their university registration number matching `^[A-Z]{2}\d{3}\/\d{6}\/\d{2}$` (e.g. `CTxxx/xxxxxx/yy` or `CT201/000001/23`).
 4. Once linked, their academic semester, fee balance, and eligibility data populate automatically on `/student`.
 
 ---
@@ -284,7 +284,7 @@ npm run db:seed:admin
 Log in at `http://localhost:5173/auth/login` with `admin@charitychain.org` / `Admin123456!`.
 
 ### Invalid university registration number
-Use the `CTxxx/xxxxxx/yy` format (`^[A-Z]{2}\d{3}\/\d{6}\/\d{2}$`), such as `CT206/204483/24` or `CT201/000001/23`.
+Use the `CTxxx/xxxxxx/yy` format (`^[A-Z]{2}\d{3}\/\d{6}\/\d{2}$`), such as `CTxxx/xxxxxx/yy` or `CT201/000001/23`.
 
 ---
 

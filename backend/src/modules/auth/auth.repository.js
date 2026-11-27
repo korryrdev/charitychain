@@ -1,7 +1,9 @@
 import { prisma } from '@charitychain/database';
+import { findMustProgramme, findMustSchool } from '@charitychain/shared';
 import { AppError } from '../../errors/AppError.js';
 import { ConflictError } from '../../errors/ConflictError.js';
 import { ERROR_CODES } from '../../errors/errorCodes.js';
+import { ValidationError } from '../../errors/ValidationError.js';
 
 export function createAuthRepository(database = prisma) {
   return {
@@ -55,6 +57,26 @@ export function createAuthRepository(database = prisma) {
         data: { status: 'ACTIVE', emailVerified: true }
       });
     },
+    findCredentialAccount(userId) {
+      return database.account.findFirst({ where: { userId, providerId: 'credential' } });
+    },
+    markTemporaryPassword(userId, expiresAt) {
+      return database.user.update({
+        where: { id: userId },
+        data: { mustChangePassword: true, temporaryPasswordExpiresAt: expiresAt }
+      });
+    },
+    clearPasswordChangeRequirement(userId) {
+      return database.user.update({
+        where: { id: userId },
+        data: { mustChangePassword: false, temporaryPasswordExpiresAt: null }
+      });
+    },
+    revokeSessionsExcept(userId, exceptToken = null) {
+      return database.session.deleteMany({
+        where: { userId, ...(exceptToken ? { token: { not: exceptToken } } : {}) }
+      });
+    },
     updateCredentialPassword(userId, password) {
       return database.account.updateMany({
         where: { userId, providerId: 'credential' },
@@ -71,7 +93,7 @@ export function createAuthRepository(database = prisma) {
         });
       });
     },
-    ensureStudentProfile(userId, fullName, registrationNumber) {
+    ensureStudentProfile(userId, fullName, registrationNumber, academicDetails) {
       return database.$transaction(async (transaction) => {
         const existing = await transaction.student.findUnique({ where: { userId } });
         const normalizedReg = registrationNumber?.trim().toUpperCase();
@@ -102,18 +124,36 @@ export function createAuthRepository(database = prisma) {
           if (existing) {
             throw new ConflictError('This account is already linked to another student record.');
           }
+          const rawSchool = academicDetails?.school?.trim();
+          const rawProgramme = academicDetails?.programme?.trim();
+          const yearOfStudy = Number(academicDetails?.yearOfStudy);
+          if (!rawSchool || !rawProgramme || !Number.isInteger(yearOfStudy) || yearOfStudy < 1 || yearOfStudy > 5) {
+            throw new ValidationError('School, programme, and year of study are required.', [
+              { path: 'school', message: 'School, programme, and year of study are required.', code: 'custom' }
+            ]);
+          }
+          const matchedSchool = findMustSchool(rawSchool);
+          const matchedProgramme = matchedSchool ? findMustProgramme(matchedSchool.code, rawProgramme) : null;
+          const schoolName = matchedSchool?.name ?? rawSchool;
+          const programmeName = matchedProgramme?.name ?? rawProgramme;
+          const durationYears = matchedProgramme?.durationYears ?? (yearOfStudy > 4 ? 5 : 4);
+          const now = new Date();
+          const admittedAt = new Date(Date.UTC(now.getUTCFullYear() - (yearOfStudy - 1), 8, 1));
+          const expectedGraduation = new Date(
+            Date.UTC(admittedAt.getUTCFullYear() + durationYears, 5, 30)
+          );
           return transaction.student.create({
             data: {
               userId,
               registrationNumber: normalizedReg,
               fullName: fullName || normalizedReg,
-              programme: 'BSC-COMPUTER-SCIENCE',
-              school: 'School of Computing and Informatics',
-              yearOfStudy: 1,
+              programme: programmeName,
+              school: schoolName,
+              yearOfStudy,
               academicStatus: 'ACTIVE',
               simulationProfile: 'MIXED_CONTROL',
-              admittedAt: new Date(),
-              expectedGraduation: new Date(Date.now() + 4 * 365 * 86400000)
+              admittedAt,
+              expectedGraduation
             }
           });
         }

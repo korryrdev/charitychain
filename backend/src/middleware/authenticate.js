@@ -1,6 +1,7 @@
 import { authenticationConfig } from '../config/authentication.js';
 import { STATUSES } from '../constants/statuses.js';
 import { AuthenticationError } from '../errors/AuthenticationError.js';
+import { AuthorizationError } from '../errors/AuthorizationError.js';
 import { ERROR_CODES } from '../errors/errorCodes.js';
 
 function extractSessionToken(request, cookieName) {
@@ -47,13 +48,35 @@ export function createAuthenticate({
         });
       }
 
+      const mustChangePassword = Boolean(
+        authentication.mustChangePassword ?? authentication.user?.mustChangePassword
+      );
+      const mfaEnrollmentRequired = Boolean(authentication.mfaEnrollmentRequired);
+
       request.auth = Object.freeze({
         user: authentication.user,
         session: authentication.session,
         roles: Object.freeze([...(authentication.roles ?? [])]),
         permissions: Object.freeze([...(authentication.permissions ?? [])]),
-        mfaVerified: Boolean(authentication.mfaVerified)
+        mfaVerified: Boolean(authentication.mfaVerified),
+        mustChangePassword,
+        mfaEnrollmentRequired
       });
+
+      const path = request.originalUrl?.split('?')[0] ?? '';
+      const allowedOnboarding =
+        (request.method === 'GET' && path === '/api/v1/users/me') ||
+        (request.method === 'POST' && path === '/api/v1/users/me/password');
+      if (!allowedOnboarding && mustChangePassword) {
+        throw new AuthorizationError('You must change your temporary password before continuing.', {
+          code: ERROR_CODES.PASSWORD_CHANGE_REQUIRED
+        });
+      }
+      if (!allowedOnboarding && mfaEnrollmentRequired) {
+        throw new AuthorizationError('You must set up multi-factor authentication before continuing.', {
+          code: ERROR_CODES.MFA_ENROLLMENT_REQUIRED
+        });
+      }
       next();
     } catch (error) {
       next(error);

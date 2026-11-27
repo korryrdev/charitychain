@@ -46,6 +46,7 @@ export async function mapResponseError(response: Response): Promise<ApiError> {
   } catch {
     /* ignore non-JSON body */
   }
+  const details = withRetryAfterHeader(body?.error?.details ?? null, response);
   return new ApiError({
     status: response.status,
     code: body?.error?.code ?? body?.code ?? `HTTP_${response.status}`,
@@ -55,6 +56,35 @@ export async function mapResponseError(response: Response): Promise<ApiError> {
       (response.status >= 500
         ? 'A service error occurred. Please try again.'
         : 'Your request could not be completed.'),
-    details: body?.error?.details ?? null,
+    details,
   });
+}
+
+function withRetryAfterHeader(details: unknown, response: Response): unknown {
+  const header = response.headers?.get?.('retry-after');
+  const seconds = header ? Number(header) : NaN;
+  if (!Number.isFinite(seconds) || seconds < 0) return details;
+  const base = typeof details === 'object' && details !== null ? (details as Record<string, unknown>) : {};
+  if (typeof base.retryAfterSeconds === 'number') return details;
+  return { ...base, retryAfterSeconds: seconds };
+}
+
+/** Seconds the client must wait before retrying (429 `details.retryAfterSeconds`), or null when not provided. */
+export function getRetryAfterSeconds(error: unknown): number | null {
+  if (typeof error !== 'object' || error === null || !('details' in error)) return null;
+  const details = (error as { details?: unknown }).details;
+  if (typeof details !== 'object' || details === null) return null;
+  const value = (details as { retryAfterSeconds?: unknown }).retryAfterSeconds;
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 ? Math.ceil(value) : null;
+}
+
+export function getErrorCode(error: unknown): string | null {
+  if (typeof error !== 'object' || error === null || !('code' in error)) return null;
+  const code = (error as { code?: unknown }).code;
+  return typeof code === 'string' ? code : null;
+}
+
+export function isRateLimited(error: unknown): boolean {
+  const status = typeof error === 'object' && error !== null ? (error as { status?: unknown }).status : undefined;
+  return status === 429 || getErrorCode(error) === 'RATE_LIMIT_EXCEEDED';
 }

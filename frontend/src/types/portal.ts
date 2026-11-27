@@ -11,6 +11,10 @@ export interface PortalUser {
   twoFactorEnabled?: boolean;
   status?: string;
   registrationNumber?: string;
+  /** Staff invited with a temporary password must change it before using the app. */
+  mustChangePassword?: boolean;
+  /** Admin and committee accounts must enrol MFA before using the app. */
+  mfaEnrollmentRequired?: boolean;
 }
 
 export interface PortalSession {
@@ -39,4 +43,18 @@ export interface AsyncState<T> {
   pending: boolean;
   error: Error | null;
   data: T | null;
+}
+
+/** Body returned by login / MFA verification / password change. */
+export interface AuthResponse {
+  user?: PortalUser | null;
+  session?: Record<string, unknown> | null;
+  roles?: string[];
+  permissions?: string[];
+  role?: string;
+  requiresMfa?: boolean;
+  twoFactorRedirect?: boolean;
+  mfaVerified?: boolean;
+  mustChangePassword?: boolean;
+  mfaEnrollmentRequired?: boolean;
 }

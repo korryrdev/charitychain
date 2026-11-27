@@ -1,0 +1,74 @@
+{
+  "schools": [
+    {
+      "code": "SCI",
+      "name": "School of Computing and Informatics",
+      "programmes": [
+        { "code": "BCSF", "name": "BSc. in Computer Security and Forensics (BCSF)", "level": "DEGREE", "durationYears": 4 },
+        { "code": "BCS", "name": "BSc. in Computer Science (BCS)", "level": "DEGREE", "durationYears": 4 },
+        { "code": "BDS", "name": "BSc. in Data Science (BDS)", "level": "DEGREE", "durationYears": 4 },
+        { "code": "BBIT", "name": "Bachelor of Business Information Technology (BBIT)", "level": "DEGREE", "durationYears": 4 },
+        { "code": "BIT", "name": "BSc. in Information Technology (BIT)", "level": "DEGREE", "durationYears": 4 },
+        { "code": "BCJ", "name": "Bachelor of Communication and Journalism (BCJ)", "level": "DEGREE", "durationYears": 4 },
+        { "code": "DIP-ICT", "name": "Diploma in Information and Communication Technology (ICT)", "level": "DIPLOMA", "durationYears": 3 },
+        { "code": "DIP-IT", "name": "Diploma in Information Technology (IT)", "level": "DIPLOMA", "durationYears": 3 }
+      ]
+    },
+    {
+      "code": "SED",
+      "name": "School of Education",
+      "programmes": [
+        { "code": "BED-ARTS", "name": "Bachelor of Education (Arts)", "level": "DEGREE", "durationYears": 4 },
+        { "code": "BED-SCIENCE", "name": "Bachelor of Education (Science)", "level": "DEGREE", "durationYears": 4 }
+      ]
+    },
+    {
+      "code": "SBE",
+      "name": "School of Business and Economics",
+      "programmes": [
+        { "code": "BCOM", "name": "Bachelor of Commerce (BCOM)", "level": "DEGREE", "durationYears": 4 },
+        { "code": "BSc-HRM", "name": "BSc. in Human Resource Management (HR)", "level": "DEGREE", "durationYears": 4 },
+        { "code": "BPSM", "name": "Bachelor of Purchasing and Supplies Management (Procurement)", "level": "DEGREE", "durationYears": 4 },
+        { "code": "BSc-INS", "name": "BSc. in Insurance and Risk Management", "level": "DEGREE", "durationYears": 4 },
+        { "code": "BSc-FIN-ACC", "name": "BSc. in Financial Accounting", "level": "DEGREE", "durationYears": 4 },
+        { "code": "DIP-HR", "name": "Diploma in Human Resource Management (HR)", "level": "DIPLOMA", "durationYears": 3 }
+      ]
+    },
+    {
+      "code": "SHS",
+      "name": "School of Health Sciences",
+      "programmes": [
+        { "code": "BSc-NURSING", "name": "BSc. in Nursing", "level": "DEGREE", "durationYears": 4 },
+        { "code": "BSc-PUB-HEALTH", "name": "BSc. in Public Health", "level": "DEGREE", "durationYears": 4 },
+        { "code": "BSc-CLIN-MED", "name": "BSc. in Clinical Medicine and Community Health", "level": "DEGREE", "durationYears": 4 }
+      ]
+    },
+    {
+      "code": "SPAS",
+      "name": "School of Pure and Applied Sciences",
+      "programmes": [
+        { "code": "BSc-PURE-MATH", "name": "BSc. in Pure Mathematics", "level": "DEGREE", "durationYears": 4 },
+        { "code": "BSc-APPL-MATH", "name": "BSc. in Applied Mathematics", "level": "DEGREE", "durationYears": 4 },
+        { "code": "BSc-STAT", "name": "BSc. in Statistics", "level": "DEGREE", "durationYears": 4 }
+      ]
+    },
+    {
+      "code": "SEA",
+      "name": "School of Engineering and Architecture",
+      "programmes": [
+        { "code": "BTECH-CIVIL", "name": "Bachelor of Technology in Civil Engineering", "level": "DEGREE", "durationYears": 5 },
+        { "code": "BTECH-BUILDING", "name": "Bachelor of Technology in Building Construction Engineering", "level": "DEGREE", "durationYears": 5 },
+        { "code": "BTECH-ELEC", "name": "Bachelor of Technology in Electrical and Electronics Engineering", "level": "DEGREE", "durationYears": 5 },
+        { "code": "BTECH-MECH", "name": "Bachelor of Technology in Mechanical Engineering", "level": "DEGREE", "durationYears": 5 }
+      ]
+    },
+    {
+      "code": "SAFS",
+      "name": "School of Agriculture and Food Science",
+      "programmes": [
+        { "code": "BSc-FOOD-SCI", "name": "BSc. in Food Science and Technology", "level": "DEGREE", "durationYears": 4 },
+        { "code": "DIP-FOOD-SCI", "name": "Diploma in Food Science and Technology", "level": "DIPLOMA", "durationYears": 3 }
+      ]
+    }
+  ]
+}

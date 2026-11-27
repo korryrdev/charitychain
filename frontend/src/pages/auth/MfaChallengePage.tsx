@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MfaForm } from '../../features/authentication/components/MfaForm';
 import { useAuth } from '../../features/authentication/hooks/useAuth';
-import { defaultAuthorizedPath } from '../../features/authorization/permissions';
+import { nextAuthPath } from '../../features/authentication/nextStep';
 import { getErrorMessage } from '../../services/errorMapper';
 
 export function MfaChallengePage() {
@@ -16,7 +16,7 @@ export function MfaChallengePage() {
     setError(null);
     try {
       const response = await verifyMfa(values);
-      navigate(defaultAuthorizedPath(response), { replace: true });
+      navigate(nextAuthPath(response), { replace: true });
     } catch (cause: unknown) {
       setError(getErrorMessage(cause, 'Verification failed.'));
     } finally {

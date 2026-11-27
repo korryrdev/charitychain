@@ -7,7 +7,15 @@ import { LoginPage } from '../pages/auth/LoginPage';
 import { RegisterPage } from '../pages/auth/RegisterPage';
 import { StudentRegisterPage } from '../pages/auth/StudentRegisterPage';
 import { StudentLoginPage } from '../pages/auth/StudentLoginPage';
-import { VerifyAccountPage } from '../pages/auth/VerifyAccountPage';
+import { StaffLoginPage } from '../pages/auth/StaffLoginPage';
+import { DonorCheckEmailPage, StudentCheckEmailPage } from '../pages/auth/CheckEmailPage';
+import {
+  RedirectVerifyAccount,
+  StudentVerifyPage,
+  VerifyAccountPage,
+} from '../pages/auth/VerifyAccountPage';
+import { ChangePasswordPage } from '../pages/auth/ChangePasswordPage';
+import { MfaEnrollmentPage } from '../pages/auth/MfaEnrollmentPage';
 import { PasswordRecoveryPage } from '../pages/auth/PasswordRecoveryPage';
 import { ResetPasswordPage } from '../pages/auth/ResetPasswordPage';
 import { MfaChallengePage } from '../pages/auth/MfaChallengePage';
@@ -138,9 +146,16 @@ export const routeConfig = Object.freeze([
     children: [
       { path: 'auth/login', element: createElement(LoginPage) },
       { path: 'auth/register', element: createElement(RegisterPage) },
+      { path: 'auth/check-email', element: createElement(DonorCheckEmailPage) },
+      { path: 'auth/verify', element: createElement(VerifyAccountPage) },
+      { path: 'auth/verify-account', element: createElement(RedirectVerifyAccount) },
       { path: 'student/auth/login', element: createElement(StudentLoginPage) },
       { path: 'student/auth/register', element: createElement(StudentRegisterPage) },
-      { path: 'auth/verify-account', element: createElement(VerifyAccountPage) },
+      { path: 'student/auth/check-email', element: createElement(StudentCheckEmailPage) },
+      { path: 'student/auth/verify', element: createElement(StudentVerifyPage) },
+      { path: 'staff/login', element: createElement(StaffLoginPage) },
+      { path: 'auth/change-password', element: createElement(ChangePasswordPage) },
+      { path: 'auth/mfa-setup', element: createElement(MfaEnrollmentPage) },
       { path: 'auth/password-recovery', element: createElement(PasswordRecoveryPage) },
       { path: 'auth/reset-password', element: createElement(ResetPasswordPage) },
       { path: 'auth/mfa', element: createElement(MfaChallengePage) },

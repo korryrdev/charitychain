@@ -6,6 +6,7 @@
   "main": "src/index.js",
   "exports": {
     ".": "./src/index.js",
+    "./must-catalog.json": "./src/constants/mustCatalog.json",
     "./abis/*": "./abis/*"
   },
   "scripts": {
