@@ -25,11 +25,7 @@ export function createHealthRouter({
 } = {}) {
   const router = Router();
 
-  router.get('/live', (_request, response) => {
-    response.status(200).json({ status: 'ok', service: 'charitychain-api' });
-  });
-
-  router.get('/ready', async (_request, response, next) => {
+  async function evaluateDependencies() {
     const entries = Object.entries(checks);
     const results = await Promise.allSettled(
       entries.map(([, check]) => runCheck(check, timeoutMs))
@@ -40,7 +36,34 @@ export function createHealthRouter({
         results[index].status === 'fulfilled' ? 'ok' : 'unavailable'
       ])
     );
-    if (results.some((result) => result.status === 'rejected')) {
+    const healthy = !results.some((result) => result.status === 'rejected');
+    return { dependencies, healthy };
+  }
+
+  router.get('/', async (_request, response, next) => {
+    const { dependencies, healthy } = await evaluateDependencies();
+    if (!healthy) {
+      return next(
+        new AppError({
+          message: 'The service is not ready to receive traffic.',
+          code: ERROR_CODES.INTEGRATION_UNAVAILABLE,
+          statusCode: 503,
+          details: { dependencies },
+          expose: true,
+          retryable: true
+        })
+      );
+    }
+    return response.status(200).json({ status: 'ok', service: 'charitychain-api', dependencies });
+  });
+
+  router.get('/live', (_request, response) => {
+    response.status(200).json({ status: 'ok', service: 'charitychain-api' });
+  });
+
+  router.get('/ready', async (_request, response, next) => {
+    const { dependencies, healthy } = await evaluateDependencies();
+    if (!healthy) {
       return next(
         new AppError({
           message: 'The service is not ready to receive traffic.',

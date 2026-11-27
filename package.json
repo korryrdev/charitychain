@@ -26,14 +26,13 @@
     "db:validate": "npm run validate -w @charitychain/database",
     "db:migrate": "npm run migrate:dev -w @charitychain/database",
     "db:seed": "npm run seed -w @charitychain/database",
-    "db:seed:university": "npm run seed:university -w @charitychain/database",
-    "db:seed:inventory": "npm run seed:inventory -w @charitychain/database",
     "db:seed:admin": "npm run seed:admin -w @charitychain/database",
-    "db:seed:all": "npm run seed:all -w @charitychain/database",
     "contracts:compile": "npm run compile -w @charitychain/blockchain",
     "verify": "npm run lint && npm run format:check && npm run db:validate && npm run build && npm run test"
   },
   "devDependencies": {
+    "@babel/eslint-parser": "^7.29.13",
+    "@babel/preset-typescript": "^7.29.7",
     "@eslint/js": "^9.39.5",
     "@nomicfoundation/hardhat-ignition": "^3.0.7",
     "@nomicfoundation/hardhat-ignition-viem": "^3.0.7",

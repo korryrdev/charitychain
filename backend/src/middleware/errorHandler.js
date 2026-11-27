@@ -7,7 +7,9 @@ export function errorHandler(error, request, response, _next) {
       ? error.statusCode
       : 500;
   const logContext = { error, requestId: request.id };
-  if (statusCode >= 500) logger.error(logContext, 'Request failed');
+  if (statusCode >= 500) {
+    logger.error({ ...logContext, err: error, stack: error.stack }, error.message || 'Request failed');
+  }
   else logger.warn(logContext, 'Request rejected');
 
   const safeError =

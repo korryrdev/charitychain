@@ -1,0 +1,51 @@
+import { useEffect, useState } from 'react';
+import { approvalsApi } from '../../features/committeeApprovals/services/approvals.api';
+
+interface ApprovedCommitment {
+  id: string;
+  reference: string;
+  type: string;
+  requestedAmount: string | number;
+  semester: {
+    code: string;
+  };
+}
+
+export function FundingCommitmentsPage() {
+  const [items, setItems] = useState<ApprovedCommitment[]>([]);
+
+  useEffect(() => {
+    approvalsApi
+      .queue({ status: 'APPROVED', pageSize: 100 })
+      .then(({ items: value }) => setItems((value ?? []) as ApprovedCommitment[]))
+      .catch(() => {});
+  }, []);
+
+  const total = items.reduce((sum, item) => sum + Number(item.requestedAmount), 0);
+
+  return (
+    <main className="portal-page committee-page">
+      <p className="section-kicker">Funding commitments</p>
+      <h1>Approved support awaiting disbursement.</h1>
+      <section className="commitment-total">
+        <span>Total approved value</span>
+        <strong>KES {total.toLocaleString()}</strong>
+        <small>
+          {items.length} approved application{items.length === 1 ? '' : 's'}
+        </small>
+      </section>
+      <div className="committee-queue">
+        {items.map((application) => (
+          <article key={application.id}>
+            <strong>CASE-{application.reference.slice(-8)}</strong>
+            <span>
+              {application.type} · KES {Number(application.requestedAmount).toLocaleString()}
+            </span>
+            <small>{application.semester.code}</small>
+          </article>
+        ))}
+      </div>
+      {!items.length && <p className="muted">No approved commitments are awaiting payout.</p>}
+    </main>
+  );
+}

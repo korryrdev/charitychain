@@ -1,2 +1,0 @@
-import { FormField } from './FormField.jsx';
-export function PhoneField({ id = 'phone', label = 'Phone number', error, ...props }) { return <FormField id={id} label={label} error={error} hint="Use 2547XXXXXXXX format."><input id={id} name={props.name ?? id} inputMode="tel" autoComplete="tel" aria-invalid={Boolean(error)} aria-describedby={error ? `${id}-error` : undefined} {...props} /></FormField>; }

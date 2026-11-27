@@ -9,6 +9,15 @@ export const updateProfileSchema = z
   })
   .refine((value) => Object.keys(value).length > 0, 'At least one field is required.');
 export const updateUserStatusSchema = z.object({ status: z.enum(Object.values(STATUSES.USER)) });
+export const createUserSchema = z.object({
+  name: z.string().trim().min(2).max(100),
+  email: z.email().trim().toLowerCase(),
+  password: z.string().min(8),
+  roles: z.array(z.string()).default([])
+});
+export const updateUserRolesSchema = z.object({
+  roles: z.array(z.string()).min(1)
+});
 export const closeOwnAccountSchema = z.object({
   password: z.string().min(12).max(128),
   confirmation: z.literal('DELETE')

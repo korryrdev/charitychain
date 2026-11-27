@@ -1,0 +1,66 @@
+import type { ReactNode } from 'react';
+import { Link } from 'react-router-dom';
+
+export interface PublicPageAction {
+  to: string;
+  label: string;
+}
+
+export interface PublicPageProps {
+  title: string;
+  lead?: string;
+  children?: ReactNode;
+  actions?: PublicPageAction[];
+  eyebrow?: string;
+}
+
+export interface InformationGridItem {
+  title: string;
+  body: string;
+}
+
+export interface InformationGridProps {
+  items: InformationGridItem[];
+}
+
+export function PublicPage({
+  title,
+  lead,
+  children,
+  actions = [],
+  eyebrow = 'CharityChain public information',
+}: PublicPageProps) {
+  return (
+    <section className="public-page">
+      <header className="public-page__header">
+        <p className="section-kicker">{eyebrow}</p>
+        <h1>{title}</h1>
+        <p>{lead}</p>
+        {actions.length > 0 && (
+          <div className="public-page__actions">
+            {actions.map((action) => (
+              <Link className="button" key={action.to} to={action.to}>
+                {action.label} <span aria-hidden="true">→</span>
+              </Link>
+            ))}
+          </div>
+        )}
+      </header>
+      <div className="public-page__body">{children}</div>
+    </section>
+  );
+}
+
+export function InformationGrid({ items }: InformationGridProps) {
+  return (
+    <div className="information-grid">
+      {items.map((item, index) => (
+        <article className="information-card" key={item.title}>
+          <span className="information-card__index">{String(index + 1).padStart(2, '0')}</span>
+          <h2>{item.title}</h2>
+          <p>{item.body}</p>
+        </article>
+      ))}
+    </div>
+  );
+}

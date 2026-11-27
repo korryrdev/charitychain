@@ -1919,3 +1919,250 @@ enum OutboxStatus {
   PUBLISHED
   FAILED
 }
+
+// --- PRD Core Entities (Section 10.1, G05) ---
+
+model Subgroup {
+  id          String       @id @default(uuid()) @db.Uuid
+  code        String       @unique
+  name        String
+  repUserId   String?      @db.Uuid
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  cases       MalkiaCase[]
+
+  @@map("subgroups")
+}
+
+model MalkiaCase {
+  id                     String           @id @default(uuid()) @db.Uuid
+  caseNumber             String           @unique
+  subGroupId             String           @db.Uuid
+  studentIdentifierHash  String
+  encryptedStudentData   String?
+  needCategory           String           // FEES, UPKEEP, MEDICAL, EMERGENCY, BOOKS
+  requestedAmountMinor   BigInt
+  approvedAmountMinor    BigInt           @default(0)
+  disbursedAmountMinor   BigInt           @default(0)
+  state                  String           @default("DRAFT") // DRAFT, SUBMITTED, UNDER_REVIEW, NEEDS_INFO, APPROVED, REJECTED, AUTHORIZED, DISBURSED, CLOSED
+  caseHash               String?
+  decisionHash           String?
+  justification          String           @db.Text
+  hasConsent             Boolean          @default(true)
+  createdByUserId        String           @db.Uuid
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+
+  subGroup               Subgroup         @relation(fields: [subGroupId], references: [id])
+  events                 CaseEvent[]
+  approvals              CaseApproval[]
+  allocations            LotAllocation[]
+
+  @@index([subGroupId, state])
+  @@index([caseNumber])
+  @@map("cases")
+}
+
+model CaseEvent {
+  id          String      @id @default(uuid()) @db.Uuid
+  caseId      String      @db.Uuid
+  fromState   String
+  toState     String
+  actorUserId String?     @db.Uuid
+  notes       String?     @db.Text
+  payload     Json?
+  createdAt   DateTime    @default(now())
+
+  case        MalkiaCase  @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([caseId, createdAt])
+  @@map("case_events")
+}
+
+model CaseApproval {
+  id             String      @id @default(uuid()) @db.Uuid
+  caseId         String      @db.Uuid
+  approverUserId String      @db.Uuid
+  decision       String      // APPROVED, REJECTED, NEEDS_INFO
+  amountMinor    BigInt?
+  notes          String?     @db.Text
+  createdAt      DateTime    @default(now())
+
+  case           MalkiaCase  @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([caseId])
+  @@map("case_approvals")
+}
+
+model DonationLot {
+  id                   String           @id @default(uuid()) @db.Uuid
+  receiptCode          String           @unique
+  sourceRefHash        String
+  donorRef             String           // Keyed HMAC of donor identity
+  totalAmountMinor     BigInt
+  remainingAmountMinor BigInt
+  currency             String           @default("KES")
+  channel              String           // MPESA, BANK, IN_KIND
+  earmark              String?          // Optional category earmark
+  isExhausted          Boolean          @default(false)
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  allocations          LotAllocation[]
+
+  @@index([donorRef])
+  @@index([receiptCode])
+  @@index([isExhausted, createdAt])
+  @@map("lots")
+}
+
+model LotAllocation {
+  id             String       @id @default(uuid()) @db.Uuid
+  lotId          String       @db.Uuid
+  caseId         String       @db.Uuid
+  amountMinor    BigInt
+  allocatedAt    DateTime     @default(now())
+
+  lot            DonationLot  @relation(fields: [lotId], references: [id], onDelete: Restrict)
+  case           MalkiaCase   @relation(fields: [caseId], references: [id], onDelete: Restrict)
+
+  @@index([lotId])
+  @@index([caseId])
+  @@map("allocations")
+}
+
+model DonationRawCallback {
+  id                     String    @id @default(uuid()) @db.Uuid
+  provider               String    // DARAJA, BANK
+  externalTransactionId String?
+  rawPayload             Json
+  processed              Boolean   @default(false)
+  createdAt              DateTime  @default(now())
+
+  @@index([externalTransactionId])
+  @@map("donation_raw_callbacks")
+}
+
+model BankDeposit {
+  id                   String    @id @default(uuid()) @db.Uuid
+  depositReference     String    @unique
+  donorRef             String
+  amountMinor          BigInt
+  currency             String    @default("KES")
+  fxRate               Decimal?  @db.Decimal(12, 6)
+  convertedAmountMinor BigInt?
+  status               String    @default("PENDING_VERIFICATION") // PENDING_VERIFICATION, VERIFIED, REJECTED
+  enteredByUserId      String    @db.Uuid
+  verifiedByUserId     String?   @db.Uuid
+  consentVersion       String?
+  createdAt            DateTime  @default(now())
+  verifiedAt           DateTime?
+
+  @@index([depositReference])
+  @@index([status])
+  @@map("bank_deposits")
+}
+
+model BankStatementLine {
+  id                String    @id @default(uuid()) @db.Uuid
+  statementDate     DateTime
+  reference         String
+  amountMinor       BigInt
+  isMatched         Boolean   @default(false)
+  matchedDepositId  String?   @db.Uuid
+  createdAt         DateTime  @default(now())
+
+  @@index([reference])
+  @@map("bank_statement_lines")
+}
+
+model PeriodReport {
+  id            String    @id @default(uuid()) @db.Uuid
+  year          Int
+  quarter       Int
+  version       Int       @default(1)
+  reportHash    String
+  periodRoot    String
+  canonicalJson Json
+  pdfUrl        String?
+  txHash        String?
+  isAnchored    Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+
+  @@unique([year, quarter, version])
+  @@map("period_reports")
+}
+
+model ForensicAlert {
+  id          String             @id @default(uuid()) @db.Uuid
+  ruleId      String
+  severity    String             // LOW, MEDIUM, HIGH, CRITICAL
+  riskScore   Int                @default(0) // 0 - 100
+  description String
+  entityType  String
+  entityId    String?
+  status      String             @default("OPEN") // OPEN, INVESTIGATING, RESOLVED, FALSE_POSITIVE
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  events      ForensicAlertEvent[]
+
+  @@index([status, riskScore])
+  @@index([ruleId])
+  @@map("forensic_alerts")
+}
+
+model ForensicAlertEvent {
+  id          String        @id @default(uuid()) @db.Uuid
+  alertId     String        @db.Uuid
+  fromStatus  String
+  toStatus    String
+  actorUserId String?       @db.Uuid
+  notes       String        @db.Text
+  createdAt   DateTime      @default(now())
+
+  alert       ForensicAlert @relation(fields: [alertId], references: [id], onDelete: Cascade)
+
+  @@index([alertId])
+  @@map("forensic_alert_events")
+}
+
+model ForensicRuleConfig {
+  id              String   @id // e.g. "R01"
+  name            String
+  description     String
+  severity        String
+  thresholdParams Json?
+  isEnabled       Boolean  @default(true)
+  phase           Int      @default(1)
+  updatedAt       DateTime @updatedAt
+
+  @@map("forensic_rules")
+}
+
+model DonorPreferenceEvent {
+  id             String   @id @default(uuid()) @db.Uuid
+  donorRef       String
+  displayMode    String   // ANONYMOUS, ALIAS, NAMED
+  publicAlias    String?
+  confirmedName  String?
+  consentVersion String
+  isOptedIn      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  @@index([donorRef])
+  @@map("donor_preference_events")
+}
+
+model DonorBadgeAward {
+  id           String   @id @default(uuid()) @db.Uuid
+  donorRef     String
+  tier         String   // BRONZE, SILVER, GOLD, PATRON, CONSISTENT
+  academicYear String
+  awardedAt    DateTime @default(now())
+  isRevoked    Boolean  @default(false)
+
+  @@index([donorRef])
+  @@map("donor_badges")
+}

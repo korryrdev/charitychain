@@ -14,15 +14,16 @@
     "migrate:dev": "node scripts/prisma.js migrate dev --schema prisma/schema.prisma",
     "migrate:deploy": "node scripts/prisma.js migrate deploy --schema prisma/schema.prisma",
     "seed": "node prisma/seed.js",
-    "seed:university": "node prisma/seedUniversityRecords.js",
-    "seed:inventory": "node prisma/seedInventory.js",
     "seed:admin": "node prisma/seedAdmin.js",
-    "seed:all": "node prisma/seed.js && node prisma/seedUniversityRecords.js && node prisma/seedInventory.js && node prisma/seedAdmin.js",
+    "studio": "node scripts/prisma.js studio --schema prisma/schema.prisma",
     "test": "vitest run"
   },
   "dependencies": {
     "@prisma/client": "6.19.0",
     "dotenv": "^17.3.1"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   },
   "devDependencies": {
     "prisma": "6.19.0",

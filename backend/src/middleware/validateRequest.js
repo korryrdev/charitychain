@@ -34,6 +34,7 @@ export function validateRequest(schemas = {}) {
           Object.defineProperty(request, 'query', {
             configurable: true,
             enumerable: true,
+            writable: true,
             value: result.data
           });
         } else {

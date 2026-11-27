@@ -4,7 +4,10 @@
   "private": true,
   "type": "module",
   "main": "src/index.js",
-  "exports": { ".": "./src/index.js" },
+  "exports": {
+    ".": "./src/index.js",
+    "./abis/*": "./abis/*"
+  },
   "scripts": {
     "build": "node scripts/checkBuild.js",
     "test": "vitest run"

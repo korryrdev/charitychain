@@ -20,7 +20,14 @@ export function createCorsConfig(environment = env) {
     allowedOrigins: parseOrigins(environment),
     credentials: true,
     methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Accept', 'Authorization', 'Content-Type', 'Idempotency-Key', 'X-CSRF-Token'],
+    allowedHeaders: [
+      'Accept',
+      'Authorization',
+      'Content-Type',
+      'Idempotency-Key',
+      'X-CSRF-Token',
+      'X-Request-Id'
+    ],
     exposedHeaders: ['X-Request-Id'],
     maxAge: 600
   });

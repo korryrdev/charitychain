@@ -1,11 +1,17 @@
-export function auditContext(request, _response, next) {
-  const context = {
+export function requestAuditContext(request) {
+  return {
     requestId: request.id,
     actorId: request.auth?.user?.id ?? null,
     sessionId: request.auth?.session?.id ?? null,
+    requestMethod: request.method,
+    requestPath: request.originalUrl,
     ipAddress: request.ip,
-    userAgent: request.get('user-agent') ?? null
+    userAgent: request.get?.('user-agent') ?? null,
   };
+}
+
+export function auditContext(request, _response, next) {
+  const context = requestAuditContext(request);
 
   request.audit = Object.freeze({
     ...context,
@@ -15,9 +21,9 @@ export function auditContext(request, _response, next) {
         action,
         entityType,
         entityId: entityId ?? null,
-        metadata: metadata ?? null
+        metadata: metadata ?? null,
       });
-    }
+    },
   });
   next();
 }

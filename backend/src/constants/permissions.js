@@ -1,6 +1,34 @@
 export const PERMISSIONS = Object.freeze({
+  // PRD Case & Workflow Permissions (FR-CASE-01 to 07)
+  CASE_CREATE: 'case:create',
+  CASE_READ: 'case:read',
+  CASE_UPDATE_DRAFT: 'case:update:draft',
+  CASE_SUBMIT: 'case:submit',
+  CASE_DECIDE: 'case:decide',
+  RELEASE_AUTHORIZE: 'release:authorize',
+
+  // PRD Fund Flow & Bank & In-Kind Intake (FR-INT-06, FR-INT-08, FR-FLOW-01)
+  BANK_DEPOSIT_CREATE: 'bank-deposit:create',
+  BANK_DEPOSIT_VERIFY: 'bank-deposit:verify',
+  ITEM_LOG_CREATE: 'item-log:create',
+  ITEM_ISSUE: 'item:issue',
+
+  // PRD Forensics & Audit (FR-FOR-01, FR-AUD-01)
+  ALERT_READ: 'alert:read',
+  ALERT_RESOLVE: 'alert:resolve',
+  RULES_MANAGE: 'rules:manage',
+  DONOR_IDENTITY_REVEAL: 'donor-identity:reveal',
+  RECOGNITION_MODERATE: 'recognition:moderate',
+  BADGE_TIER_MANAGE: 'badge-tier:manage',
+
+  // User & Administrative Permissions (FR-AUTH-03)
   PROFILE_READ_SELF: 'profile:read:self',
   PROFILE_UPDATE_SELF: 'profile:update:self',
+  USER_MANAGE: 'user:manage',
+  ROLE_MANAGE: 'role:manage',
+  SYSTEM_ADMINISTER: 'system:administer',
+
+  // Existing/Preserved Permissions
   DONATION_CREATE: 'donation:create',
   DONATION_READ_SELF: 'donation:read:self',
   DONATION_READ_ALL: 'donation:read:all',
@@ -34,10 +62,7 @@ export const PERMISSIONS = Object.freeze({
   REPORT_GENERATE: 'report:generate',
   COMPLAINT_CREATE: 'complaint:create',
   COMPLAINT_MANAGE: 'complaint:manage',
-  POLICY_MANAGE: 'policy:manage',
-  ROLE_MANAGE: 'role:manage',
-  USER_MANAGE: 'user:manage',
-  SYSTEM_ADMINISTER: 'system:administer'
+  POLICY_MANAGE: 'policy:manage'
 });
 
 export const PERMISSION_VALUES = Object.freeze(Object.values(PERMISSIONS));

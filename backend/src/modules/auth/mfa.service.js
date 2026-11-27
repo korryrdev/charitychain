@@ -6,7 +6,11 @@ export function createMfaService(engine = authEngine) {
       return engine.api.enableTwoFactor({ body: { password, method: 'totp' }, headers });
     },
     verify(code, trustDevice, headers) {
-      return engine.api.verifyTOTP({ body: { code, trustDevice }, headers });
+      return engine.api.verifyTOTP({
+        body: { code, trustDevice },
+        headers,
+        returnHeaders: true
+      });
     },
     disable(password, headers) {
       return engine.api.disableTwoFactor({ body: { password }, headers });

@@ -29,11 +29,17 @@ export function createUsersController(service = usersService) {
       res.json({ user: await service.get(req.auth, req.params.userId) })
     ),
     list: handle(async (req, res) => res.json(await service.list(req.query))),
+    create: handle(async (req, res) =>
+      res.status(201).json({ user: await service.createUser(req.auth, req.body) })
+    ),
     createStaffAccount: handle(async (req, res) =>
       res.status(201).json(await service.createStaffAccount(req.body))
     ),
     updateProfile: handle(async (req, res) =>
       res.json({ user: await service.updateProfile(req.auth, req.params.userId, req.body) })
+    ),
+    updateRoles: handle(async (req, res) =>
+      res.json({ user: await service.updateRoles(req.auth, req.params.userId, req.body.roles) })
     ),
     updateStatus: handle(async (req, res) =>
       res.json({ user: await service.updateStatus(req.params.userId, req.body.status) })

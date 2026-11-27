@@ -11,14 +11,35 @@ export const transparencyAggregationService = Object.freeze({
       inventory.set(category, (inventory.get(category) ?? 0) + batch.availableQuantity);
     }
     return {
-      generatedAt: new Date(), currency: 'KES',
+      generatedAt: new Date(),
+      currency: 'KES',
       donations: { total: number(donations), count: data.donations._count.id },
       disbursements: { total: number(disbursements), count: data.disbursements._count.id },
       centralPoolBalance: number(donations) - number(disbursements),
-      fundFlow: [{ from: 'Public donations', to: 'CharityChain central pool', amount: number(donations) }, { from: 'CharityChain central pool', to: 'Verified student support', amount: number(disbursements) }],
-      inventory: [...inventory.entries()].map(([category, availableQuantity]) => ({ category, availableQuantity })),
-      recognition: data.recognition.map((profile) => ({ name: profile.displayNameMode === 'REAL' ? profile.user.name : profile.publicAlias, tier: profile.recognitionTier, ...(profile.showContributionTotal ? { contributionTotal: number(profile.totalContribution) } : {}) })),
-      audit: data.audit.map((item) => ({ action: item.action, outcome: item.outcome, count: item._count.id }))
+      fundFlow: [
+        { from: 'Public donations', to: 'CharityChain central pool', amount: number(donations) },
+        {
+          from: 'CharityChain central pool',
+          to: 'Verified student support',
+          amount: number(disbursements),
+        },
+      ],
+      inventory: [...inventory.entries()].map(([category, availableQuantity]) => ({
+        category,
+        availableQuantity,
+      })),
+      // FR-DON-12: Never publish contribution amounts on public recognition boards.
+      recognition: data.recognition.map((profile) => ({
+        name: ['REAL', 'REAL_NAME'].includes(profile.displayNameMode)
+          ? profile.user.name
+          : profile.publicAlias,
+        ...(profile.showRecognitionTier !== false ? { tier: profile.recognitionTier } : {}),
+      })),
+      audit: data.audit.map((item) => ({
+        action: item.action,
+        outcome: item.outcome,
+        count: item._count.id,
+      })),
     };
-  }
+  },
 });

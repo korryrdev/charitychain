@@ -2,6 +2,7 @@ import { accountVerificationService } from './accountVerification.service.js';
 import { randomBytes } from 'node:crypto';
 import { authenticationConfig } from '../../config/authentication.js';
 import { env } from '../../config/environment.js';
+import { authRepository } from './auth.repository.js';
 import { authService } from './auth.service.js';
 import { mfaService } from './mfa.service.js';
 import { passwordResetService } from './passwordReset.service.js';
@@ -38,6 +39,7 @@ export function createAuthController({
   verificationService = accountVerificationService,
   resetService = passwordResetService,
   secondFactorService = mfaService,
+  repository = authRepository,
   sendPasswordReset = async () => {}
 } = {}) {
   return {
@@ -77,7 +79,9 @@ export function createAuthController({
     logout: async (request, response, next) => {
       try {
         const result = await service.logout(requestHeaders(request));
-        applyHeaders(response, result.headers);
+        applyHeaders(response, result?.headers);
+        response.clearCookie(authenticationConfig.session.cookieName, { path: '/' });
+        response.clearCookie('charitychain_csrf', { path: '/' });
         response.status(204).end();
       } catch (error) {
         next(error);
@@ -116,13 +120,32 @@ export function createAuthController({
     },
     verifyMfa: async (request, response, next) => {
       try {
-        response.json(
-          await secondFactorService.verify(
-            request.body.code,
-            request.body.trustDevice,
-            requestHeaders(request)
-          )
+        const result = await secondFactorService.verify(
+          request.body.code,
+          request.body.trustDevice,
+          requestHeaders(request)
         );
+        applyHeaders(response, result?.headers);
+        issueCsrfCookie(response);
+        const body = result?.response ?? result ?? {};
+        const safeBody = { ...body };
+        delete safeBody.token;
+        const userId = safeBody?.user?.id;
+        const fullUser = userId ? await repository.findUserById?.(userId).catch(() => null) : null;
+        const roles = fullUser?.roles?.map((assignment) => assignment.role.code) ?? [];
+        const permissions = [
+          ...new Set(
+            fullUser?.roles?.flatMap(
+              (assignment) => assignment.role.permissions?.map((item) => item.permission.code) ?? []
+            ) ?? []
+          )
+        ];
+        response.json({
+          ...safeBody,
+          roles,
+          permissions,
+          mfaVerified: true
+        });
       } catch (error) {
         next(error);
       }

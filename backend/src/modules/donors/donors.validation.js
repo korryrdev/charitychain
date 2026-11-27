@@ -1,15 +1,25 @@
 import { z } from 'zod';
 
 export const donorIdParamsSchema = z.object({ donorId: z.uuid() });
+export const donorRefParamsSchema = z.object({
+  donorRef: z.string().trim().min(4).max(128),
+});
+export const revealDonorIdentitySchema = z
+  .object({
+    reason: z.string().trim().min(10).max(500),
+  })
+  .strict();
+
 export const aliasSchema = z.object({
   alias: z
     .string()
     .trim()
     .min(3)
     .max(40)
-    .regex(/^[\p{L}\p{N}][\p{L}\p{N} _-]*$/u)
+    .regex(/^[\p{L}\p{N}][\p{L}\p{N} _-]*$/u),
 });
+
 export const aliasDecisionSchema = z.object({
   approved: z.boolean(),
-  reason: z.string().trim().min(3).max(250).optional()
+  reason: z.string().trim().min(3).max(250).optional(),
 });

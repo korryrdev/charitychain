@@ -26,7 +26,11 @@ beforeAll(async () => {
 afterAll(async () => {
   if (student?.id) {
     const applications = await prisma.assistanceApplication.findMany({ where: { studentId: student.id }, select: { id: true } });
-    await prisma.assistanceApplicationHistory.deleteMany({ where: { applicationId: { in: applications.map(({ id }) => id) } } });
+    const appIds = applications.map(({ id }) => id);
+    const runs = await prisma.vettingRun.findMany({ where: { applicationId: { in: appIds } }, select: { id: true } });
+    await prisma.vettingFactorResult.deleteMany({ where: { vettingRunId: { in: runs.map(({ id }) => id) } } });
+    await prisma.vettingRun.deleteMany({ where: { applicationId: { in: appIds } } });
+    await prisma.assistanceApplicationHistory.deleteMany({ where: { applicationId: { in: appIds } } });
     await prisma.assistanceApplication.deleteMany({ where: { studentId: student.id } });
     await prisma.studentFinancialRecord.deleteMany({ where: { studentId: student.id } });
     await prisma.student.deleteMany({ where: { id: student.id } });

@@ -1,16 +1,17 @@
+import { authenticationConfig } from '../../config/authentication.js';
+import { env } from '../../config/environment.js';
 import { STATUSES } from '../../constants/statuses.js';
 import { AuthenticationError } from '../../errors/AuthenticationError.js';
 import { ConflictError } from '../../errors/ConflictError.js';
 import { ERROR_CODES } from '../../errors/errorCodes.js';
 import { ValidationError } from '../../errors/ValidationError.js';
 import { donorsService } from '../donors/donors.service.js';
+import { accountVerificationService } from './accountVerification.service.js';
 import { EmailAlreadyRegisteredError } from './auth.errors.js';
 import { assertUserCanSignIn } from './auth.policy.js';
-import { accountVerificationService } from './accountVerification.service.js';
 import { authRepository } from './auth.repository.js';
 import { STUDENT_EMAIL_REGEX } from './auth.validation.js';
 import { authEngine } from './betterAuth.js';
-import { env } from '../../config/environment.js';
 
 function unwrap(result) {
   return result?.response ?? result;
@@ -29,8 +30,28 @@ export function createAuthService({
       return result.user;
     },
     async registerStudent(input) {
-      const result = unwrap(await engine.api.signUpEmail({ body: { name: input.name, email: input.email, password: input.password } }));
-      try { await repository.assignDefaultRole(result.user.id, 'STUDENT'); const token = await verificationService.issue(input.email); await sendVerification({ email: input.email, token, user: result.user }); return { ...result, ...(env.NODE_ENV === 'production' ? {} : { developmentVerificationToken: token }) }; } catch (error) { await repository.deleteUser(result.user.id).catch(() => {}); throw error; }
+      const result = unwrap(
+        await engine.api.signUpEmail({
+          body: { name: input.name, email: input.email, password: input.password }
+        })
+      );
+      try {
+        await repository.assignDefaultRole(result.user.id, 'STUDENT');
+        await repository.ensureStudentProfile?.(
+          result.user.id,
+          input.name,
+          input.registrationNumber
+        );
+        const token = await verificationService.issue(input.email);
+        await sendVerification({ email: input.email, token, user: result.user });
+        return {
+          ...result,
+          ...(env.NODE_ENV === 'production' ? {} : { developmentVerificationToken: token })
+        };
+      } catch (error) {
+        await repository.deleteUser(result.user.id).catch(() => {});
+        throw error;
+      }
     },
     async register(input) {
       const normalizedEmail = String(input.email ?? '').trim().toLowerCase();
@@ -128,18 +149,38 @@ export function createAuthService({
           )
         )
       ];
+      const primaryRole =
+        roles.includes('DONOR') && roles.length === 1 ? 'DONOR' : roles[0] || 'DONOR';
+      const safeResponse = { ...(response ?? {}) };
+      delete safeResponse.token;
+      const requiresMfa = Boolean(safeResponse.twoFactorRedirect || safeResponse.requiresMfa);
       return {
         ...(result.response ? result : { response }),
         response: {
-          ...response,
+          ...safeResponse,
+          requiresMfa,
+          role: primaryRole,
           roles,
           permissions,
-          mfaVerified: Boolean(user.twoFactorEnabled)
+          mfaVerified: !requiresMfa && Boolean(user.twoFactorEnabled)
         }
       };
     },
-    logout(headers) {
-      return engine.api.signOut({ headers, returnHeaders: true });
+    async logout(headers) {
+      const result = await engine.api.signOut({ headers, returnHeaders: true });
+      const rawCookie = headers?.get?.('cookie') ?? '';
+      const cookiePrefix = `${authenticationConfig.session.cookieName}=`;
+      const cookieEntry = rawCookie
+        .split(';')
+        .map((part) => part.trim())
+        .find((part) => part.startsWith(cookiePrefix));
+      const token = cookieEntry
+        ? decodeURIComponent(cookieEntry.slice(cookiePrefix.length)).split('.', 1)[0]
+        : null;
+      if (token) {
+        await repository.revokeSessionByToken?.(token).catch(() => {});
+      }
+      return result;
     },
     getSession(headers) {
       return engine.api.getSession({ headers });

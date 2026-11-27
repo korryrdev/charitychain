@@ -1,0 +1,31 @@
+import { PAYMENT_METHODS } from '../validation/donation.schema';
+
+export interface PaymentMethodSelectorProps {
+  value: string;
+  onChange: (value: string) => void;
+  error?: string | null;
+}
+
+export function PaymentMethodSelector({ value, onChange, error }: PaymentMethodSelectorProps) {
+  return (
+    <fieldset className="payment-method-selector">
+      <legend>Payment method</legend>
+      {PAYMENT_METHODS.map((method) => (
+        <label key={method.value} className={value === method.value ? 'is-selected' : ''}>
+          <input
+            type="radio"
+            name="channel"
+            value={method.value}
+            checked={value === method.value}
+            onChange={(event) => onChange(event.target.value)}
+          />
+          <span>
+            <strong>{method.label}</strong>
+            <small>{method.hint}</small>
+          </span>
+        </label>
+      ))}
+      {error && <p role="alert">{error}</p>}
+    </fieldset>
+  );
+}

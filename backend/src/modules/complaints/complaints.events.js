@@ -1,3 +1,12 @@
 'use strict';
 
-// complaints events: implementation pending.
+export const COMPLAINT_RULE_IDS = Object.freeze({
+  COMPLAINT: 'PUBLIC_COMPLAINT',
+  FRAUD_REPORT: 'PUBLIC_FRAUD_REPORT',
+});
+
+export const COMPLAINT_AUDIT_ACTIONS = Object.freeze({
+  COMPLAINT_SUBMITTED: 'COMPLAINT_SUBMITTED',
+  FRAUD_REPORT_SUBMITTED: 'FRAUD_REPORT_SUBMITTED',
+  COMPLAINT_RESOLVED: 'COMPLAINT_RESOLVED',
+});

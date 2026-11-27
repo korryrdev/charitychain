@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 export const STUDENT_EMAIL_REGEX = /^[a-zA-Z]+\d{6}@students\.must\.ac\.ke$/i;
+export const STUDENT_REG_NO_REGEX = /^[A-Z]{2}\d{3}\/\d{6}\/\d{2}$/;
 const portalRole = z.enum(['STUDENT', 'DONOR', 'ADMIN', 'SECRETARIAT']).optional();
 
 const email = z.string().trim().toLowerCase().pipe(z.email());
@@ -45,9 +46,11 @@ export const studentRegisterSchema = z
     registrationNumber: z
       .string()
       .trim()
-      .min(4)
-      .max(80)
-      .transform((value) => value.toUpperCase())
+      .toUpperCase()
+      .regex(
+        STUDENT_REG_NO_REGEX,
+        'Use a valid university registration number (e.g. CT206/204483/24 or CT201/000001/23).'
+      )
   })
   .superRefine((data, ctx) => refinePortalEmail({ ...data, role: 'STUDENT' }, ctx));
 

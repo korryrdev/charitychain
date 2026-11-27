@@ -29,6 +29,13 @@ export function createRolesRepository(database = prisma) {
     countAssignments(roleCode) {
       return database.userRole.count({ where: { role: { code: roleCode } } });
     },
+    async findUserRoleCodes(userId) {
+      const assignments = await database.userRole.findMany({
+        where: { userId },
+        include: { role: { select: { code: true } } }
+      });
+      return assignments.map((item) => item.role.code);
+    },
     assign(userId, roleCode) {
       return database.$transaction(async (transaction) => {
         const role = await transaction.role.findUniqueOrThrow({ where: { code: roleCode } });

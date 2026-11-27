@@ -16,3 +16,4 @@ cache/
 .vscode/
 database/dev.db
 blockchain/deployments/local/
+*.tsbuildinfo

@@ -6,26 +6,44 @@
     <meta name="text-scale" content="scale" />
     <meta name="color-scheme" content="light dark" />
     <script>
-      (function() {
+      (function () {
         try {
-          var stored = localStorage.getItem('charitychain_theme') || JSON.parse(localStorage.getItem('charitychain.preferences') || '{}').theme;
-          var theme = stored === 'dark' || stored === 'light' ? stored : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-          document.documentElement.dataset.theme = theme;
-          document.documentElement.style.colorScheme = theme;
+          var stored =
+            localStorage.getItem('charitychain_theme') ||
+            JSON.parse(localStorage.getItem('charitychain.preferences') || '{}').theme ||
+            'system';
+          var theme =
+            stored === 'dark' || stored === 'light'
+              ? stored
+              : window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light';
+          var root = document.documentElement;
+          root.dataset.theme = theme;
+          root.style.colorScheme = theme;
+          root.classList.toggle('dark', theme === 'dark');
+          root.classList.toggle('light', theme === 'light');
           var meta = document.querySelector('meta[name="color-scheme"]');
           if (meta) meta.content = theme;
         } catch (e) {}
       })();
     </script>
-    <meta name="description" content="Transparent donations, accountable student assistance, and public fund-flow reporting." />
+    <meta
+      name="description"
+      content="Transparent donations, accountable student assistance, smart-contract audit anchoring, and forensic fund-flow tracking."
+    />
     <meta name="theme-color" content="#16643f" />
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <title>CharityChain</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" referrerpolicy="no-referrer" />
+    <title>CharityChain | Transparent Donation Ledger</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+      referrerpolicy="no-referrer"
+    />
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

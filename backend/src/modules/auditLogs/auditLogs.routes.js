@@ -5,6 +5,7 @@ import { auditLogsController } from './auditLogs.controller.js';
 
 export function createAuditLogsRouter(controller = auditLogsController) {
   const router = Router();
+  router.get('/', controller.search);
   router.post('/events', controller.record);
   router.get('/events', controller.search);
   router.get('/events/export', controller.export);

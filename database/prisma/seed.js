@@ -1,4 +1,5 @@
 import { prisma } from '../client/prismaClient.js';
+import { seedAdmin } from './seedAdmin.js';
 
 const roles = [
   ['DONOR', 'Donor'],
@@ -8,7 +9,13 @@ const roles = [
   ['COMMITTEE_MEMBER', 'Committee Member'],
   ['FINANCE_OPERATOR', 'Finance Operator'],
   ['AUDITOR', 'Auditor'],
-  ['ADMINISTRATOR', 'Administrator']
+  ['ADMINISTRATOR', 'Administrator'],
+  ['PHARMACY_CUSTODIAN', 'Pharmacy Custodian'],
+  ['TREASURER', 'Treasurer'],
+  ['SIGNATORY', 'Signatory'],
+  ['SUBGROUP_REP', 'Subgroup Representative'],
+  ['MEMBER_AUDITOR', 'Member Auditor'],
+  ['SYSTEM_ADMIN', 'System Administrator']
 ];
 
 const permissions = [
@@ -50,7 +57,23 @@ const permissions = [
   'policy:manage',
   'role:manage',
   'user:manage',
-  'system:administer'
+  'system:administer',
+  'case:create',
+  'case:read',
+  'case:update:draft',
+  'case:submit',
+  'case:decide',
+  'release:authorize',
+  'bank-deposit:create',
+  'bank-deposit:verify',
+  'item-log:create',
+  'item:issue',
+  'alert:read',
+  'alert:resolve',
+  'rules:manage',
+  'donor-identity:reveal',
+  'recognition:moderate',
+  'badge-tier:manage'
 ];
 
 const rolePermissions = {
@@ -71,6 +94,8 @@ const rolePermissions = {
   ],
   CLERK: [
     'profile:read:self',
+    'item-log:create',
+    'item:issue',
     'physical-donation:record',
     'confirmation:manage',
     'inventory:read',
@@ -78,18 +103,61 @@ const rolePermissions = {
     'goods-collection:release',
     'student-record:read:all'
   ],
+  PHARMACY_CUSTODIAN: [
+    'item-log:create',
+    'item:issue',
+    'inventory:read',
+    'inventory:manage',
+    'physical-donation:record',
+    'goods-collection:record',
+    'goods-collection:release'
+  ],
   INVENTORY_SUPERVISOR: [
+    'item-log:create',
+    'item:issue',
     'inventory:read',
     'inventory:manage',
     'physical-donation:inspect',
     'report:read'
   ],
   COMMITTEE_MEMBER: [
+    'case:read',
+    'case:decide',
     'application:review',
     'application:approve',
     'vetting:execute',
     'evidence:read',
-    'report:read'
+    'report:read',
+    'bank-deposit:create',
+    'bank-deposit:verify',
+    'alert:read',
+    'forensics:read'
+  ],
+  TREASURER: [
+    'bank-deposit:create',
+    'bank-deposit:verify',
+    'donation:read:all',
+    'disbursement:create',
+    'disbursement:execute',
+    'reconciliation:execute',
+    'reconciliation:read',
+    'report:read',
+    'alert:read',
+    'forensics:read'
+  ],
+  SIGNATORY: [
+    'release:authorize',
+    'case:read',
+    'disbursement:read',
+    'report:read',
+    'alert:read',
+    'forensics:read'
+  ],
+  SUBGROUP_REP: [
+    'case:create',
+    'case:read',
+    'case:update:draft',
+    'case:submit'
   ],
   FINANCE_OPERATOR: [
     'donation:read:all',
@@ -107,11 +175,23 @@ const rolePermissions = {
     'reconciliation:read',
     'evidence:read',
     'audit:read',
+    'alert:read',
+    'alert:resolve',
     'forensics:read',
     'forensics:investigate',
     'report:read'
   ],
-  ADMINISTRATOR: permissions
+  MEMBER_AUDITOR: [
+    'donation:read:all',
+    'audit:read',
+    'alert:read',
+    'alert:resolve',
+    'forensics:read',
+    'forensics:investigate',
+    'report:read'
+  ],
+  ADMINISTRATOR: permissions,
+  SYSTEM_ADMIN: permissions
 };
 
 const recognitionTiers = [
@@ -160,8 +240,14 @@ await prisma.$transaction(
         create: tier
       });
     }
+
+    // Remove legacy deterministic demo tokens
+    await transaction.session.deleteMany({
+      where: { token: { startsWith: 'malkia-token-' } }
+    });
   },
   { timeout: 30_000 }
 );
 
+await seedAdmin();
 await prisma.$disconnect();
